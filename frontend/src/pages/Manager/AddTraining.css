@@ -1,0 +1,62 @@
+.add-training-form {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 25px;
+    margin-left: 40px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    padding-left: 20px;
+    padding-right: 20px;
+    background-color: white;
+    gap: 10px;
+    width: 92% !important;
+  }
+  
+  .add-training-form input:focus {
+    border-color: #0061A1;
+    outline: none;
+  }
+
+  .add-training-form input {
+    border-radius: 10px;
+  }
+  
+  .save-training-btn {
+    background-color: #0061A1;
+    color: white;
+    border-radius: 20px;
+    border: 0px;
+    width: 2cm;
+    height: 40px;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+
+  .save-training-btn:hover {
+    background-color:#166faa;
+  }
+
+  .cancel-training-btn {
+    background-color: #ffffff;
+    color: #0061a1;
+    border: 2px solid #0061a1;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    width: 120px;
+    height: 40px;
+    border-radius: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+    margin-top: 1%;
+  }
+  
+  .cancel-training-btn:hover {
+    background-color: #e1eff3;
+  }

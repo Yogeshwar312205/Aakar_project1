@@ -1,0 +1,72 @@
+.add-department-dashboard {
+    font-family: "Inter", sans-serif;
+}
+
+.back-btn {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.back-btn-icon {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    color: #0061A1;
+}
+
+.back-btn-text {
+    margin-left: 20px;
+}
+
+.back-btn-text-dashboard {
+    color: #A3A3A3;
+}
+
+.add-department-head {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.save-details-btn {
+    background-color: #0061A1;
+    color: #FFFFFF;
+    font-size: 16px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #0061A1;
+    border-radius: 5px;
+    padding: 7px 12px;
+    cursor: pointer;
+}
+
+.save-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+
+.add-department-body {
+    background-color: #FFFFFF;
+    margin-top: 25px;
+    margin-bottom: 25px;
+    padding: 20px 25px 10px 25px;
+    border-radius: 10px;
+}
+
+.department-details {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 50px;
+    margin-left: 10px;
+    margin-top: 20px;
+    margin-bottom: 25px;
+}

@@ -1,0 +1,83 @@
+.infoField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.subHead {
+  font-size: small;
+  color: rgb(90, 90, 90);
+}
+
+.infoContainer2 .data {
+  font-size: 16px;
+  font-weight: 550;
+  max-width: 300px;
+}
+
+.infoDiv {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 15px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.infoField {
+  padding: 10px;
+}
+
+.progressBar {
+  width: 80%;
+}
+
+.infoContainer {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  height: fit-content;
+}
+.infoContainer2 {
+  justify-content: space-around;
+  flex-wrap: wrap;
+}
+.infoContainer.stage {
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 15px;
+}
+.noDiv {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #cfebfe;
+  border-top-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  padding: 12px;
+  position: relative;
+  top: 0;
+  left: 0;
+}
+
+.headData {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+  gap: 5px;
+}
+
+@media (max-width: 768px) {
+  .headData {
+    display: flex;
+    flex-direction: column;
+  }
+  .infoContainer2 {
+    justify-content: space-between;
+  }
+  .formDiv {
+    padding: 20px;
+  }
+}

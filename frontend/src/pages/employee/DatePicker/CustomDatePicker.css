@@ -1,0 +1,47 @@
+.custom-date-picker-container {
+    position: relative;
+    width: 300px; /* Match width of the input */
+}
+
+.custom-date-picker {
+    width: 100%;
+    height: 40px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    border: 2px solid #7d7d7d;
+    border-radius: 4px;
+    box-sizing: border-box;
+    outline: none;
+    position: relative;
+    background: transparent; /* Ensures label appears over the input */
+}
+
+.custom-date-picker:focus {
+    border-color: #1976d2; /* Change border color on focus */
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2);
+}
+
+.custom-date-picker::placeholder {
+    color: transparent; /* Hide the placeholder text to avoid overlapping */
+}
+
+.custom-date-picker-label {
+    position: absolute;
+    top: 50%; /* Center vertically */
+    left: 14px;
+    font-size: 0.75rem;
+    color: #7d7d7d;
+    transition: 0.2s;
+    pointer-events: none; /* Ensure the label does not interfere with clicking the input */
+    background-color: white; /* Background color to cover input if needed */
+    padding: 0 4px; /* Padding to cover input borders */
+    transform: translateY(-50%); /* Center vertically */
+}
+
+.custom-date-picker:focus + .custom-date-picker-label,
+.custom-date-picker:not(:placeholder-shown) + .custom-date-picker-label {
+    top: -10px;
+    left: 14px;
+    font-size: 0.75rem;
+    color: #1976d2;
+}

@@ -1,0 +1,38 @@
+.allProject {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.info-section {
+  margin: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+  gap: 20px;
+}
+
+.info-tab {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tables {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+  .info-section {
+    display: flex;
+    flex-direction: column;
+  }
+}

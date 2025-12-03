@@ -1,0 +1,75 @@
+#navbar {
+    width: calc(100% - 3.3rem);
+    height: 3.3rem;
+    padding: 0 35px;
+    padding-right: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #ffffff;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    margin-left: 3.3rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: width 0.3s, margin-left 0.3s;
+    z-index: 2;
+}
+
+#navbar img {
+    height: 2rem;
+}
+
+.user-icon {
+    background-color: #0061a1;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    padding: 7px;
+    color: white;
+}
+
+.navDiv {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    width: 150px;
+    padding: 10px 0;
+    z-index: 2000;
+}
+
+.dropdown-menu button {
+    width: 100%;
+    padding: 8px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.dropdown-menu button:hover {
+    background-color: #f0f0f0;
+}
+
+
+.sidebar:hover ~ .layout-grid #navbar {
+    margin-left: 190px;
+    width: calc(100% - 190px);
+}
+
+@media screen and (max-width: 480px) {
+    #navbar {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}

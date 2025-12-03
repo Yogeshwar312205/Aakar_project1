@@ -1,0 +1,243 @@
+.addProject {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.addForm {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+.formDiv {
+  background-color: white;
+  width: 100%;
+  box-shadow: 0vmax 0vmax 0.2vmax rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  padding: 30px 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.beforeForm {
+  box-sizing: border-box;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  align-items: center;
+  gap: 10px;
+}
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.projectDetails {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.buttonContainer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.beforeForm > p {
+  margin-left: 0.5vmax;
+  color: black;
+  font-weight: 600;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.beforeForm > p > span {
+  color: rgba(163, 163, 163, 1);
+  margin-left: 0.5vmax;
+  font-weight: 500;
+}
+
+.back {
+  cursor: pointer;
+}
+
+.save {
+  font-size: 1.0417rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  padding: 0.5rem 1rem;
+  color: white;
+  border: none;
+  background-color: rgba(0, 97, 161, 1);
+  border-radius: 4px;
+  transition: all 0.3s ease-in-out;
+}
+.save > p {
+  margin: 0 0.4vmax;
+}
+.back {
+  font-size: 1.73rem;
+  color: rgba(0, 97, 161, 1);
+}
+
+/* Inside div */
+
+.container > div {
+  margin: 10px;
+}
+
+.formDiv h2 {
+  color: rgba(125, 125, 125, 1);
+  font-weight: 600;
+  font-size: 1.15rem;
+}
+
+.uploadContainer {
+  padding: 16px 14px;
+  border-radius: 0.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 97, 161, 1);
+  transition: all 0.3s ease-in-out;
+  margin: 0 5px;
+}
+
+.uploadbtn {
+  color: white;
+}
+
+.uploadContainer:hover,
+.save:hover {
+  background-color: rgb(22, 121, 187);
+  cursor: pointer;
+}
+
+.file-ip {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: transparent;
+  background-color: transparent;
+  position: absolute;
+  padding: 1rem;
+  border: none;
+  cursor: pointer;
+  outline: none;
+}
+
+::-webkit-file-upload-button {
+  color: transparent;
+  background-color: transparent;
+  outline: none;
+  cursor: pointer;
+  border: none;
+}
+/* Add Stage */
+
+.schedule {
+  display: flex;
+  align-items: center;
+  margin: 2vmax 0 0.5rem 0;
+}
+
+.schedule > p {
+  font-weight: 600;
+  color: rgba(125, 125, 125, 1);
+  font-size: 1.14rem;
+  margin-right: 4vmax;
+}
+
+.addStageBtn {
+  display: flex;
+  font-size: 1.042rem;
+  padding: 0.5208vmax 1.0417vmax 0.5208vmax 1.0417vmax;
+  border-radius: 0.21vmax;
+  background-color: transparent;
+  font-weight: 500;
+  color: rgba(0, 97, 161, 1);
+  border: 2px solid rgba(0, 97, 161, 1);
+  min-width: 150px;
+}
+
+.addStageBtn:hover {
+  cursor: pointer;
+  color: rgb(0, 40, 67);
+  border: 2px solid rgb(0, 40, 67);
+}
+
+.addStageBtn p {
+  margin: 0 0.4rem;
+}
+.date-input-container {
+  position: relative;
+  width: 300px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.date-input-container input[type='date'] {
+  width: 100%;
+  padding: 18.5px 14px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  outline: none;
+  transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+  position: relative;
+  z-index: 1;
+}
+
+.date-input-container input[type='date']:focus {
+  border-color: #1976d2; /* MUI primary color */
+}
+
+.date-label {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: #aaa;
+  font-size: 1rem;
+  /* pointer-events: none; */
+  transition: all 0.2s ease-in-out;
+  z-index: 0;
+  background-color: white;
+  padding: 0 5px;
+}
+
+.date-input-container input[type='date']:focus + .date-label,
+.date-input-container input[type='date']:not(:placeholder-shown) + .date-label,
+.date-input-container .filled {
+  top: -7px;
+  left: 12px;
+  font-size: 0.75rem;
+  color: #1976d2; /* MUI primary color */
+}
+
+.date-input-container input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+}

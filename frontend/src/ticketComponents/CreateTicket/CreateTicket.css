@@ -1,0 +1,17 @@
+.main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+   
+
+}
+
+.ticketContent {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  margin: 10px 0px 0px 0px;
+  
+   
+}
+

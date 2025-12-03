@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "debounce": "^2.2.0",
+    "react-modal": "^3.16.3"
+  }
+}

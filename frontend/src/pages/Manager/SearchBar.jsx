@@ -9,6 +9,7 @@ import GeneralSearchBar from '../../components/GenralSearchBar';
 import { fetchDepartmentSkills, fetchAssignedEmployeeData, fetchSkillsForDepartment, fetchDataBySkillsAndDepartment, saveEmployeeData } from './SkillMatrixAPI';
 import {skillTrainingByDepartment} from './UpdateSkillAPI';
 import SkillMatrixReport from './SkillMatrixReport';
+import DepartmentSkillMatrixReport from './DepartmentSkillMatrixReport';
 const SearchBar = () => {
   const [skills, setSkills] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState([]);
@@ -24,6 +25,7 @@ const SearchBar = () => {
   const [disableAssign, setDisableAssign] = useState(false);
   const [isSkillMatrixReportOpen, setIsSkillMatrixReportOpen] = useState(false);
   const [selectedEmployeeForReport, setSelectedEmployeeForReport] = useState(null);
+  const [isDepartmentReportOpen, setIsDepartmentReportOpen] = useState(false);
 
   const predepartmentId = useSelector((state) => state.auth.user?.departmentId); 
   const selectedDepartmentId = useSelector((state) => state.department.selectedDepartmentId);
@@ -354,6 +356,20 @@ const SearchBar = () => {
     setSelectedEmployeeForReport(null);
   };
 
+  const handleGenerateDepartmentReport = () => {
+    console.log(`Generate department report for: ${departmentName || selectedDepartmentName}`);
+    if (data && data.length > 0) {
+      setIsDepartmentReportOpen(true);
+    } else {
+      toast.error('No employee data available to generate report');
+    }
+  };
+
+  const handleCloseDepartmentReport = () => {
+    console.log('Closing department report');
+    setIsDepartmentReportOpen(false);
+  };
+
   const handleSave = () => {
     saveEmployeeData(newSelectedEmp, removeEmp, gradeChanges)
       .then(() => {
@@ -386,7 +402,19 @@ const SearchBar = () => {
       </div>)}
 
       <div className='searchbar-button-bar'>
-        <h3 className='update-skill-dept-name'>Department name: {departmentName || selectedDepartmentName || 'Unknown'}</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', gap: '30px' }}>
+          <h3 className='update-skill-dept-name'>Department name: {departmentName || selectedDepartmentName || 'Unknown'}</h3>
+          {data.length > 0 && (
+            <button 
+              className='searchbar-report-btn'
+              onClick={handleGenerateDepartmentReport}
+              title='Generate department skill matrix report for all employees'
+              style={{ marginTop: 0, marginRight: '10px', flexShrink: 0 }}
+            >
+              Department Report
+            </button>
+          )}
+        </div>
         {/* {employeeMail === 'admin@gmail.com' && (
                     <GeneralSearchBar
                     label='Search Department'
@@ -486,6 +514,15 @@ const SearchBar = () => {
           selectedSkills={selectedSkills}
           employeeSkillData={selectedEmployeeForReport.employeeData}
           onClose={handleCloseSkillMatrixReport}
+        />
+      )}
+      {isDepartmentReportOpen && (
+        <DepartmentSkillMatrixReport
+          departmentName={departmentName || selectedDepartmentName}
+          departmentId={departmentId}
+          employeeData={data}
+          selectedSkills={selectedSkills}
+          onClose={handleCloseDepartmentReport}
         />
       )}
     </div>

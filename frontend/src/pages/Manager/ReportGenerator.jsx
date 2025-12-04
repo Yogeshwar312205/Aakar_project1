@@ -4,6 +4,7 @@ import logo from "../../assets/logo.png"; // Ensure PNG format is used
 import React, { useState, useEffect } from 'react';
 import { Modal, Box, Typography, Button } from "@mui/material";
 import { Document, Page, pdfjs } from 'react-pdf';
+import dayjs from 'dayjs';
 
 // Set workerSrc for React-PDF
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
@@ -69,14 +70,14 @@ const ReportGenerator = ({ reportTitle, docNo, OriginDate,creators, revNo, revDa
 
     // **Section 4: Training Details (Box Outline)**
     doc.setFontSize(11).setFont("helvetica", "bold");
-    doc.text(trainingTitle, marginX + 2, marginY + 39);
+    doc.text("Training Title:", marginX + 2, marginY + 39);
+    doc.text(trainingTitle, marginX + 50, marginY + 39);
     doc.line(marginX, marginY + 43 , marginX + 135 , marginY + 43); // Line after each entry
-    doc.text( trainerName, marginX + 2, marginY + 48);
+    doc.text("Trainer Name:", marginX + 2, marginY + 48);
+    doc.text(trainerName, marginX + 50, marginY + 48);
     doc.line(marginX, marginY + 51 , marginX + 135 , marginY + 51); // Line after each entry
-    doc.text(sessionDate, marginX + 2, marginY + 57);
-    doc.line(marginX, marginY + 60 , marginX + 135 , marginY + 60); // Line after each entry
-    doc.text(`Training From: ${startTrainingDate} To: ${endTrainingDate}`, marginX + 2, marginY + 65);
-    doc.line(marginX, marginY + 68 , contentWidth + 10 , marginY + 68); // Line after each entry
+    doc.text(`Training From: ${startTrainingDate} To: ${endTrainingDate}`, marginX + 2, marginY + 57);
+    doc.line(marginX, marginY + 60 , contentWidth + 10 , marginY + 60); // Line after each entry
 
     // **Table Data**
     if (tableData && tableData.length > 0) {  
@@ -85,41 +86,76 @@ const ReportGenerator = ({ reportTitle, docNo, OriginDate,creators, revNo, revDa
         srNo: index + 1, // Add serial number starting from 1
       }));
 
+      // Helper function to format employee data with count and names
+      const formatEmployeeInfo = (count, names) => {
+        if (!names || names === 'N/A') {
+          return count?.toString() || '0';
+        }
+        // Truncate long names list for better readability
+        const namesList = names.split(', ').slice(0, 3).join(', ');
+        const remaining = names.split(', ').length - 3;
+        const suffix = remaining > 0 ? ` +${remaining}` : '';
+        return `${count}\n${namesList}${suffix}`;
+      };
+
       doc.autoTable({
-        startY: 80,
-        head: [["Sr No.", ...tableHeaders.map(header => 
-          typeof header === "string" ? header : header.label || header.name || JSON.stringify(header)
-        )]],  
-        body: tableDataWithSerialNo.map(item => [item.srNo, ...Object.values(item)]),
+        startY: 65,
+        head: [["Sr No.", "Session Name", "Date", "Time", "Expected", "Attended", "Absent"]],  
+        body: tableDataWithSerialNo.map(item => [
+          item.srNo.toString(),
+          item.sessionName || '',
+          item.sessionDate || '',
+          item.sessionTime || '',
+          formatEmployeeInfo(item.expectedEmployees, item.expectedEmployeeNames),
+          formatEmployeeInfo(item.attendedEmployees, item.attendedEmployeeNames),
+          formatEmployeeInfo(item.absentEmployees, item.absentEmployeeNames),
+        ]),
         styles: { 
           lineWidth: 0.1,
           lineColor: [0, 0, 0],
-          fontSize: 10,
+          fontSize: 7,
           textColor: [0, 0, 0],
-          fontStyle: "bold",
+          fontStyle: "normal",
+          cellPadding: 2.5,
+          valign: 'top',
+          halign: 'left',
+          overflow: 'linebreak',
         },
         headStyles: { 
-          fillColor: [255, 255, 255],
+          fillColor: [200, 200, 200],
           textColor: [0, 0, 0],
           fontStyle: "bold",
+          fontSize: 8,
+          halign: 'center',
+          valign: 'middle',
         },
         alternateRowStyles: { fillColor: false },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 10 },
+          1: { halign: 'left', cellWidth: 22 },
+          2: { halign: 'center', cellWidth: 15 },
+          3: { halign: 'center', cellWidth: 16 },
+          4: { halign: 'left', cellWidth: 32 },
+          5: { halign: 'left', cellWidth: 32 },
+          6: { halign: 'left', cellWidth: 32 },
+        },
         theme: "grid",
-        margin: { top: 20, left: 10, right: 10, bottom: 20 },
-        tableLineWidth: 0,
+        margin: { top: 15, left: 10, right: 10, bottom: 20 },
+        tableLineWidth: 0.1,
+        didDrawPage: (data) => {
+          // Optional: Handle page breaks if needed
+        },
       });      
 
       // **Signatures**
       let signStartY = doc.autoTable.previous.finalY + 10; // Positioning below the table
 
+      doc.setFontSize(11).setFont("helvetica", "bold");
       doc.text("Sign of Trainer:                  ", marginX + 2, signStartY);
-      //doc.line(marginX + 2, signStartY + 2, marginX + 60, signStartY + 2); // Line after Sign of Trainer
       signStartY += 15; // Increase Y position for next sign
       doc.text("Sign of HR:                       ", marginX + 2, signStartY);
-      //doc.line(marginX + 2, signStartY + 2, marginX + 60, signStartY + 2); // Line after Sign of HR
       signStartY += 15; // Increase Y position for next sign
       doc.text("Sign of HOD:                      ", marginX + 2, signStartY);
-      //doc.line(marginX + 2, signStartY + 2, marginX + 60, signStartY + 2); // Line after Sign of HOD
     } else {
       doc.text("No records found", 10, 90);
     }
@@ -135,6 +171,20 @@ const ReportGenerator = ({ reportTitle, docNo, OriginDate,creators, revNo, revDa
   const handleClosePreview = () => {
     setPreviewOpen(false); // Close the modal
     setPdfDataUrl(null);  // Reset PDF preview data (optional)
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF({ format: "a4" });
+    // Reuse the same generatePDF logic
+    const pdfData = doc.output('blob');
+    const url = URL.createObjectURL(pdfData);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Training_Report_${trainingTitle}_${dayjs().format('DD_MM_YYYY')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -163,7 +213,14 @@ const ReportGenerator = ({ reportTitle, docNo, OriginDate,creators, revNo, revDa
             <Typography variant="body1">Loading PDF preview...</Typography>
           )}
 
-          <div style={{ marginTop: '20px', textAlign: 'right' }}>
+          <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <Button 
+              onClick={handleDownloadPDF} 
+              variant="contained" 
+              color="primary"
+            >
+              Download PDF
+            </Button>
             <Button 
               onClick={handleClosePreview} 
               variant="outlined" 

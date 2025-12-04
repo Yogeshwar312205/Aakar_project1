@@ -6,7 +6,7 @@ import ReportGenerator from "./ReportGenerator"; // PDF generation component
 import '../Overall/TrainingDetails.css';
 import { FiEye, FiArrowLeftCircle, FiFileText } from 'react-icons/fi';
 import dayjs from 'dayjs';
-import { fetchTrainingSessions } from './TrainingAPI';
+import { fetchTrainingSessions, fetchSessionAttendance, fetchEmployeesEnrolled } from './TrainingAPI';
 import reportMetadata from "./reportMetadata.json"; // Import metadata JSON
 import { Modal, Box } from '@mui/material';
 
@@ -25,7 +25,57 @@ const TrainingDetails = () => {
     const loadSessionData = async () => {
         try {
             const sessions = await fetchTrainingSessions(trainingId);
-            setSessionData(sessions);
+            
+            // Fetch enrolled employees (expected attendees)
+            const enrolledEmployees = await fetchEmployeesEnrolled(trainingId);
+            const expectedCount = enrolledEmployees?.length || 0;
+            const expectedNames = enrolledEmployees?.map(e => e.employeeName || e.name).join(', ') || 'N/A';
+            
+            // Enhance session data with attendance statistics
+            const enhancedSessions = await Promise.all(
+                sessions.map(async (session) => {
+                    try {
+                        const attendanceData = await fetchSessionAttendance(session.sessionId);
+                        
+                        // Get attended employee names from this specific session's attendance
+                        const attendedEmployees = attendanceData.filter(r => r.attendanceStatus === 1);
+                        const attendedCount = attendedEmployees.length;
+                        const attendedNames = attendedEmployees.map(e => e.employeeName).join(', ') || 'N/A';
+                        
+                        // Calculate absent employees by comparing expected vs attended for THIS SESSION ONLY
+                        const attendedEmployeeNames = new Set(attendedEmployees.map(e => e.employeeName));
+                        const absentEmployeesList = enrolledEmployees.filter(
+                            e => !attendedEmployeeNames.has(e.employeeName || e.name)
+                        );
+                        const absentCount = absentEmployeesList.length;
+                        const absentNames = absentEmployeesList.map(e => e.employeeName || e.name).join(', ') || 'N/A';
+                        
+                        return {
+                            ...session,
+                            expectedEmployees: expectedCount,
+                            expectedEmployeeNames: expectedNames,
+                            attendedEmployees: attendedCount,
+                            attendedEmployeeNames: attendedNames,
+                            absentEmployees: absentCount,
+                            absentEmployeeNames: absentNames,
+                        };
+                    } catch (error) {
+                        console.error('Error fetching attendance for session:', session.sessionId, error);
+                        return {
+                            ...session,
+                            expectedEmployees: expectedCount,
+                            expectedEmployeeNames: expectedNames,
+                            attendedEmployees: 0,
+                            attendedEmployeeNames: 'N/A',
+                            absentEmployees: expectedCount,
+                            absentEmployeeNames: expectedNames,
+                        };
+                    }
+                })
+            );
+            
+            setSessionData(enhancedSessions);
+            console.log('Enhanced sessions data:', enhancedSessions);
             
         } catch (error) {
             console.error('Error loading session data:', error);
@@ -164,12 +214,17 @@ const TrainingDetails = () => {
                     trainingTitle={trainingTitle}
                     startTrainingDate={startTrainingDate}
                     endTrainingDate={endTrainingDate}
-                    tableHeaders={['Session Name', 'Date', 'Time', 'Description']}
+                    tableHeaders={['Session Name', 'Date', 'Time', 'Expected', 'Attended', 'Absent']}
                     tableData={sessionData.map((session) => ({
                         sessionName: session.sessionName,
-                        sessionDate: dayjs(session.sessionDate).format("YYYY-MM-DD"),
+                        sessionDate: dayjs(session.sessionDate).format("DD-MM-YYYY"),
                         sessionTime: `${session.sessionStartTime} - ${session.sessionEndTime}`,
-                        sessionDescription: session.sessionDescription,
+                        expectedEmployees: session.expectedEmployees || 0,
+                        expectedEmployeeNames: session.expectedEmployeeNames || 'N/A',
+                        attendedEmployees: session.attendedEmployees || 0,
+                        attendedEmployeeNames: session.attendedEmployeeNames || 'N/A',
+                        absentEmployees: session.absentEmployees || 0,
+                        absentEmployeeNames: session.absentEmployeeNames || 'N/A',
                     }))}
                 />
             )}

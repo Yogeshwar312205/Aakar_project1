@@ -90,51 +90,54 @@ const AssignedTrainingReport = ({ departmentId, departmentName, skillsWithEmploy
         const employeeCount = employees.length;
 
         if (employeeCount > 0) {
-          // For skills with employees, add each employee as a row
-          employees.forEach((emp, idx) => {
-            tableData.push([
-              serialNo.toString(),
-              { content: skillName, styles: { fontSize: 10, fontStyle: 'normal' } },
-              { content: emp.employeeName || 'N/A', styles: { fontSize: 10, fontStyle: 'normal' } },
-              { content: employeeCount.toString(), styles: { fontSize: 10, fontStyle: 'normal', halign: 'center' } },
-            ]);
-            serialNo++;
-          });
+          // Combine all employee names with proper spacing (comma + space separation)
+          const employeeNames = employees
+            .map(emp => emp.employeeName || 'N/A')
+            .join(',  ');  // Double space after comma for better readability
+          
+          tableData.push([
+            { content: serialNo.toString(), styles: { fontSize: 10, valign: 'middle', halign: 'center' } },
+            { content: skillName, styles: { fontSize: 10, fontStyle: 'normal', valign: 'middle' } },
+            { content: employeeNames, styles: { fontSize: 10, fontStyle: 'normal', cellPadding: { top: 6, bottom: 6, left: 4, right: 4 } } },
+            { content: employeeCount.toString(), styles: { fontSize: 10, fontStyle: 'bold', halign: 'center', valign: 'middle' } },
+          ]);
         } else {
           // For skills with no employees, add one row with employee count as 0
           tableData.push([
-            serialNo.toString(),
-            { content: skillName, styles: { fontSize: 10, fontStyle: 'normal' } },
-            { content: 'No employees assigned', styles: { fontSize: 10, fontStyle: 'italic' } },
-            { content: '0', styles: { fontSize: 10, fontStyle: 'normal', halign: 'center' } },
+            { content: serialNo.toString(), styles: { fontSize: 10, valign: 'middle', halign: 'center' } },
+            { content: skillName, styles: { fontSize: 10, fontStyle: 'normal', valign: 'middle' } },
+            { content: 'No employees assigned', styles: { fontSize: 10, fontStyle: 'italic', valign: 'middle' } },
+            { content: '0', styles: { fontSize: 10, fontStyle: 'bold', halign: 'center', valign: 'middle' } },
           ]);
-          serialNo++;
         }
+        serialNo++;
       });
 
       doc.autoTable({
         startY: 80,
-        head: [["Sr No.", "Skill Name", "Employee Name", "No. of Employees"]],
+        head: [["Sr No.", "Skill Name", "Employee Names", "Count"]],
         body: tableData,
         styles: {
           lineWidth: 0.1,
           lineColor: [0, 0, 0],
           fontSize: 10,
           textColor: [0, 0, 0],
-          cellPadding: 4,
+          cellPadding: 5,
+          valign: 'middle',
         },
         headStyles: {
           fillColor: [200, 200, 200],
           textColor: [0, 0, 0],
           fontStyle: "bold",
           fontSize: 11,
+          halign: 'center',
         },
-        alternateRowStyles: { fillColor: false },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          0: { halign: 'center', cellWidth: 15 },
-          1: { halign: 'left', cellWidth: 60 },
-          2: { halign: 'left', cellWidth: 85 },
-          3: { halign: 'center', cellWidth: 30 },
+          0: { halign: 'center', cellWidth: 18 },
+          1: { halign: 'left', cellWidth: 45 },
+          2: { halign: 'left', cellWidth: 105 },
+          3: { halign: 'center', cellWidth: 22 },
         },
         theme: "grid",
         margin: { top: 20, left: 10, right: 10, bottom: 20 },
@@ -231,51 +234,54 @@ const AssignedTrainingReport = ({ departmentId, departmentName, skillsWithEmploy
         const employeeCount = employees.length;
 
         if (employeeCount > 0) {
-          // For skills with employees, add each employee as a row
-          employees.forEach((emp, idx) => {
-            tableData.push([
-              serialNo.toString(),
-              { content: skillName, styles: { fontSize: 10, fontStyle: 'normal' } },
-              { content: emp.employeeName || 'N/A', styles: { fontSize: 10, fontStyle: 'normal' } },
-              { content: employeeCount.toString(), styles: { fontSize: 10, fontStyle: 'normal', halign: 'center' } },
-            ]);
-            serialNo++;
-          });
+          // Combine all employee names with proper spacing (comma + space separation)
+          const employeeNames = employees
+            .map(emp => emp.employeeName || 'N/A')
+            .join(',  ');  // Double space after comma for better readability
+          
+          tableData.push([
+            { content: serialNo.toString(), styles: { fontSize: 10, valign: 'middle', halign: 'center' } },
+            { content: skillName, styles: { fontSize: 10, fontStyle: 'normal', valign: 'middle' } },
+            { content: employeeNames, styles: { fontSize: 10, fontStyle: 'normal', cellPadding: { top: 6, bottom: 6, left: 4, right: 4 } } },
+            { content: employeeCount.toString(), styles: { fontSize: 10, fontStyle: 'bold', halign: 'center', valign: 'middle' } },
+          ]);
         } else {
           // For skills with no employees, add one row with employee count as 0
           tableData.push([
-            serialNo.toString(),
-            { content: skillName, styles: { fontSize: 10, fontStyle: 'normal' } },
-            { content: 'No employees assigned', styles: { fontSize: 10, fontStyle: 'italic' } },
-            { content: '0', styles: { fontSize: 10, fontStyle: 'normal', halign: 'center' } },
+            { content: serialNo.toString(), styles: { fontSize: 10, valign: 'middle', halign: 'center' } },
+            { content: skillName, styles: { fontSize: 10, fontStyle: 'normal', valign: 'middle' } },
+            { content: 'No employees assigned', styles: { fontSize: 10, fontStyle: 'italic', valign: 'middle' } },
+            { content: '0', styles: { fontSize: 10, fontStyle: 'bold', halign: 'center', valign: 'middle' } },
           ]);
-          serialNo++;
         }
+        serialNo++;
       });
 
       doc.autoTable({
         startY: 80,
-        head: [["Sr No.", "Skill Name", "Employee Name", "No. of Employees"]],
+        head: [["Sr No.", "Skill Name", "Employee Names", "Count"]],
         body: tableData,
         styles: {
           lineWidth: 0.1,
           lineColor: [0, 0, 0],
           fontSize: 10,
           textColor: [0, 0, 0],
-          cellPadding: 4,
+          cellPadding: 5,
+          valign: 'middle',
         },
         headStyles: {
           fillColor: [200, 200, 200],
           textColor: [0, 0, 0],
           fontStyle: "bold",
           fontSize: 11,
+          halign: 'center',
         },
-        alternateRowStyles: { fillColor: false },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          0: { halign: 'center', cellWidth: 15 },
-          1: { halign: 'left', cellWidth: 60 },
-          2: { halign: 'left', cellWidth: 85 },
-          3: { halign: 'center', cellWidth: 30 },
+          0: { halign: 'center', cellWidth: 18 },
+          1: { halign: 'left', cellWidth: 45 },
+          2: { halign: 'left', cellWidth: 105 },
+          3: { halign: 'center', cellWidth: 22 },
         },
         theme: "grid",
         margin: { top: 20, left: 10, right: 10, bottom: 20 },

@@ -110,30 +110,35 @@ const UpdateSkill = () => {
         const resp = await axios.get(`http://${IP}:3000/skills/${departmentId}`);
         const deptSkills = resp?.data || [];
 
-        // Map department skills into the shape expected by the table
-        const deptOnly = Array.isArray(deptSkills) ? deptSkills.map(ds => ({
-          skillId: ds.skillId || ds.id,
-          skillName: ds.skillName || ds.label,
-          departmentId: ds.departmentId || departmentId,
-          departmentName: ds.departmentName || departmentName || selectedDepartmentName || '',
-          skillDescription: ds.skillDescription || ds.description || '',
-          departmentSkillType: 'Giving Training', // Type 1: Giving Training
-        })) : [];
-
-        // Still fetch expected-skills to compute checkbox state for this department
+        // First fetch expected-skills to compute checkbox state and correct type for this department
         const expectedResp = await departmentExpectedSkill();
         const expectedData = expectedResp?.data || expectedResp || [];
         // Checkbox should be checked only for skills with type 3 (Applicable to my department) and active status
-        const expectedSkill = expectedData
+        const expectedSkillIds = expectedData
           .filter((dept) => dept.departmentId === departmentId && dept.departmentSkillType === 3 && dept.departmentSkillStatus === 1)
           .map((dept) => dept.skillId);
 
+        // Map department skills into the shape expected by the table
+        // Check if skill is in expectedSkillIds to determine the correct type
+        const deptOnly = Array.isArray(deptSkills) ? deptSkills.map(ds => {
+          const skillId = ds.skillId || ds.id;
+          return {
+            skillId: skillId,
+            skillName: ds.skillName || ds.label,
+            departmentId: ds.departmentId || departmentId,
+            departmentName: ds.departmentName || departmentName || selectedDepartmentName || '',
+            skillDescription: ds.skillDescription || ds.description || '',
+            // Use type 3 label if skill is in expected skills, otherwise type 1 label
+            departmentSkillType: expectedSkillIds.includes(skillId) ? 'Applicable to my department' : 'Giving Training',
+          };
+        }) : [];
+
         // Use only department-specific skills for display
         setSkills(deptOnly);
-        setGlobalExpectedSkill(expectedSkill);
+        setGlobalExpectedSkill(expectedSkillIds);
 
         console.log("Department skills count:", deptOnly.length);
-        console.log("Expected Skill : ", expectedSkill);
+        console.log("Expected Skill : ", expectedSkillIds);
       } catch (error){
         console.error("Error in fetching department skills: ", error);
       }
@@ -498,6 +503,7 @@ const UpdateSkill = () => {
             skillDescription: s.skillDescription,
             departmentSkillType: s.departmentSkillType,
           }))}
+          onClose={() => setSkillReportMeta(null)}
         />
       )}
 

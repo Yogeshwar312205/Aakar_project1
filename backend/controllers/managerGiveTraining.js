@@ -414,7 +414,7 @@ router.get('/eligible-employee-to-send-to-training', (req, res) => {
   INNER JOIN skill s ON sa.skillId = s.skillId
   INNER JOIN employeeDesignation ed on ed.employeeId = sa.employeeId
   INNER JOIN employee e ON e.employeeId = sa.employeeId
-  WHERE t.trainingId = ? and ed.departmentId = ?`;
+  WHERE t.trainingId = ? AND ed.departmentId = ? AND sa.employeeId != t.trainerId`;
 
   connection.query(query, [trainingId,departmentId], (err, result) => {
     if (err) {

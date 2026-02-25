@@ -9,6 +9,7 @@ import { fetchTrainings, fetchTrainingEmployees } from './trainerapi';
 import Modal from 'react-modal';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
+import TrainerReportGenerator from './TrainerReportGenerator';
 
 
 const Tickit = ({ text, icon, onClick, count }) => (
@@ -27,6 +28,7 @@ const TrainerSwitch = () => {
   const [employeesData, setEmployeesData] = useState([]);
   const [employeecount, setemployeecount] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showTrainerReport, setShowTrainerReport] = useState(false);
   const navigate = useNavigate();
   const employeeId = useSelector((state) => state.auth.user?.employeeId);
   const trainerName = useSelector((state) => state.auth.user?.employeeName);
@@ -261,6 +263,13 @@ const TrainerSwitch = () => {
             setSelectedValues={handleSearch}
             includeSelectAll={false}
           />
+          <button 
+            className="trainer-report-button"
+            onClick={() => setShowTrainerReport(true)}
+            disabled={trainings.length === 0}
+          >
+            Trainer Report
+          </button>
         </div>
         <div className="trainerSwitch-table-container">
           <TableCo
@@ -282,6 +291,15 @@ const TrainerSwitch = () => {
                 <TableCo rows={employeesData} columns={employeeColumns} />
           </div>
         </div>
+      )}
+
+      {/* Trainer Report Generator */}
+      {showTrainerReport && (
+        <TrainerReportGenerator
+          trainerName={trainerName}
+          trainingsData={trainings}
+          onClose={() => setShowTrainerReport(false)}
+        />
       )}
     </div>
   );

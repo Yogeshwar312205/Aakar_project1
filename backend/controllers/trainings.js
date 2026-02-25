@@ -3,36 +3,65 @@ import express from "express";
 const router = express.Router();
 
 
-//add training
+//add training - checks for existing training with same name, dates, and trainer first
 router.post('/add-training', (req, res) => {
   const { trainingTitle, startTrainingDate, endTrainingDate, trainerId, skills, evaluationType } = req.body;
 
-  const query = 'INSERT INTO training (trainingTitle, startTrainingDate, endTrainingDate, trainerId, evaluationType) VALUES (?, ?, ?, ?, ?)';
-  connection.query(query, [trainingTitle, startTrainingDate, endTrainingDate, trainerId, evaluationType], (err, result) => {
-    if (err) {
-      console.error('Error inserting training:', err);
-      return res.status(500).send('Failed to insert training');
+  // First, check if a training with the same title, dates, and trainer already exists
+  const checkExistingQuery = `
+    SELECT trainingId FROM training 
+    WHERE trainingTitle = ? 
+    AND startTrainingDate = ? 
+    AND endTrainingDate = ? 
+    AND trainerId = ?
+  `;
+  
+  connection.query(checkExistingQuery, [trainingTitle, startTrainingDate, endTrainingDate, trainerId], (checkErr, existingResults) => {
+    if (checkErr) {
+      console.error('Error checking existing training:', checkErr);
+      return res.status(500).send('Failed to check existing training');
     }
-    const trainingId = result.insertId;
-    
-    if (skills && skills.length > 0) {
-      const skillQueries = skills.map(skill => {
-        return new Promise((resolve, reject) => {
-          const skillQuery = 'INSERT INTO trainingSkills (trainingId, skillId) VALUES (?, ?)';
-          connection.query(skillQuery, [trainingId, skill.id], (err) => {  // Changed skill.id to skill
-            if (err) {
-              console.error('Error inserting skill:', err);
-              reject(err);
-            } else {
-              resolve();
-            }
-            console.log(skill);  
-          });
-        });
+
+    // If training already exists, return the existing training ID
+    if (existingResults.length > 0) {
+      const existingTrainingId = existingResults[0].trainingId;
+      console.log('Training already exists with ID:', existingTrainingId);
+      return res.status(200).json({ 
+        message: 'Training already exists', 
+        trainingId: existingTrainingId,
+        isExisting: true 
       });
     }
-    return res.status(201).json({ message: 'Training added successfully',trainingId: trainingId});
-  })})
+
+    // If no existing training found, create a new one
+    const insertQuery = 'INSERT INTO training (trainingTitle, startTrainingDate, endTrainingDate, trainerId, evaluationType) VALUES (?, ?, ?, ?, ?)';
+    connection.query(insertQuery, [trainingTitle, startTrainingDate, endTrainingDate, trainerId, evaluationType], (err, result) => {
+      if (err) {
+        console.error('Error inserting training:', err);
+        return res.status(500).send('Failed to insert training');
+      }
+      const trainingId = result.insertId;
+      
+      if (skills && skills.length > 0) {
+        const skillQueries = skills.map(skill => {
+          return new Promise((resolve, reject) => {
+            const skillQuery = 'INSERT INTO trainingSkills (trainingId, skillId) VALUES (?, ?)';
+            connection.query(skillQuery, [trainingId, skill.id], (err) => {
+              if (err) {
+                console.error('Error inserting skill:', err);
+                reject(err);
+              } else {
+                resolve();
+              }
+              console.log(skill);  
+            });
+          });
+        });
+      }
+      return res.status(201).json({ message: 'Training added successfully', trainingId: trainingId, isExisting: false });
+    });
+  });
+})
   
   
   router.get('/all-training/:departmentId', (req, res) => {

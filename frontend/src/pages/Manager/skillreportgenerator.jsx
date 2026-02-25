@@ -15,6 +15,7 @@ const SkillReportGenerator = ({
   departmentId,
   tableHeaders = [],
   tableData = [],
+  onClose: onCloseProp,
 }) => {
   const [pdfDataUrl, setPdfDataUrl] = useState(null)
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -143,6 +144,8 @@ const SkillReportGenerator = ({
   const handleClose = () => {
     setPreviewOpen(false)
     setPdfDataUrl(null)
+    // Notify parent to reset state so component can re-mount on next click
+    if (onCloseProp) onCloseProp()
   }
 
   return (

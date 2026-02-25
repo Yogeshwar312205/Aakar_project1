@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Textfield from '../../components/Textfield';
 import TableComponent from '../../components/TableCo'; 
 import ReportGenerator from "./ReportGenerator"; // PDF generation component
+import CumulativeAttendanceGenerator from "./CumulativeAttendanceGenerator"; // Cumulative attendance component
 import '../Overall/TrainingDetails.css';
 import { FiEye, FiArrowLeftCircle, FiFileText } from 'react-icons/fi';
 import dayjs from 'dayjs';
@@ -17,6 +18,10 @@ const TrainingDetails = () => {
     const [sessionData, setSessionData] = useState([]);
     const [metadata, setMetadata] = useState(null);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportKey, setReportKey] = useState(0); // Force remount of ReportGenerator
+    const [isCumulativeAttendanceModalOpen, setIsCumulativeAttendanceModalOpen] = useState(false);
+    const [cumulativeAttendanceKey, setCumulativeAttendanceKey] = useState(0);
+    const [cumulativeAttendanceData, setCumulativeAttendanceData] = useState([]);
 
     useEffect(() => {
         if (trainingId) loadSessionData();
@@ -26,29 +31,37 @@ const TrainingDetails = () => {
         try {
             const sessions = await fetchTrainingSessions(trainingId);
             
-            // Fetch enrolled employees (expected attendees)
+            // Fetch enrolled employees for the training (global list)
             const enrolledEmployees = await fetchEmployeesEnrolled(trainingId);
-            const expectedCount = enrolledEmployees?.length || 0;
-            const expectedNames = enrolledEmployees?.map(e => e.employeeName || e.name).join(', ') || 'N/A';
             
             // Enhance session data with attendance statistics
             const enhancedSessions = await Promise.all(
                 sessions.map(async (session) => {
                     try {
+                        // Fetch attendance data for THIS SPECIFIC SESSION
                         const attendanceData = await fetchSessionAttendance(session.sessionId);
                         
-                        // Get attended employee names from this specific session's attendance
-                        const attendedEmployees = attendanceData.filter(r => r.attendanceStatus === 1);
+                        // Get the list of employees who have attendance records for this session
+                        const sessionAttendanceSet = new Set(attendanceData.map(r => r.employeeName));
+                        
+                        // Expected employees for THIS session are those with attendance records
+                        const expectedEmployeesForSession = attendanceData.map(r => ({
+                            employeeName: r.employeeName,
+                            attendanceStatus: r.attendanceStatus
+                        }));
+                        
+                        const expectedCount = expectedEmployeesForSession.length;
+                        const expectedNames = expectedEmployeesForSession.map(e => e.employeeName).join(', ') || 'N/A';
+                        
+                        // Get attended employees for THIS session
+                        const attendedEmployees = expectedEmployeesForSession.filter(r => r.attendanceStatus === 1);
                         const attendedCount = attendedEmployees.length;
                         const attendedNames = attendedEmployees.map(e => e.employeeName).join(', ') || 'N/A';
                         
-                        // Calculate absent employees by comparing expected vs attended for THIS SESSION ONLY
-                        const attendedEmployeeNames = new Set(attendedEmployees.map(e => e.employeeName));
-                        const absentEmployeesList = enrolledEmployees.filter(
-                            e => !attendedEmployeeNames.has(e.employeeName || e.name)
-                        );
+                        // Get absent employees for THIS session (expected - attended)
+                        const absentEmployeesList = expectedEmployeesForSession.filter(r => r.attendanceStatus !== 1);
                         const absentCount = absentEmployeesList.length;
-                        const absentNames = absentEmployeesList.map(e => e.employeeName || e.name).join(', ') || 'N/A';
+                        const absentNames = absentEmployeesList.map(e => e.employeeName).join(', ') || 'N/A';
                         
                         return {
                             ...session,
@@ -63,12 +76,12 @@ const TrainingDetails = () => {
                         console.error('Error fetching attendance for session:', session.sessionId, error);
                         return {
                             ...session,
-                            expectedEmployees: expectedCount,
-                            expectedEmployeeNames: expectedNames,
+                            expectedEmployees: 0,
+                            expectedEmployeeNames: 'N/A',
                             attendedEmployees: 0,
                             attendedEmployeeNames: 'N/A',
-                            absentEmployees: expectedCount,
-                            absentEmployeeNames: expectedNames,
+                            absentEmployees: 0,
+                            absentEmployeeNames: 'N/A',
                         };
                     }
                 })
@@ -88,10 +101,19 @@ const TrainingDetails = () => {
         });
     };
 
-    const handleViewAttendance = (sessionId) => {
+    const handleViewAttendance = (session) => {
         console.log(trainingId, trainingTitle, trainerName, startTrainingDate, endTrainingDate);
-        navigate(`/attendance/${sessionId}`, {
-            state: { trainingId, trainingTitle, trainerName, startTrainingDate, endTrainingDate }  
+        navigate(`/attendance/${session.sessionId}`, {
+            state: { 
+                trainingId, 
+                trainingTitle, 
+                trainerName, 
+                startTrainingDate, 
+                endTrainingDate,
+                sessionName: session.sessionName,
+                sessionDate: dayjs(session.sessionDate).format("DD-MM-YYYY"),
+                sessionTime: `${session.sessionStartTime} - ${session.sessionEndTime}`
+            }  
         });
     };
 
@@ -99,6 +121,101 @@ const TrainingDetails = () => {
         const reportMetadataValues = reportMetadata["Safety Training Report"] || {}; 
         setMetadata(reportMetadataValues); // Store metadata directly from JSON
         setIsReportModalOpen(true);
+        // Force remount of ReportGenerator to reset internal state
+        setReportKey(prev => prev + 1);
+    };
+
+    const handleReportClose = () => {
+        setIsReportModalOpen(false);
+    };
+
+    const handleCumulativeAttendanceReport = () => {
+        // Calculate cumulative attendance data
+        const cumulativeData = calculateCumulativeAttendance();
+        setCumulativeAttendanceData(cumulativeData);
+        
+        const reportMetadataValues = reportMetadata["Safety Training Report"] || {}; 
+        setMetadata(reportMetadataValues);
+        setIsCumulativeAttendanceModalOpen(true);
+        setCumulativeAttendanceKey(prev => prev + 1);
+    };
+
+    const handleCumulativeAttendanceClose = () => {
+        setIsCumulativeAttendanceModalOpen(false);
+    };
+
+    const calculateCumulativeAttendance = () => {
+        // Create a map to store employee attendance across all sessions
+        const employeeMap = new Map();
+
+        // Iterate through all sessions and collect attendance data
+        sessionData.forEach(session => {
+            if (session.sessionName) {
+                // Parse attendance data from session
+                const sessionAttendanceData = [];
+                
+                // We need to fetch or have access to the raw attendance data
+                // For now, we'll reconstruct from the enhanced session data
+                // This requires us to also track the raw attendance records in sessionData
+            }
+        });
+
+        // Since we need raw attendance data, we'll collect it differently
+        // Let's build the cumulative data from sessionData which should have attendance info
+        
+        const employeeDataMap = new Map();
+
+        // First pass: collect all employees and their session details
+        sessionData.forEach(session => {
+            // Extract employee names and attendance from session data
+            const expectedNames = session.expectedEmployeeNames ? 
+                session.expectedEmployeeNames.split(', ').filter(n => n !== 'N/A') : [];
+            
+            expectedNames.forEach(employeeName => {
+                if (!employeeDataMap.has(employeeName)) {
+                    employeeDataMap.set(employeeName, {
+                        employeeName: employeeName,
+                        totalSessions: 0,
+                        attended: 0,
+                        absent: 0,
+                        sessions: []
+                    });
+                }
+                
+                const employeeData = employeeDataMap.get(employeeName);
+                employeeData.totalSessions += 1;
+                
+                // Check if employee attended this session
+                const attendedNames = session.attendedEmployeeNames ? 
+                    session.attendedEmployeeNames.split(', ').filter(n => n !== 'N/A') : [];
+                
+                if (attendedNames.includes(employeeName)) {
+                    employeeData.attended += 1;
+                    employeeData.sessions.push({
+                        sessionName: session.sessionName,
+                        attendanceStatus: 1
+                    });
+                } else {
+                    employeeData.absent += 1;
+                    employeeData.sessions.push({
+                        sessionName: session.sessionName,
+                        attendanceStatus: 0
+                    });
+                }
+            });
+        });
+
+        // Calculate attendance percentage and convert to array
+        const cumulativeArray = Array.from(employeeDataMap.values()).map(emp => ({
+            ...emp,
+            attendancePercentage: emp.totalSessions > 0 ? (emp.attended / emp.totalSessions) * 100 : 0
+        }));
+
+        // Sort by employee name
+        cumulativeArray.sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+
+        console.log('Cumulative Attendance Data:', cumulativeArray);
+        return cumulativeArray;
     };
 
     console.log('Session data:', sessionData);
@@ -114,7 +231,7 @@ const TrainingDetails = () => {
             align: 'center',
             render: (row) => (
                 <>
-                    <FiEye onClick={() => handleViewAttendance(row.sessionId)} className="action-icon" size={18} style={{ color: '#0061A1', fontWeight: '900' }} />
+                    <FiEye onClick={() => handleViewAttendance(row)} className="action-icon" size={18} style={{ color: '#0061A1', fontWeight: '900' }} />
                 </>
             ),
         },
@@ -161,9 +278,9 @@ const TrainingDetails = () => {
                             className="training-details-report-button" 
                             onClick={handleReport}
                             style={{
-                                backgroundColor: '#28A745',
+                                backgroundColor: '#0061A1',
                                 color: '#fff',
-                                border: '2px solid #1E8E3E',
+                                border: '2px solid #0061A1',
                                 borderRadius: '6px',
                                 padding: '10px 20px',
                                 marginLeft: '10px',
@@ -176,15 +293,44 @@ const TrainingDetails = () => {
                                 transition: 'all 0.3s ease',
                             }}
                             onMouseEnter={(e) => {
-                                e.target.style.backgroundColor = '#1E8E3E';
-                                e.target.style.boxShadow = '0 4px 8px rgba(40, 167, 69, 0.3)';
+                                e.target.style.backgroundColor = '#0061A1';
+                                e.target.style.boxShadow = '0 4px 8px rgba(0, 97, 161, 0.3)';
                             }}
                             onMouseLeave={(e) => {
-                                e.target.style.backgroundColor = '#28A745';
+                                e.target.style.backgroundColor = '#0061A1';
                                 e.target.style.boxShadow = 'none';
                             }}
                         >
-                            <FiFileText size={18} /> Report
+                            <FiFileText size={18} /> Cumulative Training Report
+                        </button>
+                        <button 
+                            className="training-details-attendance-report-button" 
+                            onClick={handleCumulativeAttendanceReport}
+                            style={{
+                                backgroundColor: '#0061A1',
+                                color: '#fff',
+                                border: '2px solid #0061A1',
+                                borderRadius: '6px',
+                                padding: '10px 20px',
+                                marginLeft: '10px',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                transition: 'all 0.3s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = '#0061A1';
+                                e.target.style.boxShadow = '0 4px 8px rgba(255, 149, 0, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = '#0061A1';
+                                e.target.style.boxShadow = 'none';
+                            }}
+                        >
+                            <FiFileText size={18} /> Cumulative Attendance Report
                         </button>
                     </h3>
                     <div className="training-details-form">
@@ -202,8 +348,9 @@ const TrainingDetails = () => {
             </div>
 
             {/* Report Modal */}
-            {metadata && (
+            {metadata && isReportModalOpen && (
                 <ReportGenerator
+                    key={reportKey}
                     reportTitle="Training Information"
                     docNo={metadata.docNo}
                     OriginDate={metadata.OriginDate}
@@ -226,6 +373,26 @@ const TrainingDetails = () => {
                         absentEmployees: session.absentEmployees || 0,
                         absentEmployeeNames: session.absentEmployeeNames || 'N/A',
                     }))}
+                    onClose={handleReportClose}
+                />
+            )}
+
+            {/* Cumulative Attendance Report Modal */}
+            {metadata && isCumulativeAttendanceModalOpen && (
+                <CumulativeAttendanceGenerator
+                    key={cumulativeAttendanceKey}
+                    reportTitle="Cumulative Attendance Report"
+                    docNo={metadata.docNo}
+                    OriginDate={metadata.OriginDate}
+                    revNo={metadata.revNo}
+                    revDate={metadata.revDate}
+                    trainerName={trainerName}
+                    location="Training Location: pune"
+                    trainingTitle={trainingTitle}
+                    startTrainingDate={startTrainingDate}
+                    endTrainingDate={endTrainingDate}
+                    employeeAttendanceData={cumulativeAttendanceData}
+                    onClose={handleCumulativeAttendanceClose}
                 />
             )}
         </div>

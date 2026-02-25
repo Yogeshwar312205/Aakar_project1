@@ -294,7 +294,16 @@ const SendConformEmpToTraining = () => {
             evaluationType: reverseEvaluationType(training.evaluationType),
         }
         console.log("Added data:", addedData);
-        setFilterTrainingData((prevData) => [...prevData, addedData]);
+        
+        // Check if training already exists in the list to avoid duplicates
+        setFilterTrainingData((prevData) => {
+            const existingTraining = prevData.find(t => t.trainingId === training.trainingId);
+            if (existingTraining) {
+                console.log("Training already exists in the list, not adding duplicate");
+                return prevData;
+            }
+            return [...prevData, addedData];
+        });
     }
 
     useEffect(() => {

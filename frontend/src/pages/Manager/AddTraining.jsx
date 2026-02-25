@@ -291,11 +291,17 @@ const AddTraining = ({ onTrainingAdded, editTrainingData, isEditing, setIsEditin
           setIsEditing(false);
           
         } else {
-          toast.success('Training added successfully!');
-         // onTrainingAdded(updateTraining);
           try{
             const success = await addTraining(formattedTraining);
             console.log("Success:", success.trainingId);
+            
+            // Check if training already existed or was newly created
+            if (success.isExisting) {
+              toast.info('Training already exists! Using existing training.');
+            } else {
+              toast.success('Training added successfully!');
+            }
+            
             const updateTraining = {
               ...formattedTraining,
               trainingId: success.trainingId,

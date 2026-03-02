@@ -1,0 +1,220 @@
+.all-training-training-content {
+  margin-top: 0px !important;
+  width: calc(100% - 90px);
+  padding: 20px;
+  margin-left: 80px !important;
+  margin-right: 30px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  top: 0;
+}
+
+.all-training-dash-header {
+  background-color: white;
+  height: 2.5rem; 
+  margin-top: 1.5%;
+  margin-left: 3%;
+  margin-bottom: 1.5%;
+  border-radius: 0.5rem; 
+  padding: 0.5rem 0; 
+  font-size: 1.2rem;
+  font-weight: bolder;
+  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); 
+  width: 94%;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+}
+
+.all-training-search-bar-container {
+  margin-bottom: 20px;
+  margin-top: 5px;
+  width: 300px;
+}
+
+.tickit-container{
+  display:flex;
+  margin-top: 5px;
+  margin-left: 40px;;
+  gap: 10px;
+}
+
+.custom-button-all-training-ticket {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  width: 270px;
+  height: 80px;
+  margin: 0;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #000;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+  position: relative; /* Ensures proper stacking context */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+}
+
+.custom-button-all-training-ticket .icon {
+  font-size: 24px;
+  color: inherit;
+}
+
+.custom-button-all-training-ticket .text {
+  width:300px;
+  font-size: 17px;
+}
+
+.custom-button-all-training-ticket.active,
+.custom-button-all-training-ticket:hover {
+  background-color: #0061A1;
+  color: white;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.custom-button-all-training-ticket:focus {
+  outline: none;
+}
+
+.custom-button-all-training-ticket .count{
+  font-size: 20px;
+}
+
+.add-training-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 35px 0 40px;
+}
+
+.add-training-btn {
+  background-color: #ffffff;
+  color: #0061a1;
+  border: 2px solid #0061a1;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  width: 165px;
+  height: 46px;
+  border-radius: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+}
+
+.add-training-btn:hover {
+  background-color: #e1eff3;
+}
+
+.training-action-container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+}
+
+.all-training-table-container {
+  width: calc(100% - 80px);
+  max-width: 100%;
+  margin: 50px auto 0;
+  padding: 20px;
+  border-radius: 15px;
+  background-color: #ffffff;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.action-icon {
+  cursor: pointer;
+  margin: 0 5px;
+  font-size: 18px;
+  color: #0061a1;
+  transition: color 0.3s ease;
+}
+
+.action-icon:hover {
+  color: #004c81;
+}
+
+.skills-bubbles-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+}
+
+.skill-bubble {
+  background-color: #ffffff;
+  color: #000000;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 2px solid #0061a1;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.skill-bubble:hover {
+  background-color: #0061a1;
+  color: #ffffff;
+}
+
+.status-bubble {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-align: center;
+  min-width: 100px;
+}
+
+.status-bubble.ongoing {
+  background-color: rgba(255, 233, 120, 0.5);
+  color: #766b09;
+}
+
+.status-bubble.completed {
+  background-color: rgba(174, 255, 192, 0.5);
+  color: #117f0f;
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-align: center;
+  min-width: 100px;
+}
+
+.status-bubble.upcoming {
+  background-color: rgba(90, 189, 255, 0.4);
+  color: #0061a1;
+}
+
+.overall-no-data{
+  font-size: 20px;
+  font-weight: bolder;
+  justify-self: center;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  align-items: center;
+}

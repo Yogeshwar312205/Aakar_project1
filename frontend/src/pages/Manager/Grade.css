@@ -1,0 +1,27 @@
+.matrix {
+  display: grid;
+  grid-template-columns: repeat(2, 20px); 
+  grid-template-rows: repeat(2, 20px);    
+  gap: 2px; 
+}
+  
+.cell {
+  width: 20px;  
+  height: 20px;
+  background-color: #B9D9EB;
+  transition: background-color 0.3s;
+  border-radius: 8px; 
+}
+  
+.cell.hovered,
+.cell.clicked {
+  background-color: #0061A1; 
+}
+
+.cell-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+  

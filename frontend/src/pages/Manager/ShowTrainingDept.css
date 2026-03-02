@@ -1,0 +1,109 @@
+.show-training-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  width: 70vw;
+  margin: auto;
+  margin-top: 20px;
+}
+
+.show-training-dept-dash-header {
+  background-color: white;
+  height: 2.5rem; 
+  margin-top: 1.5%;
+  margin-left: 0%;
+  margin-bottom: 1.5%;
+  border-radius: 0.5rem; 
+  padding: 0.5rem 0; 
+  font-size: 1.2rem;
+  font-weight: bolder;
+  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); 
+  width: 94%;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+}
+
+.show-training-employee-table {
+  margin-top: 40px;
+  width: 95%;
+  background-color: #ffffff;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.show-training-tableComponent {
+  width: 95% !important;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #333;
+  border-radius: 10px;
+}
+
+.show-training-tableComponent table {
+  width: 100%; 
+  border-collapse: collapse;
+  table-layout: auto; 
+  margin-top: 5px;
+}
+
+.show-training-tableComponent th,
+.show-training-tableComponent td {
+  padding: 8px 12px;
+  text-align: center;
+  border: none;
+}
+
+.show-training-tableComponent th {
+  background-color: white;
+  color: #333;
+  border-bottom: 2px solid #ccc;
+  border-top: none;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.show-training-tableComponent td {
+  font-size: 14px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.show-training-tableComponent .clickable-header {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.show-training-tableComponent .clickable-header:hover {
+  color: #0061A1;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: bolder;
+}
+
+.show-training-tableComponent .expanded-row {
+  background-color: #f9f9f9;
+  border-top: 2px solid #0061A1;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.show-training-tableComponent .expanded-row td {
+  padding: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.show-training-tableComponent .expanded-row td.employee-name {
+  text-align: center;
+  padding-left: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.show-training-tableComponent .expanded-row td {
+  vertical-align: top;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e0e0e0;
+}

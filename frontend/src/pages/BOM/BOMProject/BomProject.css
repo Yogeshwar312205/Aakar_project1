@@ -1,0 +1,16 @@
+/* .designer-bom-dashboard{
+    background-color: aqua;
+} */
+
+
+ 
+.bom-designer-infocard-container-parent .infocard-container{
+    margin-top: 15px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    justify-content: flex-start;
+    align-items: center;
+}
+

@@ -1,0 +1,51 @@
+.attendance-container {
+  margin-left: 40px !important;
+  border-radius: 8px;
+  width: 90% !important;
+}
+
+.manager-attendance-title{
+  margin-top: 50px !important;
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+  width: 100%;
+  margin-left: 40px !important;
+  padding: 5px;
+  background-color: white;
+  font-weight: bolder;
+  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); 
+  border-radius: 8px;
+}
+
+.attendance-dash-header{
+  background-color: white;
+  height: 2.5rem; 
+  margin-top: 1.5%;
+  margin-bottom: 2%;
+  margin-left: 3.25%;
+  border-radius: 0.5rem; 
+  padding: 0.5rem 0; 
+  font-size: 1.2rem;
+  font-weight: bolder;
+  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); 
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+}
+
+.attendance-table-container{
+  width: 100% ;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 10px !important;
+  margin-left: 40px !important;
+  border-radius: 15px;
+  box-sizing: border-box;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+
+}

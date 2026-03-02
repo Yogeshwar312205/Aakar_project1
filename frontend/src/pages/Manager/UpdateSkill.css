@@ -1,0 +1,126 @@
+.update-container {
+  margin-left: 100px;
+  width: calc(100% - 150px); 
+  margin-top: 40px;
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.update-skill-dash-header{
+  background-color: white;
+  height: 2.5rem; 
+  margin-top: 0% !important;
+  margin-left: 3%;
+  margin-bottom: 1.5%;
+  border-radius: 0.5rem; 
+  padding: 0.5rem 0; 
+  font-size: 1.2rem;
+  font-weight: bolder;
+  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); 
+  width: 94%;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+}
+
+.update-skill-dept-name{
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+.skill-save{
+  width: 80px;
+  margin-right: 10px;
+}
+
+.update-head {
+  margin-left: 45px;
+}
+
+.add-skill-container{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: calc(100% - 75px); 
+  margin-left: 40px;
+}
+
+.Add-skill {
+  background-color: #ffffff;
+  color: #0061a1;
+  border: 2px solid #0061a1;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  width: 165px;
+  height: 46px;
+  border-radius: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+  margin-top: 15px;
+}
+
+.Add-skill:hover {
+  background-color: rgb(225, 239, 243);;
+}
+
+.input-box {
+  width: calc(100% - 120px); 
+  height: auto; 
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 60px;
+  border-radius: 10px;
+  border: 1.5px solid #7D7D7D;
+  background: #FFF;
+  gap: 15px;
+  margin-left: 50px;
+  padding-left: 20px;
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.input-box .Textfield, 
+.input-box .DSearchbar {
+  height: 40px; 
+}
+
+.skill-action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px; 
+}
+
+.skill-action-buttons button {
+  background-color: white;
+  color: #0061A1;
+  border: none;
+  cursor: pointer;
+  padding: 5px; 
+  transition: opacity 0.3s ease;
+}
+
+.skill-action-buttons button:hover{
+  background-color: #0061A1;
+  color: white;
+}
+
+.update-skill-table-container{
+  width: 95% !important; 
+  max-width: 100%; 
+  overflow-x: auto; 
+  margin-top: 50px !important;
+  margin-left: 40px !important; 
+  border-radius: 15px;
+  box-sizing: border-box; 
+  margin: 0 auto; 
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+}

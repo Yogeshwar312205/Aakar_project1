@@ -1,0 +1,89 @@
+*{
+    margin: 0px;
+    padding: 0%;
+    box-sizing: border-box;
+}
+.add-bom-header{
+    display: flex;
+    justify-content: flex-start;
+    gap: 30px;
+    align-items: center;
+}
+
+.add-bom-header .add-bom-btn{
+
+    height: 40px;
+    width: 200px;
+    /* margin-bottom: 20px; */
+    border-radius: 5px;
+    border: 2px solid #0061A1;
+    border: 2px solid #71a3c5;
+    background-color: #ffffff;
+    color: #0061a1;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+}
+
+
+.add-bom-header .save-bom-btn{
+
+    height: 40px;
+    width: 200px;
+    /* margin-bottom: 20px; */
+    border-radius: 5px;
+    
+    border: 2px solid #71a3c5;
+    background-color: #0061a1;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+}
+
+.add-bom-body{
+    padding:0px  10px;
+    background-color: #ffffff;
+    border: 1px solid   #A3A3A3;
+    border-radius: 10px;
+    margin-left: 10px;
+    margin-top: 20px;
+    margin-bottom: 25px;
+    display: flex;
+    gap: 50px;
+    align-items: center;
+    width: 100%;
+
+}
+.bom-details{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-left: 20px;
+    margin-top: 50px;
+    margin-bottom: 35px;
+
+}
+
+.add-bom-body .delete-icon{
+    cursor: pointer;
+
+    align-self: flex-start;
+    font-size: large;
+    margin: 10px;
+     color: #625f5f;
+}
+

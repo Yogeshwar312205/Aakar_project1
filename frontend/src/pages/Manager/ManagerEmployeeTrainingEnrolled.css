@@ -1,0 +1,119 @@
+.employee-training-enrolled-page {
+  width: 80vw !important;
+  margin-left: 95px !important;
+  padding: 20px;
+}
+
+.manager-employee-training-enrolled-title {
+  margin-top: 50px !important;
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+  width: 100%;
+  margin-left: 0px !important;
+  font-weight: bold;
+  padding: 5px;
+}
+
+.employee-training-enrolled-dash-header {
+  background-color: white;
+  height: 2.5rem; 
+  margin-top: 1.5%;
+  margin-bottom: 3%;
+  border-radius: 0.5rem; 
+  padding: 0.5rem 0; 
+  font-size: 1.2rem;
+  font-weight: bolder;
+  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); 
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+}
+
+.employeeSwitch-back-button {
+  font-size: 25px;
+  cursor: pointer;
+  color: #333;
+  margin-right: 10px;
+}
+
+.employeeSwitch-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.skill-update-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.skill-update-button:hover {
+  background-color: #45a049;
+}
+
+.employee-training-enrolled-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.employee-training-enrolled-table th,
+.employee-training-enrolled-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+
+.employee-training-enrolled-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.employee-training-enrolled-table td {
+  background-color: #fff;
+}
+
+.skill-column {
+  background-color: #f9f9f9;
+  font-weight: normal;
+}
+
+.update-grade-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 20px 0;
+  transition: background-color 0.3s;
+}
+
+.update-grade-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.update-grade-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.manager-employee-training-container {
+  padding: 20px;
+  border-radius: 15px;
+  background-color: #ffffff;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  box-sizing: border-box;
+}

@@ -1,0 +1,22 @@
+#navbar {
+  width: 100%;
+  box-shadow: 0vmax 0vmax 0.5vmax rgba(0, 0, 0, 0.2);
+  height: 55px;
+  padding: 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+}
+
+#navbar > img {
+  height: 2vmax;
+}
+
+.user-icon {
+  background: #0061A1;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  padding: 7px;
+}

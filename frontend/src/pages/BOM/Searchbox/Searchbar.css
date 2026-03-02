@@ -1,0 +1,25 @@
+.searchbar-container {
+    max-width: 300px;
+    width: 100%;
+}
+
+.searchbar-textfield .MuiOutlinedInput-root {
+    margin: 10px auto;
+    border: 1px solid #A3A3A3; 
+    border-radius: 16px !important;
+}
+
+.searchbar-input .MuiOutlinedInput-input {
+    width: 250px;
+    height: 6px;
+    font-size: 16px;
+    color: #4E4E4E;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+}
+
+@media screen and (max-width: 480px) {
+    .searchbar-input .MuiOutlinedInput-input {
+        width: 100%;
+    }
+}

@@ -1,0 +1,82 @@
+.employeeSwitch-training-content {
+    width: 80vw !important;
+    margin: 0 auto;
+}
+
+.employeeSwitch-dash-header {
+    background-color: white;
+    height: 2.5rem; /* Replaced 30px */
+    margin-top: 1.5%;
+    margin-bottom: 1.5%;
+    border-radius: 0.5rem; /* Replaced 8px */
+    padding: 0.5rem 0; /* Replaced padding-top and padding-bottom */
+    font-size: 1.2rem; /* Replaced 17px */
+    font-weight: bolder;
+    box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); /* Replaced 2px and 10px */
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+}
+
+.employeeSwitch-back-button {
+    margin-left: 1%;
+    font-size: 1.375rem; /* Replaced 22px */
+    color: #0d6efd;
+}
+
+.employeeSwitch-back-button:hover {
+    color: #0061A1;
+    cursor: pointer;
+}
+
+.employeeSwitch-title {
+    margin-bottom: auto;
+}
+
+.status-filter {
+    padding: 0.625rem; /* Replaced 10px */
+    font-size: 1rem;
+    border: 0.0625rem solid #ccc; /* Replaced 1px */
+    border-radius: 0.3125rem; /* Replaced 5px */
+    background-color: #f9f9f9;
+    color: #333;
+    transition: border-color 0.3s;
+}
+
+.status-filter:focus {
+    outline: none;
+    border-color: #0061A1;
+}
+
+.employeeSwitch-search-bar-container {
+    margin-top: 1.5%;
+    margin-bottom: 1.5%;
+    display: flex;
+    justify-content: left;
+}
+
+.employeeSwitch-table-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 0.625rem auto; /* Replaced 10px */
+    border-radius: 0.9375rem; /* Replaced 15px */
+    box-sizing: border-box;
+    padding: 1.25rem; /* Replaced 20px */
+    background-color: white;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1); /* Replaced 4px and 8px */
+}
+
+.edit-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #0061A1;
+    font-size: 1.25rem; /* Replaced 20px */
+    transition: color 0.3s ease;
+}
+
+.edit-button:hover {
+    color: #004978;
+}

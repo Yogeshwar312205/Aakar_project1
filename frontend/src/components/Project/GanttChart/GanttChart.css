@@ -1,0 +1,59 @@
+.ganttLoader {
+  position: absolute;
+  top: 20%;
+  left: 35%;
+}
+.gantt .beforeForm p {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.customTooltip p {
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: #666;
+}
+.customTooltip {
+  background: #fff;
+  padding: 12px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+polygon {
+  display: none;
+}
+._2pZMF {
+  display: none;
+}
+
+._3lLk3 {
+  margin: 0 10px;
+  overflow: auto;
+}
+._2B2zv ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+._WuQ0f {
+  min-width: 500px;
+}
+.gantt > div {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* For smooth scrolling on mobile */
+}
+/* Custom styles for project connections */
+.gantt-link-line.project-line {
+  stroke: #8f013f !important; /* Dark pink for projects */
+  stroke-width: 2px;
+}
+
+/* Custom styles for stage connections */
+.gantt-link-line.stage-line {
+  stroke: #0061a1 !important; /* Dark blue for stages */
+  stroke-width: 2px;
+}
+
+/* Custom styles for substage connections */
+.gantt-link-line.substage-line {
+  stroke: #2c7a7b !important; /* Teal for substages */
+  stroke-width: 2px;
+}

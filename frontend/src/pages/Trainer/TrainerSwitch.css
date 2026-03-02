@@ -1,0 +1,79 @@
+.trainerSwitch-training-content {
+  margin-left: 8%;
+  padding: 5px;
+  width: 80vw;
+}
+
+.trainerSwitch-dash-header{
+  background-color: white;
+  height: 2.5rem; /* Replaced 30px */
+  margin-top: 1.5%;
+  margin-bottom: 1.5%;
+  border-radius: 0.5rem; /* Replaced 8px */
+  padding: 0.5rem 0; /* Replaced padding-top and padding-bottom */
+  font-size: 1.2rem; /* Replaced 17px */
+  font-weight: bolder;
+  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); /* Replaced 2px and 10px */
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+}
+
+.trainerSwitch-search-bar-container {
+  margin-top: 1.5%;
+  margin-bottom: 1.5%;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.trainerSwitch-table-container {
+    width: 100% ;
+    max-width: 100%;
+    overflow-x: auto;
+    margin-top: 1.5%;
+    border-radius: 15px;
+    box-sizing: border-box;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.edit-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #0061A1; 
+    font-size: 20px; 
+    transition: color 0.3s ease;
+  }
+
+  .status-bubble.ongoing {
+    background-color: #fffac0; 
+    color: #000; 
+  }
+  
+  .status-bubble.completed {
+    background-color: #c9fcca; 
+    color: black; 
+  }
+  
+  .status-bubble.upcoming {
+    background-color: #cde9ff; 
+    color: #000;
+  }
+
+  .trainerSwitch-tickets {
+    display:flex;
+    flex-direction: column;
+    margin-top: 5px;
+    margin-left: 0px;
+    width: 150% !important;
+  }
+
+  .trainerSwitch-ticket {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+  }
+  

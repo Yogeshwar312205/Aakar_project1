@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+.table-container {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 20px;
+  border-radius: 10px !important;
+  box-shadow: 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  font-weight: bold;
+  background-color: #ffffff;
+  color: #002773;
+}
+
+.MuiTablePagination-actions button {
+  margin: 0;
+}
+.tbody tr:hover {
+  background-color: rgba(45, 84, 161, 0.1);
+}
+
+.table-row {
+  width: 100%;
+}
+
+.table-row div {
+  width: 100%;
+}
+
+.option-icon {
+  font-size: 17px;
+  margin: 0 10px;
+  color: rgb(102, 87, 87);
+}
+
+.option-icon:hover {
+  color: black;
+}
+
+.history-table {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #002773;
+  padding: 5px;
+}
+
+.history-table thead {
+  background-color: #385184;
+  border-radius: 10px;
+  color: white;
+}
+
+.history-table td {
+  border: 1px solid #002773;
+  padding: 10px;
+}
+
+.updateReason {
+  max-width: 250px;
+}
+.table-container th {
+  padding: 10px;
+}
+.table-container a {
+  padding: 0px 10px;
+  text-decoration: none;
+}
+.completed {
+  background-color: rgba(0, 255, 0, 0.4);
+  color: rgb(0, 76, 0);
+  border-radius: 5px;
+  padding: 4px;
+  width: fit-content;
+}
+
+.overdue {
+  background-color: rgba(255, 64, 64, 0.4);
+  color: rgb(53, 0, 0);
+  border-radius: 5px;
+  padding: 4px;
+  width: fit-content;
+}
+.pending {
+  background-color: rgba(242, 255, 0, 0.4);
+  color: rgb(63, 62, 0);
+  border-radius: 5px;
+  padding: 4px;
+  width: fit-content;
+}
+
+.custom-scrollbar {
+  overflow: auto;
+  max-height: 40vh;
+}
+
+.custom-scrollbar.project {
+  max-height: 53vh;
+}
+.history-table td {
+  max-width: 250px;
+}
+#loaderLine {
+  padding: 0;
+}
+
+.MuiTableBody-root tr a p {
+  margin: 12px 0px;
+}

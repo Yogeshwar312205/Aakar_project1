@@ -1,0 +1,108 @@
+/* General content container styles */
+.content-container {
+  padding: 10px;
+}
+
+/* General content block styles */
+.ticketPageContent {
+  flex: 1;
+  padding: 16px;
+  /* margin-bottom: 20px; */
+  overflow-y: auto;
+  margin: 10px 0px 0px 0px;
+}
+
+/* Assignee functionality section */
+.assignee-functionality {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Create Log Button styling */
+.createLogButton {
+  display: flex;
+  flex-direction: column;
+  
+
+  justify-content: flex-start;
+  /* margin-top: 10px; */
+}
+
+.createLogButton button {
+  background-color: #1976d2;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  width: 180px;
+}
+
+.createLogButton button:hover {
+  background-color: #0056b3;
+}
+
+/* Assignee History Section */
+.history-toggle-button {
+  background-color: #1976d2;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.history-table-container {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: #f9f9f9;
+}
+
+.assignee-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.assignee-history-table th,
+.assignee-history-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  font-size: 0.875rem;
+}
+
+.assignee-history-table th {
+  background-color: #7accf3;
+  color: white;
+}
+
+.assignee-history-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.assignee-history-table tr:hover {
+  background-color: #ddd;
+}
+
+/* Message Section */
+.message-section {
+  margin-top: 20px;
+}
+
+.message-section h3 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.message-section p {
+  color: #555;
+  font-size: 16px;
+}

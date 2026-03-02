@@ -1,0 +1,33 @@
+.layout {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+     
+  
+  }
+  
+  .content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    
+     
+  }
+  
+  .assignee-functionality{
+    display: flex;
+    justify-content: space-between;
+   
+  }
+  
+  .createLogButton{
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  

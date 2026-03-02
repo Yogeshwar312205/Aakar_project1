@@ -1,0 +1,48 @@
+/* Style for the container that wraps the input field */
+.general-search-bar-container {
+    position: relative;
+    width: 100%;
+    max-width: 250px;
+  }
+  
+  /* Style for the TextField itself */
+  .general-search-bar-container .MuiInputBase-root {
+    position: relative;
+    height: 50px;
+    background-color: white;
+  }
+  
+  /* Style for the label */
+  .general-search-bar-container .MuiInputLabel-root {
+    position: absolute;
+    top: 40%;
+    left: 17px;
+    transform: translate(0, -50%);
+    font-size: 1rem;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    background-color: white;  /* Match the background of the input */
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 0;
+    padding-bottom: 0;
+    z-index: 1; /* Ensure the label stays on top of the input */
+  }
+  
+  /* When the input is focused, or contains a value, float the label up */
+  .general-search-bar-container .MuiInput-root.Mui-focused .MuiInputLabel-root,
+  .general-search-bar-container .MuiInput-root:not(:placeholder-shown) .MuiInputLabel-root {
+    transform: translate(0, -1.5em);
+    font-size: 0.75rem;
+  }
+  
+  /* Style for the input field itself */
+  .general-search-bar-container .MuiInputBase-input {
+    padding-left: 10px;
+    cursor: text;
+  }
+  
+  /* Placeholder style when not showing the label */
+  .general-search-bar-container .MuiInputBase-input::placeholder {
+    color: transparent;
+  }

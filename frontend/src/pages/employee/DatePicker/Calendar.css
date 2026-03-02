@@ -1,0 +1,42 @@
+.calendar {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    width: 280px;
+    z-index: 1000;
+    font-size: 14px;
+}
+
+.calendar-header {
+    padding: 10px;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+.calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-day {
+    padding: 5px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.calendar-day.clickable:hover {
+    background: #eee;
+}
+
+.close-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}

@@ -28,12 +28,20 @@ const columns = [
     id: 'projectStatus',
   },
   {
-    label: 'Start Date*',
+    label: 'Planned Start Date',
     id: 'startDate',
   },
   {
-    label: 'End Date*',
+    label: 'Planned End Date',
     id: 'endDate',
+  },
+  {
+    label: 'Executed Start Date',
+    id: 'executedStartDate',
+  },
+  {
+    label: 'Executed End Date',
+    id: 'executedEndDate',
   },
   {
     label: 'Progress(%)',

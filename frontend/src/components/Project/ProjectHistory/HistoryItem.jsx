@@ -193,14 +193,30 @@ const HistoryItem = ({ entry, isLast }) => {
                     <span className="detail-value">{formatFullDate(entry.createdAt)}</span>
                   </div>
                   <div className="detail-item">
-                    <span className="detail-label">Start Date</span>
+                    <span className="detail-label">Planned Start Date</span>
                     <span className="detail-value">{formatDate(entry.startDate) || '—'}</span>
                   </div>
                   <div className="detail-item">
-                    <span className="detail-label">End Date</span>
+                    <span className="detail-label">Planned End Date</span>
                     <span className="detail-value">{formatDate(entry.endDate) || '—'}</span>
                   </div>
                 </div>
+                {(entry.executedStartDate || entry.executedEndDate) && (
+                  <div className="detail-row" style={{ marginTop: '8px' }}>
+                    <div className="detail-item">
+                      <span className="detail-label" style={{ color: '#16a34a' }}>Executed Start Date</span>
+                      <span className="detail-value" style={{ color: '#16a34a', fontWeight: 600 }}>
+                        {formatDate(entry.executedStartDate) || '—'}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label" style={{ color: '#16a34a' }}>Executed End Date</span>
+                      <span className="detail-value" style={{ color: '#16a34a', fontWeight: 600 }}>
+                        {formatDate(entry.executedEndDate) || '—'}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* People Section */}

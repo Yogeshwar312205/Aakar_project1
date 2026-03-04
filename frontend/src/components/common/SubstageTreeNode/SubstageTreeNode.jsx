@@ -4,6 +4,18 @@ import { RiDeleteBinLine } from 'react-icons/ri'
 import { useNavigate } from 'react-router-dom'
 import LinearProgress from '@mui/joy/LinearProgress'
 import { formatDate } from '../functions/formatDate.js'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+} from '@mui/material'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
 import './SubstageTreeNode.css'
 
 // Utility: Build tree from flat list using parentSubstageId
@@ -47,6 +59,9 @@ const SubstageTreeNode = ({
   employeeAccess,
 }) => {
   const [expanded, setExpanded] = useState(true)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [executedStartDate, setExecutedStartDate] = useState(null)
+  const [executedEndDate, setExecutedEndDate] = useState(null)
   const hasChildren = node.children && node.children.length > 0
   const navigate = useNavigate()
   const isCompleted = !!node.isCompleted
@@ -55,10 +70,34 @@ const SubstageTreeNode = ({
 
   const handleCheckboxChange = () => {
     if (hasChildren && !areAllChildrenCompleted(node)) {
-      // Don't allow marking as complete if children are not done
       return
     }
-    onToggleComplete && onToggleComplete(node.substageId, !isCompleted)
+    if (!isCompleted) {
+      // Opening: show dialog to get executed dates
+      setExecutedStartDate(dayjs())
+      setExecutedEndDate(dayjs())
+      setDialogOpen(true)
+    } else {
+      // Unchecking: clear executed dates
+      onToggleComplete && onToggleComplete(node.substageId, false, null, null)
+    }
+  }
+
+  const handleDialogConfirm = () => {
+    const formattedStart = executedStartDate
+      ? dayjs(executedStartDate).format('YYYY-MM-DD')
+      : null
+    const formattedEnd = executedEndDate
+      ? dayjs(executedEndDate).format('YYYY-MM-DD')
+      : null
+    setDialogOpen(false)
+    onToggleComplete && onToggleComplete(node.substageId, true, formattedStart, formattedEnd)
+  }
+
+  const handleDialogCancel = () => {
+    setDialogOpen(false)
+    setExecutedStartDate(null)
+    setExecutedEndDate(null)
   }
 
   return (
@@ -105,8 +144,13 @@ const SubstageTreeNode = ({
               Owner: {node.owner || '—'} | Machine: {node.machine || '—'} | Duration: {node.duration || '—'}hrs
             </span>
             <span className="tree-node-dates">
-              {node.startDate ? formatDate(node.startDate) : '—'} → {node.endDate ? formatDate(node.endDate) : '—'}
+              <strong>Planned:</strong> {node.startDate ? formatDate(node.startDate) : '—'} → {node.endDate ? formatDate(node.endDate) : '—'}
             </span>
+            {isCompleted && (node.executedStartDate || node.executedEndDate) && (
+              <span className="tree-node-dates" style={{ color: '#16a34a' }}>
+                <strong>Executed:</strong> {node.executedStartDate ? formatDate(node.executedStartDate) : '—'} → {node.executedEndDate ? formatDate(node.executedEndDate) : '—'}
+              </span>
+            )}
           </div>
 
           <div className="tree-node-progress">
@@ -177,6 +221,49 @@ const SubstageTreeNode = ({
           ))}
         </div>
       )}
+
+      {/* Executed Date Dialog */}
+      <Dialog open={dialogOpen} onClose={handleDialogCancel} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, color: '#0061A1' }}>
+          Enter Executed Dates
+        </DialogTitle>
+        <DialogContent>
+          <p style={{ fontSize: '14px', color: '#6c757d', marginBottom: '16px' }}>
+            Please enter the actual start and end dates for <strong>{node.stageName || node.substageName}</strong>
+          </p>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+              <DatePicker
+                label="Executed Start Date*"
+                value={executedStartDate}
+                onChange={(val) => setExecutedStartDate(val)}
+                sx={{ flex: 1 }}
+                renderInput={(params) => <TextField {...params} fullWidth required />}
+              />
+              <DatePicker
+                label="Executed End Date*"
+                value={executedEndDate}
+                onChange={(val) => setExecutedEndDate(val)}
+                sx={{ flex: 1 }}
+                renderInput={(params) => <TextField {...params} fullWidth required />}
+              />
+            </div>
+          </LocalizationProvider>
+        </DialogContent>
+        <DialogActions sx={{ padding: '16px' }}>
+          <Button onClick={handleDialogCancel} sx={{ color: '#6c757d' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDialogConfirm}
+            variant="contained"
+            disabled={!executedStartDate || !executedEndDate}
+            sx={{ backgroundColor: '#0061A1', '&:hover': { backgroundColor: '#004d80' } }}
+          >
+            Complete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   )
 }

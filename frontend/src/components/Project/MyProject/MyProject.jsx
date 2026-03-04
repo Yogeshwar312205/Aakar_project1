@@ -57,6 +57,8 @@ const MyProject = () => {
     projectStatus,
     startDate,
     endDate,
+    executedStartDate,
+    executedEndDate,
     projectType,
     projectPOLink,
     projectDesignDocLink,
@@ -154,8 +156,13 @@ const MyProject = () => {
                 {companyName} — {dieName}
               </h2>
               <p style={{ margin: 0, fontSize: '12px', color: '#6c757d' }}>
-                Die #: {dieNumber} • Type: {projectType} • {formatDate(startDate)} → {formatDate(endDate)}
+                Die #: {dieNumber} • Type: {projectType} • <strong>Planned:</strong> {formatDate(startDate)} → {formatDate(endDate)}
               </p>
+              {(executedStartDate || executedEndDate) && (
+                <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>
+                  <strong>Executed:</strong> {executedStartDate ? formatDate(executedStartDate) : '—'} → {executedEndDate ? formatDate(executedEndDate) : '—'}
+                </p>
+              )}
             </div>
             <div style={{ textAlign: 'center', minWidth: '100px' }}>
               <div
@@ -311,8 +318,13 @@ const MyProject = () => {
                           {stage.stageName}
                         </div>
                         <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                          Owner: {stage.owner} • Machine: {stage.machine} • {formatDate(stage.startDate)} → {formatDate(stage.endDate)}
+                          Owner: {stage.owner} • Machine: {stage.machine} • <strong>Planned:</strong> {formatDate(stage.startDate)} → {formatDate(stage.endDate)}
                         </div>
+                        {(stage.executedStartDate || stage.executedEndDate) && (
+                          <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>
+                            <strong>Executed:</strong> {stage.executedStartDate ? formatDate(stage.executedStartDate) : '—'} → {stage.executedEndDate ? formatDate(stage.executedEndDate) : '—'}
+                          </div>
+                        )}
                       </div>
                       <div style={{ textAlign: 'right', minWidth: '80px' }}>
                         <div

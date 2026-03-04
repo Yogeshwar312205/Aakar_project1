@@ -45,6 +45,8 @@ const MyStage = () => {
     stageName = '',
     startDate = null,
     endDate = null,
+    executedStartDate = null,
+    executedEndDate = null,
     owner = '',
     machine = '',
     duration = '',
@@ -63,9 +65,9 @@ const MyStage = () => {
     return Math.round((completed / total) * 100)
   }, [activeSubStages, progress])
 
-  const handleToggleComplete = async (substageId, isCompleted) => {
+  const handleToggleComplete = async (substageId, isCompleted, executedStartDate, executedEndDate) => {
     try {
-      await dispatch(toggleSubStageCompletion({ substageId, isCompleted })).unwrap()
+      await dispatch(toggleSubStageCompletion({ substageId, isCompleted, executedStartDate, executedEndDate })).unwrap()
       toast.success(isCompleted ? 'Substage marked complete!' : 'Substage marked incomplete')
       // Refresh substages and stage data to update progress
       dispatch(getActiveSubStagesByStageId(sNo))
@@ -123,8 +125,13 @@ const MyStage = () => {
                 Owner: {owner} • Machine: {machine} • Duration: {duration} Hrs
               </p>
               <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#868e96' }}>
-                {formatDate(startDate)} → {formatDate(endDate)} • Created by: {createdBy}
+                <strong>Planned:</strong> {formatDate(startDate)} → {formatDate(endDate)} • Created by: {createdBy}
               </p>
+              {(executedStartDate || executedEndDate) && (
+                <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#16a34a', fontWeight: 600 }}>
+                  <strong>Executed:</strong> {executedStartDate ? formatDate(executedStartDate) : '—'} → {executedEndDate ? formatDate(executedEndDate) : '—'}
+                </p>
+              )}
             </div>
             <div style={{ textAlign: 'center', minWidth: '120px' }}>
               <div

@@ -161,7 +161,7 @@ const SubstageForm = ({
 
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
-            label="Start Date*"
+            label="Planned Start Date*"
             value={inputValues.startDate ? dayjs(inputValues.startDate) : null}
             onChange={(date) => handleDateChange(date, 'startDate')}
             sx={{ width: '150px' }}
@@ -180,7 +180,7 @@ const SubstageForm = ({
 
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
-            label="End Date*"
+            label="Planned End Date*"
             value={inputValues.endDate ? dayjs(inputValues.endDate) : null}
             onChange={(date) => handleDateChange(date, 'endDate')}
             sx={{ width: '150px' }}

@@ -174,7 +174,7 @@ const StageComponent = ({
 
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
-            label="Start date*"
+            label="Planned Start Date*"
             value={dayjs(stage.startDate)}
             onChange={(date) => handleChange(date, 'startDate')}
             sx={{
@@ -211,7 +211,7 @@ const StageComponent = ({
         </LocalizationProvider>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
-            label="End date*"
+            label="Planned End Date*"
             value={dayjs(stage.endDate)}
             onChange={(date) => handleChange(date, 'endDate')}
             renderInput={(params) => (

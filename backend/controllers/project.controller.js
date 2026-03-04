@@ -42,10 +42,16 @@ export const getAllProjects = asyncHandler(async (req, res) => {
       ...project,
       startDate: project.startDate
         ? new Date(project.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: project.endDate
         ? new Date(project.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: project.executedStartDate
+        ? new Date(project.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: project.executedEndDate
+        ? new Date(project.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
 
     // Send the response with the modified date formats
@@ -71,10 +77,16 @@ export const getActiveProjects = asyncHandler(async (req, res) => {
       ...project,
       startDate: project.startDate
         ? new Date(project.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: project.endDate
         ? new Date(project.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: project.executedStartDate
+        ? new Date(project.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: project.executedEndDate
+        ? new Date(project.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
 
     res
@@ -106,10 +118,16 @@ export const getHistoricalProjects = asyncHandler(async (req, res) => {
       ...project,
       startDate: project.startDate
         ? new Date(project.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: project.endDate
         ? new Date(project.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: project.executedStartDate
+        ? new Date(project.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: project.executedEndDate
+        ? new Date(project.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
 
     res
@@ -145,6 +163,12 @@ export const getProjectById = asyncHandler(async (req, res) => {
         : null,
       endDate: project.endDate
         ? new Date(project.endDate).toLocaleDateString('en-CA')
+        : null,
+      executedStartDate: project.executedStartDate
+        ? new Date(project.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: project.executedEndDate
+        ? new Date(project.executedEndDate).toLocaleDateString('en-CA')
         : null,
     }))
     res
@@ -634,6 +658,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
       p.progress,
       p.startDate,
       p.endDate,
+      p.executedStartDate,
+      p.executedEndDate,
       p.projectStatus as status,
       p.projectType,
       p.companyName,
@@ -664,6 +690,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
       p.progress,
       p.startDate,
       p.endDate,
+      p.executedStartDate,
+      p.executedEndDate,
       p.projectStatus as status,
       p.projectType,
       p.companyName,
@@ -694,6 +722,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
       s.progress,
       s.startDate,
       s.endDate,
+      s.executedStartDate,
+      s.executedEndDate,
       NULL as status,
       NULL as projectType,
       NULL as companyName,
@@ -730,6 +760,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
       ss.progress,
       ss.startDate,
       ss.endDate,
+      ss.executedStartDate,
+      ss.executedEndDate,
       NULL as status,
       NULL as projectType,
       NULL as companyName,
@@ -787,6 +819,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
         ...item,
         startDate: item.startDate ? new Date(item.startDate).toLocaleDateString('en-CA') : null,
         endDate: item.endDate ? new Date(item.endDate).toLocaleDateString('en-CA') : null,
+        executedStartDate: item.executedStartDate ? new Date(item.executedStartDate).toLocaleDateString('en-CA') : null,
+        executedEndDate: item.executedEndDate ? new Date(item.executedEndDate).toLocaleDateString('en-CA') : null,
         createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : null,
       }))
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))

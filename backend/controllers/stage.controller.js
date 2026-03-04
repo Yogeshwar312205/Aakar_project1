@@ -32,10 +32,16 @@ export const getAllStages = asyncHandler(async (req, res) => {
       ...stage,
       startDate: stage.startDate
         ? new Date(stage.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: stage.endDate
         ? new Date(stage.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: stage.executedStartDate
+        ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: stage.executedEndDate
+        ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
     res
       .status(200)
@@ -102,6 +108,12 @@ export const getActiveStagesByProjectNumber = asyncHandler(async (req, res) => {
       endDate: stage.endDate
         ? new Date(stage.endDate).toLocaleDateString('en-CA')
         : null,
+      executedStartDate: stage.executedStartDate
+        ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: stage.executedEndDate
+        ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
 
     // Get stages in order based on seqPrevStage
@@ -139,10 +151,16 @@ export const getHistoryStagesByStageId = asyncHandler(async (req, res) => {
       ...stage,
       startDate: stage.startDate
         ? new Date(stage.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: stage.endDate
         ? new Date(stage.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: stage.executedStartDate
+        ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: stage.executedEndDate
+        ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
     res
       .status(200)
@@ -176,10 +194,16 @@ export const getSingleStageByStageId = asyncHandler(async (req, res) => {
       ...stage,
       startDate: stage.startDate
         ? new Date(stage.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: stage.endDate
         ? new Date(stage.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: stage.executedStartDate
+        ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: stage.executedEndDate
+        ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
 
     res
@@ -214,10 +238,16 @@ export const getStagesByProjectNumber = asyncHandler(async (req, res) => {
       ...stage,
       startDate: stage.startDate
         ? new Date(stage.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: stage.endDate
         ? new Date(stage.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: stage.executedStartDate
+        ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: stage.executedEndDate
+        ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
     res
       .status(200)

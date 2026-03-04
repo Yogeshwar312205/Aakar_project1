@@ -27,10 +27,16 @@ WHERE ss.stageId = ?;`
       ...substage,
       startDate: substage.startDate
         ? new Date(substage.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: substage.endDate
         ? new Date(substage.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: substage.executedStartDate
+        ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: substage.executedEndDate
+        ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
     res
       .status(200)
@@ -66,10 +72,16 @@ export const getHistorySubStagesBySubStageId = asyncHandler(
         ...substage,
         startDate: substage.startDate
           ? new Date(substage.startDate).toLocaleDateString('en-CA')
-          : null, // Convert to local time
+          : null,
         endDate: substage.endDate
           ? new Date(substage.endDate).toLocaleDateString('en-CA')
-          : null, // Convert to local time
+          : null,
+        executedStartDate: substage.executedStartDate
+          ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
+          : null,
+        executedEndDate: substage.executedEndDate
+          ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
+          : null,
       }))
       res
         .status(200)
@@ -152,10 +164,16 @@ AND ss.historyOf IS NULL;`
       ...substage,
       startDate: substage.startDate
         ? new Date(substage.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: substage.endDate
         ? new Date(substage.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: substage.executedStartDate
+        ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: substage.executedEndDate
+        ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
 
     // const orderedSubstages = orderSubstagesBySeqPrevStage(substages)
@@ -199,10 +217,16 @@ WHERE ss.projectNumber = ?;`
       ...substage,
       startDate: substage.startDate
         ? new Date(substage.startDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
       endDate: substage.endDate
         ? new Date(substage.endDate).toLocaleDateString('en-CA')
-        : null, // Convert to local time
+        : null,
+      executedStartDate: substage.executedStartDate
+        ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: substage.executedEndDate
+        ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
     res
       .status(200)
@@ -539,6 +563,12 @@ export const getSingleSubStageById = asyncHandler(async (req, res) => {
       endDate: data[0].endDate
         ? new Date(data[0].endDate).toLocaleDateString('en-CA')
         : null,
+      executedStartDate: data[0].executedStartDate
+        ? new Date(data[0].executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: data[0].executedEndDate
+        ? new Date(data[0].executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }
 
     console.log('Retrieved substage:', substage)
@@ -575,6 +605,12 @@ export const getSubStageChildren = asyncHandler(async (req, res) => {
       endDate: substage.endDate
         ? new Date(substage.endDate).toLocaleDateString('en-CA')
         : null,
+      executedStartDate: substage.executedStartDate
+        ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
+        : null,
+      executedEndDate: substage.executedEndDate
+        ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
+        : null,
     }))
 
     res
@@ -586,15 +622,18 @@ export const getSubStageChildren = asyncHandler(async (req, res) => {
 })
 
 // Toggle isCompleted for a substage + recalculate stage AND project progress
+// Also saves executedStartDate & executedEndDate when completing, clears when unchecking
 export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
   const substageId = req.params.id
-  const { isCompleted } = req.body
+  const { isCompleted, executedStartDate, executedEndDate } = req.body
 
   const newProgress = isCompleted ? 100 : 0
+  const execStart = isCompleted && executedStartDate ? executedStartDate : null
+  const execEnd = isCompleted && executedEndDate ? executedEndDate : null
 
-  // 1. Update substage completion & progress
-  const updateQuery = `UPDATE substage SET isCompleted = ?, progress = ? WHERE substageId = ?`
-  db.query(updateQuery, [isCompleted ? 1 : 0, newProgress, substageId], (err, result) => {
+  // 1. Update substage completion, progress & executed dates
+  const updateQuery = `UPDATE substage SET isCompleted = ?, progress = ?, executedStartDate = ?, executedEndDate = ? WHERE substageId = ?`
+  db.query(updateQuery, [isCompleted ? 1 : 0, newProgress, execStart, execEnd, substageId], (err, result) => {
     if (err) {
       console.error('Error toggling completion:', err)
       return res
@@ -627,68 +666,109 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
           const completed = stats[0].completed || 0
           const stageProgress = Math.round((completed / total) * 100)
 
-          // 4. Update stage progress
-          db.query('UPDATE stage SET progress = ? WHERE stageId = ?', [stageProgress, stageId], () => {
-           // 5. Recalculate project progress = avg of all stage progresses
-            if (projectNumber) {
-              db.query(
-                'SELECT AVG(progress) as avgProgress FROM stage WHERE projectNumber = ? AND historyOf IS NULL',
-                [projectNumber],
-                (err, projStats) => {
-                  if (!err && projStats.length > 0) {
-                    const projectProgress = Math.round(projStats[0].avgProgress || 0)
+          // 4. Auto-compute stage executed dates from substages:
+          //    executedStartDate = MIN of substages' executedStartDate
+          //    executedEndDate = MAX of substages' executedEndDate (only if ALL substages completed)
+          const stageExecDateQuery = `
+            SELECT 
+              MIN(executedStartDate) as stageExecStart,
+              MAX(executedEndDate) as stageExecEnd,
+              COUNT(*) as totalSubs,
+              SUM(isCompleted) as completedSubs
+            FROM substage 
+            WHERE stageId = ? AND historyOf IS NULL
+          `
+          db.query(stageExecDateQuery, [stageId], (err, execStats) => {
+            const stageExecStart = execStats && execStats[0] && execStats[0].stageExecStart ? execStats[0].stageExecStart : null
+            const allSubsDone = execStats && execStats[0] && Number(execStats[0].totalSubs) === Number(execStats[0].completedSubs)
+            const stageExecEnd = allSubsDone && execStats[0].stageExecEnd ? execStats[0].stageExecEnd : null
 
-                    // 6. Auto-set projectStatus based on progress and endDate
-                    db.query('SELECT endDate, projectStatus FROM project WHERE projectNumber = ?', [projectNumber], (err, projRows) => {
-                      let newStatus = null
-                      if (!err && projRows.length > 0) {
-                        const currentStatus = projRows[0].projectStatus
-                        const endDate = projRows[0].endDate ? new Date(projRows[0].endDate) : null
-                        const today = new Date()
-                        today.setHours(0, 0, 0, 0)
+            // 5. Update stage progress + executed dates
+            db.query(
+              'UPDATE stage SET progress = ?, executedStartDate = ?, executedEndDate = ? WHERE stageId = ?',
+              [stageProgress, stageExecStart, stageExecEnd, stageId],
+              () => {
+                // 6. Recalculate project progress = avg of all stage progresses
+                if (projectNumber) {
+                  db.query(
+                    'SELECT AVG(progress) as avgProgress FROM stage WHERE projectNumber = ? AND historyOf IS NULL',
+                    [projectNumber],
+                    (err, projStats) => {
+                      if (!err && projStats.length > 0) {
+                        const projectProgress = Math.round(projStats[0].avgProgress || 0)
 
-                        if (projectProgress >= 100) {
-                          newStatus = 'Completed'
-                        } else if (endDate && today > endDate) {
-                          newStatus = 'Overdue'
-                        } else if (currentStatus === 'Completed' && projectProgress < 100) {
-                          // If it was Completed but substages were unchecked
-                          newStatus = 'In Progress'
-                        }
+                        // 7. Auto-compute project executed dates from stages
+                        const projExecDateQuery = `
+                          SELECT 
+                            MIN(executedStartDate) as projExecStart,
+                            MAX(executedEndDate) as projExecEnd,
+                            COUNT(*) as totalStages,
+                            SUM(CASE WHEN progress = 100 THEN 1 ELSE 0 END) as completedStages
+                          FROM stage 
+                          WHERE projectNumber = ? AND historyOf IS NULL
+                        `
+                        db.query(projExecDateQuery, [projectNumber], (err, projExecStats) => {
+                          const projExecStart = projExecStats && projExecStats[0] && projExecStats[0].projExecStart ? projExecStats[0].projExecStart : null
+                          const allStagesDone = projExecStats && projExecStats[0] && Number(projExecStats[0].totalStages) === Number(projExecStats[0].completedStages)
+                          const projExecEnd = allStagesDone && projExecStats[0].projExecEnd ? projExecStats[0].projExecEnd : null
+
+                          // 8. Auto-set projectStatus based on progress and endDate
+                          db.query('SELECT endDate, projectStatus FROM project WHERE projectNumber = ?', [projectNumber], (err, projRows) => {
+                            let newStatus = null
+                            if (!err && projRows.length > 0) {
+                              const currentStatus = projRows[0].projectStatus
+                              const endDate = projRows[0].endDate ? new Date(projRows[0].endDate) : null
+                              const today = new Date()
+                              today.setHours(0, 0, 0, 0)
+
+                              if (projectProgress >= 100) {
+                                newStatus = 'Completed'
+                              } else if (endDate && today > endDate) {
+                                newStatus = 'Overdue'
+                              } else if (currentStatus === 'Completed' && projectProgress < 100) {
+                                newStatus = 'In Progress'
+                              }
+                            }
+
+                            // Build dynamic UPDATE for project: progress + executed dates + optional status
+                            let projectUpdateSql = 'UPDATE project SET progress = ?, executedStartDate = ?, executedEndDate = ?'
+                            let projectUpdateParams = [projectProgress, projExecStart, projExecEnd]
+
+                            if (newStatus) {
+                              projectUpdateSql += ', projectStatus = ?'
+                              projectUpdateParams.push(newStatus)
+                            }
+                            projectUpdateSql += ' WHERE projectNumber = ?'
+                            projectUpdateParams.push(projectNumber)
+
+                            db.query(projectUpdateSql, projectUpdateParams, () => {
+                              res.status(200).json(
+                                new ApiResponse(200, {
+                                  substageId, isCompleted, stageProgress, projectProgress,
+                                  projectStatus: newStatus,
+                                  stageExecutedStartDate: stageExecStart,
+                                  stageExecutedEndDate: stageExecEnd,
+                                  projectExecutedStartDate: projExecStart,
+                                  projectExecutedEndDate: projExecEnd,
+                                }, 'Progress updated.')
+                              )
+                            })
+                          })
+                        })
+                      } else {
+                        res.status(200).json(
+                          new ApiResponse(200, { substageId, isCompleted, stageProgress }, 'Progress updated.')
+                        )
                       }
-
-                      const statusClause = newStatus
-                        ? ', projectStatus = ?'
-                        : ''
-                      const params = newStatus
-                        ? [projectProgress, newStatus, projectNumber]
-                        : [projectProgress, projectNumber]
-
-                      db.query(
-                        `UPDATE project SET progress = ?${statusClause} WHERE projectNumber = ?`,
-                        params,
-                        () => {
-                          res.status(200).json(
-                            new ApiResponse(200, {
-                              substageId, isCompleted, stageProgress, projectProgress,
-                              projectStatus: newStatus,
-                            }, 'Progress updated.')
-                          )
-                        }
-                      )
-                    })
-                  } else {
-                    res.status(200).json(
-                      new ApiResponse(200, { substageId, isCompleted, stageProgress }, 'Progress updated.')
-                    )
-                  }
+                    }
+                  )
+                } else {
+                  res.status(200).json(
+                    new ApiResponse(200, { substageId, isCompleted, stageProgress }, 'Progress updated.')
+                  )
                 }
-              )
-            } else {
-              res.status(200).json(
-                new ApiResponse(200, { substageId, isCompleted, stageProgress }, 'Progress updated.')
-              )
-            }
+              }
+            )
           })
         }
       )

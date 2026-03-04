@@ -205,7 +205,7 @@ const ProjectForm = ({ inputValues, setInputValues, action }) => {
         </div>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
-            label="Start date*"
+            label="Planned Start Date*"
             value={inputValues.startDate ? dayjs(inputValues.startDate) : null}
             onChange={(newValue) => {
               const formattedDate = newValue
@@ -220,7 +220,7 @@ const ProjectForm = ({ inputValues, setInputValues, action }) => {
             renderInput={(params) => <TextField {...params} required />}
           />
           <DatePicker
-            label="End date*"
+            label="Planned End Date*"
             value={inputValues.endDate ? dayjs(inputValues.endDate) : null}
             onChange={(newValue) => {
               const formattedDate = newValue

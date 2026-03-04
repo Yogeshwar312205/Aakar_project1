@@ -108,10 +108,10 @@ export const deleteSubStage = createAsyncThunk(
 
 export const toggleSubStageCompletion = createAsyncThunk(
   'substages/toggleCompletion',
-  async ({ substageId, isCompleted }) => {
+  async ({ substageId, isCompleted, executedStartDate, executedEndDate }) => {
     const response = await axios.put(
       `http://localhost:3000/api/subStages/${substageId}/completion`,
-      { isCompleted },
+      { isCompleted, executedStartDate, executedEndDate },
       { withCredentials: true }
     )
     return response.data.data

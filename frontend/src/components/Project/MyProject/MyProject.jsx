@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { FiArrowLeftCircle, FiEdit, FiClock } from 'react-icons/fi'
+import { FiArrowLeftCircle, FiEdit, FiClock, FiEdit2, FiCheck, FiX } from 'react-icons/fi'
 import { FaChartGantt } from 'react-icons/fa6'
 import { formatDate } from '../../common/functions/formatDate.js'
 import { useDispatch, useSelector } from 'react-redux'
@@ -16,9 +16,23 @@ import {
   fetchActiveStagesByProjectNumber,
   resetStageState,
 } from '../../../features/stageSlice.js'
+import { updateStageProgress } from '../../../features/stageSlice.js'
 import './MyProject.css'
 import { BASE_URL } from '../../../constants.js'
 import { ProjectHistory } from '../ProjectHistory/index.js'
+import { toast } from 'react-toastify'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+} from '@mui/material'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
 
 const MyProject = () => {
   const employeeAccess = useSelector(
@@ -29,11 +43,17 @@ const MyProject = () => {
   const pNo = params.id
   const dispatch = useDispatch()
 
-  const { project = {}, projectHistory = [], loading } = useSelector((state) => state.projects)
+  const { project = {}, projectHistory = {}, loading } = useSelector((state) => state.projects)
   const { activeStages = [] } = useSelector((state) => state.stages)
   const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState('stages')
+  const [editingStageId, setEditingStageId] = useState(null)
+  const [stageProgressValue, setStageProgressValue] = useState(0)
+  const [stageDateDialogOpen, setStageDateDialogOpen] = useState(false)
+  const [stageDateDialogStageId, setStageDateDialogStageId] = useState(null)
+  const [stageExecStartDate, setStageExecStartDate] = useState(null)
+  const [stageExecEndDate, setStageExecEndDate] = useState(null)
 
   useEffect(() => {
     dispatch(fetchProjectById(pNo))
@@ -48,6 +68,77 @@ const MyProject = () => {
   const handleRefreshHistory = useCallback(() => {
     dispatch(fetchProjectHistory(pNo))
   }, [dispatch, pNo])
+
+  const handleStageProgressEditStart = (e, stageId, currentProgress) => {
+    e.stopPropagation()
+    setEditingStageId(stageId)
+    setStageProgressValue(currentProgress || 0)
+  }
+
+  const handleStageProgressSave = async (e, stageId) => {
+    e.stopPropagation()
+    const val = Math.max(0, Math.min(100, Math.round(Number(stageProgressValue))))
+    setEditingStageId(null)
+
+    if (val >= 100) {
+      // Show executed dates dialog before saving 100%
+      setStageDateDialogStageId(stageId)
+      setStageExecStartDate(dayjs())
+      setStageExecEndDate(dayjs())
+      setStageDateDialogOpen(true)
+      return
+    }
+
+    try {
+      await dispatch(updateStageProgress({ stageId, progress: val })).unwrap()
+      toast.success(`Stage progress updated to ${val}%`)
+      dispatch(fetchActiveStagesByProjectNumber(pNo))
+      dispatch(fetchProjectById(pNo))
+    } catch (err) {
+      const msg = err?.message || 'Failed to update stage progress'
+      toast.error(msg)
+    }
+  }
+
+  const handleStageDateDialogConfirm = async () => {
+    const formattedStart = stageExecStartDate ? dayjs(stageExecStartDate).format('YYYY-MM-DD') : null
+    const formattedEnd = stageExecEndDate ? dayjs(stageExecEndDate).format('YYYY-MM-DD') : null
+    setStageDateDialogOpen(false)
+    try {
+      await dispatch(updateStageProgress({
+        stageId: stageDateDialogStageId,
+        progress: 100,
+        executedStartDate: formattedStart,
+        executedEndDate: formattedEnd,
+      })).unwrap()
+      toast.success('Stage progress updated to 100%')
+      dispatch(fetchActiveStagesByProjectNumber(pNo))
+      dispatch(fetchProjectById(pNo))
+    } catch (err) {
+      const msg = err?.message || 'Failed to update stage progress'
+      toast.error(msg)
+    }
+  }
+
+  const handleStageDateDialogCancel = () => {
+    setStageDateDialogOpen(false)
+    setStageExecStartDate(null)
+    setStageExecEndDate(null)
+  }
+
+  const handleStageProgressCancel = (e) => {
+    e.stopPropagation()
+    setEditingStageId(null)
+    setStageProgressValue(0)
+  }
+
+  const handleStageProgressKeyDown = (e, stageId) => {
+    if (e.key === 'Enter') {
+      handleStageProgressSave(e, stageId)
+    } else if (e.key === 'Escape') {
+      handleStageProgressCancel(e)
+    }
+  }
 
   const {
     projectNumber,
@@ -263,7 +354,7 @@ const MyProject = () => {
               }}
             >
               <FiClock style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-              History ({projectHistory.length})
+              History ({(projectHistory.stages || []).length} stages)
             </button>
           </div>
 
@@ -273,10 +364,15 @@ const MyProject = () => {
               {activeStages.length > 0 ? (
                 activeStages.map((stage, index) => {
                   const stageProgress = stage.progress || 0
+                  const isEditing = editingStageId === stage.stageId
                   return (
                     <div
                       key={stage.stageId}
-                      onClick={() => navigate(`/myProject/${pNo}/myStage/${stage.stageId}`)}
+                      onClick={() => {
+                        if (!isEditing) {
+                          navigate(`/myProject/${pNo}/myStage/${stage.stageId}`)
+                        }
+                      }}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -286,7 +382,7 @@ const MyProject = () => {
                         background: stageProgress >= 100 ? '#f0fdf4' : '#f8f9fa',
                         border: `1px solid ${stageProgress >= 100 ? '#86efac' : '#e5e7eb'}`,
                         borderRadius: '10px',
-                        cursor: 'pointer',
+                        cursor: isEditing ? 'default' : 'pointer',
                         transition: 'box-shadow 0.2s',
                       }}
                       onMouseEnter={(e) => {
@@ -327,20 +423,100 @@ const MyProject = () => {
                         )}
                       </div>
                       <div style={{ textAlign: 'right', minWidth: '80px' }}>
-                        <div
-                          style={{
-                            fontSize: '20px',
-                            fontWeight: 700,
-                            color: stageProgress >= 100 ? '#16a34a' : '#0061A1',
-                          }}
-                        >
-                          {stageProgress}%
-                        </div>
-                        <LinearProgress
-                          determinate
-                          value={stageProgress}
-                          sx={{ width: '80px', height: '6px', borderRadius: '3px' }}
-                        />
+                        {isEditing ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={stageProgressValue}
+                              onChange={(e) => setStageProgressValue(e.target.value)}
+                              onKeyDown={(e) => handleStageProgressKeyDown(e, stage.stageId)}
+                              autoFocus
+                              style={{
+                                width: '55px',
+                                padding: '4px 6px',
+                                fontSize: '16px',
+                                fontWeight: 700,
+                                border: '2px solid #0061A1',
+                                borderRadius: '6px',
+                                textAlign: 'center',
+                                outline: 'none',
+                              }}
+                            />
+                            <span style={{ fontSize: '16px', fontWeight: 700 }}>%</span>
+                            <button
+                              onClick={(e) => handleStageProgressSave(e, stage.stageId)}
+                              style={{
+                                background: '#16a34a',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '4px 6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                              }}
+                              title="Save"
+                            >
+                              <FiCheck size={16} />
+                            </button>
+                            <button
+                              onClick={handleStageProgressCancel}
+                              style={{
+                                background: '#e5e7eb',
+                                color: '#374151',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '4px 6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                              }}
+                              title="Cancel"
+                            >
+                              <FiX size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                              <span
+                                style={{
+                                  fontSize: '20px',
+                                  fontWeight: 700,
+                                  color: stageProgress >= 100 ? '#16a34a' : '#0061A1',
+                                }}
+                              >
+                                {stageProgress}%
+                              </span>
+                              <button
+                                onClick={(e) => handleStageProgressEditStart(e, stage.stageId, stageProgress)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#6c757d',
+                                  padding: '2px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  borderRadius: '4px',
+                                  transition: 'color 0.2s',
+                                }}
+                                title="Edit progress"
+                                onMouseEnter={(e) => { e.currentTarget.style.color = '#0061A1' }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = '#6c757d' }}
+                              >
+                                <FiEdit2 size={14} />
+                              </button>
+                            </div>
+                            <LinearProgress
+                              determinate
+                              value={stageProgress}
+                              sx={{ width: '80px', height: '6px', borderRadius: '3px' }}
+                            />
+                          </>
+                        )}
                       </div>
                     </div>
                   )
@@ -363,8 +539,52 @@ const MyProject = () => {
           )}
         </div>
       </div>
+
+      {/* Executed Date Dialog for Stage Progress 100% */}
+      <Dialog open={stageDateDialogOpen} onClose={handleStageDateDialogCancel} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, color: '#0061A1' }}>
+          Enter Executed Dates
+        </DialogTitle>
+        <DialogContent>
+          <p style={{ fontSize: '14px', color: '#6c757d', marginBottom: '16px' }}>
+            Stage progress is being set to <strong>100%</strong>. Please enter the actual start and end dates.
+          </p>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+              <DatePicker
+                label="Executed Start Date*"
+                value={stageExecStartDate}
+                onChange={(val) => setStageExecStartDate(val)}
+                sx={{ flex: 1 }}
+                renderInput={(params) => <TextField {...params} fullWidth required />}
+              />
+              <DatePicker
+                label="Executed End Date*"
+                value={stageExecEndDate}
+                onChange={(val) => setStageExecEndDate(val)}
+                sx={{ flex: 1 }}
+                renderInput={(params) => <TextField {...params} fullWidth required />}
+              />
+            </div>
+          </LocalizationProvider>
+        </DialogContent>
+        <DialogActions sx={{ padding: '16px' }}>
+          <Button onClick={handleStageDateDialogCancel} sx={{ color: '#6c757d' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleStageDateDialogConfirm}
+            variant="contained"
+            disabled={!stageExecStartDate || !stageExecEndDate}
+            sx={{ backgroundColor: '#0061A1', '&:hover': { backgroundColor: '#004d80' } }}
+          >
+            Complete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </section>
   )
 }
 
 export default MyProject
+

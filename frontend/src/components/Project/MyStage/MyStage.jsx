@@ -14,6 +14,7 @@ import {
   getActiveSubStagesByStageId,
   resetSubstageState,
   toggleSubStageCompletion,
+  updateSubStageProgress,
 } from '../../../features/subStageSlice.js'
 import LinearProgress from '@mui/joy/LinearProgress'
 import { formatDate } from '../../common/functions/formatDate.js'
@@ -74,6 +75,17 @@ const MyStage = () => {
       dispatch(fetchSingleStageById(sNo))
     } catch (err) {
       toast.error('Failed to update completion status')
+    }
+  }
+
+  const handleProgressEdit = async (substageId, progress, executedStartDate, executedEndDate) => {
+    try {
+      await dispatch(updateSubStageProgress({ substageId, progress, executedStartDate, executedEndDate })).unwrap()
+      toast.success(`Progress updated to ${progress}%`)
+      dispatch(getActiveSubStagesByStageId(sNo))
+      dispatch(fetchSingleStageById(sNo))
+    } catch (err) {
+      toast.error('Failed to update progress')
     }
   }
 
@@ -195,6 +207,7 @@ const MyStage = () => {
                   onAddChild={null}
                   onDelete={null}
                   onToggleComplete={handleToggleComplete}
+                  onProgressEdit={handleProgressEdit}
                   stageId={sNo}
                   projectNumber={pNo}
                   employeeAccess={false}

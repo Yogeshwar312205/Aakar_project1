@@ -149,7 +149,7 @@ const initialState = {
   historyProjects: [],
   activeProjects: [],
   project: {},
-  projectHistory: [],
+  projectHistory: {},
   status: 'idle',
   error: null,
   loading: false,
@@ -294,11 +294,11 @@ const projectsSlice = createSlice({
       })
       .addCase(fetchProjectHistory.fulfilled, (state, action) => {
         state.loading = false
-        state.projectHistory = action.payload.data || []
+        state.projectHistory = action.payload.data || {}
       })
       .addCase(fetchProjectHistory.rejected, (state, action) => {
         state.loading = false
-        state.projectHistory = []
+        state.projectHistory = {}
         state.error = action.error.message
       })
   },

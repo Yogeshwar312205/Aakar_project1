@@ -9,6 +9,7 @@ import {
   updateStage,
   getHistoryStagesByStageId,
   getActiveStagesByProjectNumber,
+  updateStageProgress,
 } from '../controllers/stage.controller.js'
 import { authMiddleware } from '../middleware/authMiddleware.js'
 
@@ -24,5 +25,6 @@ router.get('/activeStages/:id', getActiveStagesByProjectNumber) //tested
 router.post('/stages', authMiddleware, createStage) //tested
 router.delete('/stages/:id', deleteStage) //tested
 router.put('/stages/:id', authMiddleware, updateStage) //tested
+router.put('/stages/:id/progress', updateStageProgress) // Edit progress manually
 
 export default router

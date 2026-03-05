@@ -646,148 +646,75 @@ export const updateProject = asyncHandler(async (req, res) => {
 export const getProjectHistory = asyncHandler(async (req, res) => {
   const projectNumber = req.params.id
 
-  // Get project creation info
-  const projectCreationQuery = `
-    SELECT 
-      'project' as type,
-      p.projectNumber as itemId,
-      CONCAT(p.companyName, ' - ', p.dieName) as itemName,
-      'Project created' as updateReason,
-      p.timestamp,
-      p.timestamp as createdAt,
-      p.progress,
-      p.startDate,
-      p.endDate,
-      p.executedStartDate,
-      p.executedEndDate,
-      p.projectStatus as status,
-      p.projectType,
-      p.companyName,
-      p.dieName,
-      p.dieNumber,
-      e.employeeName as updatedBy,
-      e.employeeName as createdBy,
-      NULL as ownerName,
-      NULL as machine,
-      NULL as duration,
-      NULL as historyOf,
-      'created' as action,
-      NULL as parentStageName
+  // Get current project
+  const projectQuery = `
+    SELECT p.*, e.employeeName as projectCreatedByName
     FROM project p
     LEFT JOIN employee e ON p.projectCreatedBy = e.employeeId
     WHERE p.projectNumber = ? AND p.historyOf IS NULL
   `
 
-  // Get project version history
+  // Get project history versions
   const projectHistoryQuery = `
-    SELECT 
-      'project' as type,
-      p.projectNumber as itemId,
-      CONCAT(p.companyName, ' - ', p.dieName) as itemName,
-      p.updateReason,
-      p.timestamp,
-      p.timestamp as createdAt,
-      p.progress,
-      p.startDate,
-      p.endDate,
-      p.executedStartDate,
-      p.executedEndDate,
-      p.projectStatus as status,
-      p.projectType,
-      p.companyName,
-      p.dieName,
-      p.dieNumber,
-      e.employeeName as updatedBy,
-      e.employeeName as createdBy,
-      NULL as ownerName,
-      NULL as machine,
-      NULL as duration,
-      p.historyOf,
-      'updated' as action,
-      NULL as parentStageName
+    SELECT p.*, e.employeeName as projectCreatedByName
     FROM project p
     LEFT JOIN employee e ON p.projectCreatedBy = e.employeeId
     WHERE p.historyOf = ?
+    ORDER BY p.timestamp DESC
   `
 
-  // Get ALL stages (both current and historical)
-  const stageQuery = `
-    SELECT 
-      'stage' as type,
-      s.stageId as itemId,
-      s.stageName as itemName,
-      s.updateReason,
-      s.timestamp,
-      s.timestamp as createdAt,
-      s.progress,
-      s.startDate,
-      s.endDate,
-      s.executedStartDate,
-      s.executedEndDate,
-      NULL as status,
-      NULL as projectType,
-      NULL as companyName,
-      NULL as dieName,
-      NULL as dieNumber,
-      creator.employeeName as updatedBy,
-      creator.employeeName as createdBy,
-      owner.employeeName as ownerName,
-      s.machine,
-      s.duration,
-      s.historyOf,
-      CASE 
-        WHEN s.progress >= 100 THEN 'completed'
-        WHEN s.historyOf IS NOT NULL THEN 'updated'
-        ELSE 'created'
-      END as action,
-      NULL as parentStageName
+  // Get active stages for this project
+  const activeStagesQuery = `
+    SELECT s.*, 
+      eo.employeeName AS ownerName, 
+      cb.employeeName AS createdByName
     FROM stage s
-    LEFT JOIN employee creator ON s.createdBy = creator.employeeId
-    LEFT JOIN employee owner ON s.owner = owner.employeeId
-    WHERE s.projectNumber = ?
+    LEFT JOIN employee eo ON s.owner = eo.employeeId
+    LEFT JOIN employee cb ON s.createdBy = cb.employeeId
+    WHERE s.projectNumber = ? AND s.historyOf IS NULL
+    ORDER BY s.seqPrevStage ASC
+  `
+
+  // Get all stage history records for this project
+  const stageHistoryQuery = `
+    SELECT s.*, 
+      eo.employeeName AS ownerName, 
+      cb.employeeName AS createdByName
+    FROM stage s
+    LEFT JOIN employee eo ON s.owner = eo.employeeId
+    LEFT JOIN employee cb ON s.createdBy = cb.employeeId
+    WHERE s.projectNumber = ? AND s.historyOf IS NOT NULL
     ORDER BY s.timestamp DESC
   `
 
-  // Get ALL substages (both current and historical)
-  const substageQuery = `
-    SELECT 
-      'substage' as type,
-      ss.substageId as itemId,
-      ss.substageName as itemName,
-      ss.updateReason,
-      ss.timestamp,
-      ss.timestamp as createdAt,
-      ss.progress,
-      ss.startDate,
-      ss.endDate,
-      ss.executedStartDate,
-      ss.executedEndDate,
-      NULL as status,
-      NULL as projectType,
-      NULL as companyName,
-      NULL as dieName,
-      NULL as dieNumber,
-      creator.employeeName as updatedBy,
-      creator.employeeName as createdBy,
-      owner.employeeName as ownerName,
-      ss.machine,
-      ss.duration,
-      ss.historyOf,
-      CASE 
-        WHEN ss.progress >= 100 THEN 'completed'
-        WHEN ss.historyOf IS NOT NULL THEN 'updated'
-        ELSE 'created'
-      END as action,
-      st.stageName as parentStageName
+  // Get all active substages for this project
+  const activeSubstagesQuery = `
+    SELECT ss.*, 
+      eo.employeeName AS ownerName, 
+      cb.employeeName AS createdByName,
+      st.stageName AS parentStageName
     FROM substage ss
-    LEFT JOIN employee creator ON ss.createdBy = creator.employeeId
-    LEFT JOIN employee owner ON ss.owner = owner.employeeId
-    LEFT JOIN stage st ON ss.stageId = st.stageId
-    WHERE ss.projectNumber = ?
+    LEFT JOIN employee eo ON ss.owner = eo.employeeId
+    LEFT JOIN employee cb ON ss.createdBy = cb.employeeId
+    LEFT JOIN stage st ON ss.stageId = st.stageId AND st.historyOf IS NULL
+    WHERE ss.projectNumber = ? AND ss.historyOf IS NULL
+    ORDER BY ss.seqPrevStage ASC
+  `
+
+  // Get all substage history records for this project
+  const substageHistoryQuery = `
+    SELECT ss.*, 
+      eo.employeeName AS ownerName, 
+      cb.employeeName AS createdByName,
+      st.stageName AS parentStageName
+    FROM substage ss
+    LEFT JOIN employee eo ON ss.owner = eo.employeeId
+    LEFT JOIN employee cb ON ss.createdBy = cb.employeeId
+    LEFT JOIN stage st ON ss.stageId = st.stageId AND st.historyOf IS NULL
+    WHERE ss.projectNumber = ? AND ss.historyOf IS NOT NULL
     ORDER BY ss.timestamp DESC
   `
 
-  // Execute all queries
   const executeQuery = (query, params) => {
     return new Promise((resolve, reject) => {
       db.query(query, params, (err, data) => {
@@ -797,38 +724,63 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
     })
   }
 
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-CA') : null
+
+  const formatRecord = (record) => ({
+    ...record,
+    startDate: formatDate(record.startDate),
+    endDate: formatDate(record.endDate),
+    executedStartDate: formatDate(record.executedStartDate),
+    executedEndDate: formatDate(record.executedEndDate),
+    timestamp: record.timestamp ? new Date(record.timestamp).toISOString() : null,
+  })
+
   try {
-    const [projectCreation, projectHistory, stages, substages] = await Promise.all([
-      executeQuery(projectCreationQuery, [projectNumber]),
+    const [projectData, projectHistory, activeStages, stageHistory, activeSubstages, substageHistory] = await Promise.all([
+      executeQuery(projectQuery, [projectNumber]),
       executeQuery(projectHistoryQuery, [projectNumber]),
-      executeQuery(stageQuery, [projectNumber]),
-      executeQuery(substageQuery, [projectNumber]),
+      executeQuery(activeStagesQuery, [projectNumber]),
+      executeQuery(stageHistoryQuery, [projectNumber]),
+      executeQuery(activeSubstagesQuery, [projectNumber]),
+      executeQuery(substageHistoryQuery, [projectNumber]),
     ])
 
-    // Combine all history entries
-    let allHistory = [
-      ...projectCreation,
-      ...projectHistory,
-      ...stages,
-      ...substages,
-    ]
+    // Build tree: substages nested under their parent substage or stage
+    const buildSubstageTree = (stageId) => {
+      const stageSubstages = activeSubstages.filter(ss => ss.stageId === stageId)
 
-    // Format dates and sort by timestamp (newest first)
-    allHistory = allHistory
-      .map((item) => ({
-        ...item,
-        startDate: item.startDate ? new Date(item.startDate).toLocaleDateString('en-CA') : null,
-        endDate: item.endDate ? new Date(item.endDate).toLocaleDateString('en-CA') : null,
-        executedStartDate: item.executedStartDate ? new Date(item.executedStartDate).toLocaleDateString('en-CA') : null,
-        executedEndDate: item.executedEndDate ? new Date(item.executedEndDate).toLocaleDateString('en-CA') : null,
-        createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : null,
-      }))
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 200) // Limit to 200 entries
+      const buildChildren = (parentId) => {
+        return stageSubstages
+          .filter(ss => (ss.parentSubstageId || null) === parentId)
+          .map(ss => ({
+            ...formatRecord(ss),
+            history: substageHistory
+              .filter(h => h.historyOf === ss.substageId)
+              .map(formatRecord),
+            children: buildChildren(ss.substageId),
+          }))
+      }
 
-    res.status(200).json(new ApiResponse(200, allHistory, 'Project history retrieved.'))
+      return buildChildren(null)
+    }
+
+    const tree = {
+      project: {
+        ...formatRecord(projectData[0] || {}),
+        history: projectHistory.map(formatRecord),
+      },
+      stages: activeStages.map(stage => ({
+        ...formatRecord(stage),
+        history: stageHistory
+          .filter(h => h.historyOf === stage.stageId)
+          .map(formatRecord),
+        substages: buildSubstageTree(stage.stageId),
+      })),
+    }
+
+    res.status(200).json(new ApiResponse(200, tree, 'Project tree history retrieved.'))
   } catch (err) {
-    console.error('Error fetching project history:', err)
+    console.error('Error fetching project tree history:', err)
     return res.status(500).send(new ApiError(500, 'Error fetching history'))
   }
 })

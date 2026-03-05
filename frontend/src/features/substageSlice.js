@@ -118,6 +118,18 @@ export const toggleSubStageCompletion = createAsyncThunk(
   }
 )
 
+export const updateSubStageProgress = createAsyncThunk(
+  'substages/updateProgress',
+  async ({ substageId, progress, executedStartDate, executedEndDate }) => {
+    const response = await axios.put(
+      `http://localhost:3000/api/subStages/${substageId}/progress`,
+      { progress, executedStartDate, executedEndDate },
+      { withCredentials: true }
+    )
+    return response.data.data
+  }
+)
+
 const substageSlice = createSlice({
   name: 'substages',
   initialState: initialSubStageState,

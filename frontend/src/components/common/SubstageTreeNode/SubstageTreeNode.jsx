@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FiChevronDown, FiChevronRight, FiPlusCircle } from 'react-icons/fi'
+import { FiChevronDown, FiChevronRight, FiPlusCircle, FiEdit2, FiCheck, FiX } from 'react-icons/fi'
 import { RiDeleteBinLine } from 'react-icons/ri'
 import { useNavigate } from 'react-router-dom'
 import LinearProgress from '@mui/joy/LinearProgress'
@@ -54,6 +54,7 @@ const SubstageTreeNode = ({
   onAddChild,
   onDelete,
   onToggleComplete,
+  onProgressEdit,
   stageId,
   projectNumber,
   employeeAccess,
@@ -62,6 +63,9 @@ const SubstageTreeNode = ({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [executedStartDate, setExecutedStartDate] = useState(null)
   const [executedEndDate, setExecutedEndDate] = useState(null)
+  const [editingProgress, setEditingProgress] = useState(false)
+  const [progressValue, setProgressValue] = useState(node.progress || 0)
+  const [dialogSource, setDialogSource] = useState('checkbox') // 'checkbox' or 'progressEdit'
   const hasChildren = node.children && node.children.length > 0
   const navigate = useNavigate()
   const isCompleted = !!node.isCompleted
@@ -76,6 +80,7 @@ const SubstageTreeNode = ({
       // Opening: show dialog to get executed dates
       setExecutedStartDate(dayjs())
       setExecutedEndDate(dayjs())
+      setDialogSource('checkbox')
       setDialogOpen(true)
     } else {
       // Unchecking: clear executed dates
@@ -91,7 +96,13 @@ const SubstageTreeNode = ({
       ? dayjs(executedEndDate).format('YYYY-MM-DD')
       : null
     setDialogOpen(false)
-    onToggleComplete && onToggleComplete(node.substageId, true, formattedStart, formattedEnd)
+
+    if (dialogSource === 'checkbox') {
+      onToggleComplete && onToggleComplete(node.substageId, true, formattedStart, formattedEnd)
+    } else if (dialogSource === 'progressEdit') {
+      // Progress edit to 100% — call onProgressEdit with executed dates
+      onProgressEdit && onProgressEdit(node.substageId, 100, formattedStart, formattedEnd)
+    }
   }
 
   const handleDialogCancel = () => {
@@ -99,6 +110,50 @@ const SubstageTreeNode = ({
     setExecutedStartDate(null)
     setExecutedEndDate(null)
   }
+
+  const handleProgressEditStart = (e) => {
+    e.stopPropagation()
+    setProgressValue(node.progress || 0)
+    setEditingProgress(true)
+  }
+
+  const handleProgressSave = (e) => {
+    e.stopPropagation()
+    const val = Math.max(0, Math.min(100, Math.round(Number(progressValue))))
+    setEditingProgress(false)
+
+    if (val >= 100) {
+      // Block 100% if children aren't all completed
+      if (hasChildren && !areAllChildrenCompleted(node)) {
+        return
+      }
+      // Show executed dates dialog before saving 100%
+      setExecutedStartDate(dayjs())
+      setExecutedEndDate(dayjs())
+      setDialogSource('progressEdit')
+      setDialogOpen(true)
+      return
+    }
+
+    if (onProgressEdit && val !== (node.progress || 0)) {
+      onProgressEdit(node.substageId, val)
+    }
+  }
+
+  const handleProgressCancel = (e) => {
+    e.stopPropagation()
+    setEditingProgress(false)
+    setProgressValue(node.progress || 0)
+  }
+
+  const handleProgressKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleProgressSave(e)
+    } else if (e.key === 'Escape') {
+      handleProgressCancel(e)
+    }
+  }
+
 
   return (
     <div className="substage-tree-node" style={{ marginLeft: `${depth * 28}px` }}>
@@ -159,7 +214,87 @@ const SubstageTreeNode = ({
               value={node.progress || 0}
               sx={{ width: '100px', height: '6px' }}
             />
-            <span className="tree-node-progress-text">{node.progress || 0}%</span>
+            {editingProgress ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={progressValue}
+                  onChange={(e) => setProgressValue(e.target.value)}
+                  onKeyDown={handleProgressKeyDown}
+                  autoFocus
+                  style={{
+                    width: '55px',
+                    padding: '2px 6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    border: '2px solid #0061A1',
+                    borderRadius: '6px',
+                    textAlign: 'center',
+                    outline: 'none',
+                  }}
+                />
+                <span style={{ fontSize: '13px', fontWeight: 700 }}>%</span>
+                <button
+                  onClick={handleProgressSave}
+                  style={{
+                    background: '#16a34a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '2px 4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Save"
+                >
+                  <FiCheck size={14} />
+                </button>
+                <button
+                  onClick={handleProgressCancel}
+                  style={{
+                    background: '#e5e7eb',
+                    color: '#374151',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '2px 4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Cancel"
+                >
+                  <FiX size={14} />
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="tree-node-progress-text">{node.progress || 0}%</span>
+                {onProgressEdit && (
+                  <button
+                    onClick={handleProgressEditStart}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#6c757d',
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderRadius: '4px',
+                      transition: 'color 0.2s',
+                    }}
+                    title="Edit progress"
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#0061A1' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = '#6c757d' }}
+                  >
+                    <FiEdit2 size={13} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Completion status badge */}
@@ -214,6 +349,7 @@ const SubstageTreeNode = ({
               onAddChild={onAddChild}
               onDelete={onDelete}
               onToggleComplete={onToggleComplete}
+              onProgressEdit={onProgressEdit}
               stageId={stageId}
               projectNumber={projectNumber}
               employeeAccess={employeeAccess}
@@ -269,3 +405,4 @@ const SubstageTreeNode = ({
 }
 
 export default SubstageTreeNode
+

@@ -97,6 +97,18 @@ export const updateStage = createAsyncThunk('stages/updateStage', async (s) => {
   return response.data.data
 })
 
+export const updateStageProgress = createAsyncThunk(
+  'stages/updateProgress',
+  async ({ stageId, progress, executedStartDate, executedEndDate }) => {
+    const response = await axios.put(
+      `http://localhost:3000/api/stages/${stageId}/progress`,
+      { progress, executedStartDate, executedEndDate },
+      { withCredentials: true }
+    )
+    return response.data.data
+  }
+)
+
 const stageSlice = createSlice({
   name: 'Stages',
   initialState: initialStageState,

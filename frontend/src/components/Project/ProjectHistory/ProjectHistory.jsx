@@ -1,116 +1,105 @@
 import React, { useState, useMemo, useCallback } from 'react'
-import { FiClock, FiRefreshCw } from 'react-icons/fi'
-import HistoryItem from './HistoryItem.jsx'
-import HistoryFilters from './HistoryFilters.jsx'
+import { FiClock, FiRefreshCw, FiSearch, FiX, FiDownload } from 'react-icons/fi'
+import TreeNode from './TreeNode.jsx'
 import './ProjectHistory.css'
 
-const ProjectHistory = ({ history = [], onRefresh, loading = false }) => {
+const ProjectHistory = ({ history = {}, onRefresh, loading = false }) => {
   const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [dateRange, setDateRange] = useState({ start: '', end: '' })
+  const [expandAll, setExpandAll] = useState(false)
 
-  // Filter and search history
-  const filteredHistory = useMemo(() => {
-    let filtered = [...history]
+  const { project = {}, stages = [] } = history
 
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter((entry) => entry.type === typeFilter)
-    }
-
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      filtered = filtered.filter(
-        (entry) =>
-          entry.itemName?.toLowerCase().includes(searchLower) ||
-          entry.updateReason?.toLowerCase().includes(searchLower) ||
-          entry.updatedBy?.toLowerCase().includes(searchLower)
-      )
-    }
-
-    // Date range filter
-    if (dateRange.start) {
-      const startDate = new Date(dateRange.start)
-      filtered = filtered.filter(
-        (entry) => new Date(entry.timestamp) >= startDate
-      )
-    }
-    if (dateRange.end) {
-      const endDate = new Date(dateRange.end)
-      endDate.setHours(23, 59, 59)
-      filtered = filtered.filter(
-        (entry) => new Date(entry.timestamp) <= endDate
-      )
-    }
-
-    return filtered
-  }, [history, typeFilter, searchTerm, dateRange])
-
-  // Group history by date
-  const groupedHistory = useMemo(() => {
-    const groups = {}
-    const today = new Date().toDateString()
-    const yesterday = new Date(Date.now() - 86400000).toDateString()
-
-    filteredHistory.forEach((entry) => {
-      const entryDate = new Date(entry.timestamp).toDateString()
-      let groupKey
-
-      if (entryDate === today) {
-        groupKey = 'Today'
-      } else if (entryDate === yesterday) {
-        groupKey = 'Yesterday'
-      } else {
-        groupKey = new Date(entry.timestamp).toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
+  // Count total history entries
+  const totalHistoryCount = useMemo(() => {
+    let count = (project.history || []).length
+    stages.forEach((stage) => {
+      count += (stage.history || []).length
+      const countSubstages = (subs) => {
+        (subs || []).forEach((ss) => {
+          count += (ss.history || []).length
+          countSubstages(ss.children)
         })
       }
+      countSubstages(stage.substages)
+    })
+    return count
+  }, [project, stages])
 
-      if (!groups[groupKey]) {
-        groups[groupKey] = []
+  // Filter tree by search term
+  const matchesSearch = useCallback(
+    (node, type) => {
+      if (!searchTerm) return true
+      const s = searchTerm.toLowerCase()
+      const name =
+        type === 'project'
+          ? `${node.companyName || ''} ${node.dieName || ''}`
+          : type === 'stage'
+          ? node.stageName || ''
+          : node.substageName || node.stageName || ''
+      return (
+        name.toLowerCase().includes(s) ||
+        (node.ownerName || '').toLowerCase().includes(s) ||
+        (node.machine || '').toLowerCase().includes(s) ||
+        (node.updateReason || '').toLowerCase().includes(s)
+      )
+    },
+    [searchTerm]
+  )
+
+  const stageMatchesSearch = useCallback(
+    (stage) => {
+      if (matchesSearch(stage, 'stage')) return true
+      const checkSubs = (subs) =>
+        (subs || []).some(
+          (ss) => matchesSearch(ss, 'substage') || checkSubs(ss.children)
+        )
+      return checkSubs(stage.substages)
+    },
+    [matchesSearch]
+  )
+
+  const filteredStages = useMemo(() => {
+    if (!searchTerm) return stages
+    return stages.filter(stageMatchesSearch)
+  }, [stages, searchTerm, stageMatchesSearch])
+
+  // Export all data as CSV
+  const handleExport = useCallback(() => {
+    const rows = [
+      ['Level', 'Name', 'Owner', 'Machine', 'Duration', 'Progress', 'Planned Start', 'Planned End', 'Executed Start', 'Executed End', 'History Count'].join(',')
+    ]
+
+    // Project
+    rows.push(
+      ['Project', `"${project.companyName || ''} - ${project.dieName || ''}"`, '', '', '', project.progress || 0, project.startDate || '', project.endDate || '', project.executedStartDate || '', project.executedEndDate || '', (project.history || []).length].join(',')
+    )
+
+    stages.forEach((stage) => {
+      rows.push(
+        ['Stage', `"${stage.stageName || ''}"`, `"${stage.ownerName || ''}"`, `"${stage.machine || ''}"`, stage.duration || '', stage.progress || 0, stage.startDate || '', stage.endDate || '', stage.executedStartDate || '', stage.executedEndDate || '', (stage.history || []).length].join(',')
+      )
+      const exportSubs = (subs, depth) => {
+        (subs || []).forEach((ss) => {
+          const prefix = '  '.repeat(depth)
+          rows.push(
+            [`${prefix}Substage`, `"${ss.substageName || ss.stageName || ''}"`, `"${ss.ownerName || ''}"`, `"${ss.machine || ''}"`, ss.duration || '', ss.progress || 0, ss.startDate || '', ss.endDate || '', ss.executedStartDate || '', ss.executedEndDate || '', (ss.history || []).length].join(',')
+          )
+          exportSubs(ss.children, depth + 1)
+        })
       }
-      groups[groupKey].push(entry)
+      exportSubs(stage.substages, 1)
     })
 
-    return groups
-  }, [filteredHistory])
-
-  // Export functionality
-  const handleExport = useCallback(() => {
-    const csvContent = [
-      ['Type', 'Item Name', 'Owner', 'Created By', 'Machine', 'Duration', 'Progress', 'Start Date', 'End Date', 'Created At', 'Update Reason', 'Parent Stage'].join(','),
-      ...filteredHistory.map((entry) =>
-        [
-          entry.type,
-          `"${entry.itemName || ''}"`,
-          `"${entry.ownerName || ''}"`,
-          `"${entry.createdBy || ''}"`,
-          `"${entry.machine || ''}"`,
-          entry.duration || '',
-          entry.progress || 0,
-          entry.startDate || '',
-          entry.endDate || '',
-          entry.createdAt ? new Date(entry.createdAt).toISOString() : '',
-          `"${entry.updateReason || ''}"`,
-          `"${entry.parentStageName || ''}"`,
-        ].join(',')
-      ),
-    ].join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `project-history-${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `project-tree-history-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [filteredHistory])
+  }, [project, stages])
 
-  const dateGroups = Object.keys(groupedHistory)
+  const hasData = project.projectNumber || stages.length > 0
 
   return (
     <div className="project-history">
@@ -119,98 +108,142 @@ const ProjectHistory = ({ history = [], onRefresh, loading = false }) => {
         <div className="history-title">
           <FiClock size={20} />
           <h3>Project History</h3>
-          <span className="history-count">{history.length} entries</span>
+          <span className="history-count">{totalHistoryCount} changes</span>
         </div>
-        {onRefresh && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
-            className={`refresh-btn ${loading ? 'loading' : ''}`}
-            onClick={onRefresh}
-            disabled={loading}
+            className={`tree-toggle-btn ${expandAll ? 'active' : ''}`}
+            onClick={() => setExpandAll(!expandAll)}
           >
-            <FiRefreshCw size={16} className={loading ? 'spin' : ''} />
+            {expandAll ? 'Collapse All' : 'Expand All'}
+          </button>
+          <button className="export-btn" onClick={handleExport} title="Export CSV">
+            <FiDownload size={16} />
+          </button>
+          {onRefresh && (
+            <button
+              className={`refresh-btn ${loading ? 'loading' : ''}`}
+              onClick={onRefresh}
+              disabled={loading}
+            >
+              <FiRefreshCw size={16} className={loading ? 'spin' : ''} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="search-bar" style={{ marginBottom: '16px' }}>
+        <FiSearch className="search-icon" />
+        <input
+          type="text"
+          placeholder="Search stages, substages, owners, machines..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
+        />
+        {searchTerm && (
+          <button className="clear-search" onClick={() => setSearchTerm('')}>
+            <FiX size={14} />
           </button>
         )}
       </div>
 
-      {/* Filters */}
-      <HistoryFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        typeFilter={typeFilter}
-        setTypeFilter={setTypeFilter}
-        dateRange={dateRange}
-        setDateRange={setDateRange}
-        onExport={handleExport}
-        totalCount={history.length}
-        filteredCount={filteredHistory.length}
-      />
-
-      {/* Timeline */}
-      <div className="history-timeline">
+      {/* Tree */}
+      <div className="history-tree">
         {loading ? (
           <div className="history-loading">
             <div className="loading-spinner" />
             <p>Loading history...</p>
           </div>
-        ) : dateGroups.length > 0 ? (
-          dateGroups.map((dateGroup) => (
-            <div key={dateGroup} className="history-date-group">
-              <div className="date-group-header">
-                <div className="date-group-dot" />
-                <span className="date-group-label">{dateGroup}</span>
-              </div>
-              <div className="date-group-items">
-                {groupedHistory[dateGroup].map((entry, index) => (
-                  <HistoryItem
-                    key={`${entry.type}-${entry.itemId}-${index}`}
-                    entry={entry}
-                    isLast={
-                      dateGroup === dateGroups[dateGroups.length - 1] &&
-                      index === groupedHistory[dateGroup].length - 1
-                    }
-                  />
+        ) : hasData ? (
+          <>
+            {/* Project Node */}
+            {project.projectNumber && (
+              <TreeNode
+                type="project"
+                node={project}
+                expandAll={expandAll}
+                searchTerm={searchTerm}
+              >
+                {filteredStages.map((stage, idx) => (
+                  <TreeNode
+                    key={stage.stageId}
+                    type="stage"
+                    node={stage}
+                    isLast={idx === filteredStages.length - 1}
+                    expandAll={expandAll}
+                    searchTerm={searchTerm}
+                  >
+                    {(stage.substages || []).map((ss, ssIdx) => (
+                      <SubstageTree
+                        key={ss.substageId}
+                        substage={ss}
+                        isLast={ssIdx === (stage.substages || []).length - 1}
+                        expandAll={expandAll}
+                        searchTerm={searchTerm}
+                      />
+                    ))}
+                  </TreeNode>
                 ))}
-              </div>
-            </div>
-          ))
+              </TreeNode>
+            )}
+          </>
         ) : (
           <div className="history-empty">
             <FiClock size={48} />
             <h4>No History Found</h4>
-            {history.length > 0 ? (
-              <p>No entries match your current filters. Try adjusting your search criteria.</p>
-            ) : (
-              <p>Changes to stages and substages will appear here as your project progresses.</p>
-            )}
+            <p>Changes to the project, stages, and substages will appear here.</p>
           </div>
         )}
       </div>
 
-      {/* Summary Stats */}
-      {history.length > 0 && (
+      {/* Stats */}
+      {hasData && (
         <div className="history-stats">
           <div className="stat-item">
-            <span className="stat-value">
-              {history.filter((h) => h.type === 'stage').length}
-            </span>
-            <span className="stat-label">Stage Updates</span>
+            <span className="stat-value">{stages.length}</span>
+            <span className="stat-label">Stages</span>
           </div>
           <div className="stat-item">
             <span className="stat-value">
-              {history.filter((h) => h.type === 'substage').length}
+              {stages.reduce((acc, s) => {
+                const countSubs = (subs) =>
+                  (subs || []).reduce((a, ss) => a + 1 + countSubs(ss.children), 0)
+                return acc + countSubs(s.substages)
+              }, 0)}
             </span>
-            <span className="stat-label">Substage Updates</span>
+            <span className="stat-label">Substages</span>
           </div>
           <div className="stat-item">
-            <span className="stat-value">
-              {history.filter((h) => h.progress >= 100).length}
-            </span>
-            <span className="stat-label">Completed</span>
+            <span className="stat-value">{totalHistoryCount}</span>
+            <span className="stat-label">Total Changes</span>
           </div>
         </div>
       )}
     </div>
   )
 }
+
+// Recursive substage renderer
+const SubstageTree = ({ substage, isLast, expandAll, searchTerm }) => (
+  <TreeNode
+    type="substage"
+    node={substage}
+    isLast={isLast}
+    expandAll={expandAll}
+    searchTerm={searchTerm}
+  >
+    {(substage.children || []).map((child, idx) => (
+      <SubstageTree
+        key={child.substageId}
+        substage={child}
+        isLast={idx === (substage.children || []).length - 1}
+        expandAll={expandAll}
+        searchTerm={searchTerm}
+      />
+    ))}
+  </TreeNode>
+)
 
 export default ProjectHistory

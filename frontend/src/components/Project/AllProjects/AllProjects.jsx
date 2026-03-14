@@ -90,8 +90,8 @@ const AllProjects = () => {
     switch (selectedTab) {
       case 'overdue':
         return activeProjects.filter((op) => op.projectStatus === 'Overdue')
-      case 'pending':
-        return activeProjects.filter((op) => op.projectStatus === 'Pending')
+      case 'ongoing':
+        return activeProjects.filter((op) => op.projectStatus === 'Ongoing')
       case 'completed':
         return activeProjects.filter((op) => op.projectStatus === 'Completed')
       case 'activities':
@@ -114,7 +114,7 @@ const AllProjects = () => {
       all: activeProjects.length,
       overdue: activeProjects.filter((op) => op.projectStatus === 'Overdue')
         .length,
-      pending: activeProjects.filter((op) => op.projectStatus === 'Pending')
+      ongoing: activeProjects.filter((op) => op.projectStatus === 'Ongoing')
         .length,
       completed: activeProjects.filter((op) => op.projectStatus === 'Completed')
         .length,
@@ -150,13 +150,13 @@ const AllProjects = () => {
               }`}
             />
           </div>
-          <div onClick={() => handleTabClick('pending')}>
+          <div onClick={() => handleTabClick('ongoing')}>
             <Infocard
               icon={'<FiAlertCircle />'}
-              number={counts.pending}
-              text={'Pending'}
+              number={counts.ongoing}
+              text={'Ongoing'}
               className={`infoCard ${
-                selectedTab === 'pending' ? 'selected' : ''
+                selectedTab === 'ongoing' ? 'selected' : ''
               }`}
             />
           </div>
@@ -261,6 +261,7 @@ const AllProjects = () => {
           columns={selectedTab == 'activities' ? activityColumns : columns}
           linkBasePath={'/myProject'}
           optionLinkBasePath={'/updateProject'}
+          activeFilter={selectedTab}
         />
       )}
     </div>

@@ -82,7 +82,7 @@
   padding: 4px;
   width: fit-content;
 }
-.pending {
+.ongoing {
   background-color: rgba(242, 255, 0, 0.4);
   color: rgb(63, 62, 0);
   border-radius: 5px;

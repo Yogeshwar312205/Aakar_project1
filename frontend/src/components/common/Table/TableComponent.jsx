@@ -52,6 +52,7 @@ const TableComponent = ({
   columns,
   linkBasePath,
   optionLinkBasePath,
+  activeFilter,
 }) => {
   const { user } = useSelector((state) => state.auth)
   console.log({ user: user })
@@ -93,10 +94,18 @@ const TableComponent = ({
     setAnchorEl(null)
   }
   const exportToExcel = (rows) => {
-    const worksheet = XLSX.utils.json_to_sheet(rows)
+    const exportData = rows.map((row) => {
+      const mappedRow = {}
+      columns.forEach((col) => {
+        mappedRow[col.label] = row[col.id]
+      })
+      return mappedRow
+    })
+    const worksheet = XLSX.utils.json_to_sheet(exportData)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data')
-    XLSX.writeFile(workbook, 'data.xlsx')
+    const fileName = `${whose || 'data'}${activeFilter && activeFilter !== 'all' ? '_' + activeFilter : ''}_export.xlsx`
+    XLSX.writeFile(workbook, fileName)
   }
 
   const exportToPDF = (rows) => {
@@ -105,7 +114,8 @@ const TableComponent = ({
       head: [columns.map((col) => col.label)],
       body: rows.map((row) => columns.map((col) => row[col.id])),
     })
-    doc.save('data.pdf')
+    const pdfFileName = `${whose || 'data'}${activeFilter && activeFilter !== 'all' ? '_' + activeFilter : ''}_export.pdf`
+    doc.save(pdfFileName)
   }
 
   const downloadFile = (type) => {
@@ -378,8 +388,8 @@ const TableComponent = ({
                                 ? 'completed'
                                 : row[column.id] === 'Overdue'
                                 ? 'overdue'
-                                : row[column.id] === 'Pending'
-                                ? 'pending'
+                                : row[column.id] === 'Ongoing'
+                                ? 'ongoing'
                                 : ''
                             }
                           >

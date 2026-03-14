@@ -718,6 +718,7 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
                             if (!err && projRows.length > 0) {
                               const currentStatus = projRows[0].projectStatus
                               const endDate = projRows[0].endDate ? new Date(projRows[0].endDate) : null
+                              if (endDate) endDate.setHours(0, 0, 0, 0)
                               const today = new Date()
                               today.setHours(0, 0, 0, 0)
 
@@ -726,7 +727,9 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
                               } else if (endDate && today > endDate) {
                                 newStatus = 'Overdue'
                               } else if (currentStatus === 'Completed' && projectProgress < 100) {
-                                newStatus = 'In Progress'
+                                newStatus = 'Ongoing'
+                              } else if (currentStatus === 'Overdue' && endDate && today <= endDate) {
+                                newStatus = 'Ongoing'
                               }
                             }
 
@@ -871,6 +874,7 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
                             if (!err && projRows.length > 0) {
                               const currentStatus = projRows[0].projectStatus
                               const endDate = projRows[0].endDate ? new Date(projRows[0].endDate) : null
+                              if (endDate) endDate.setHours(0, 0, 0, 0)
                               const today = new Date()
                               today.setHours(0, 0, 0, 0)
 
@@ -879,7 +883,9 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
                               } else if (endDate && today > endDate) {
                                 newStatus = 'Overdue'
                               } else if (currentStatus === 'Completed' && projectProgress < 100) {
-                                newStatus = 'In Progress'
+                                newStatus = 'Ongoing'
+                              } else if (currentStatus === 'Overdue' && endDate && today <= endDate) {
+                                newStatus = 'Ongoing'
                               }
                             }
 

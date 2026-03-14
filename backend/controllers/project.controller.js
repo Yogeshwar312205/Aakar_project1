@@ -63,14 +63,26 @@ export const getAllProjects = asyncHandler(async (req, res) => {
 
 // get active projects
 export const getActiveProjects = asyncHandler(async (req, res) => {
-  // console.log(req.user)
-  const query = 'SELECT * FROM project WHERE historyOf IS NULL'
-  db.query(query, (err, data) => {
-    if (err) {
-      const error = new ApiError(400, 'Error retrieving active projects')
-      console.log(error)
-      return res.status(400).json(error)
-    }
+  try {
+    // 1. Normalize "Pending" and "In Progress" to "Ongoing"
+    await db.promise().query(
+      `UPDATE project SET projectStatus = 'Ongoing' WHERE projectStatus IN ('Pending', 'In Progress') AND historyOf IS NULL`
+    )
+
+    // 2. Auto-detect overdue: endDate passed, not completed, not already overdue
+    await db.promise().query(
+      `UPDATE project SET projectStatus = 'Overdue' WHERE endDate < CURDATE() AND progress < 100 AND projectStatus NOT IN ('Completed', 'Overdue') AND historyOf IS NULL`
+    )
+
+    // 3. Revert overdue to ongoing if endDate was extended or progress completed
+    await db.promise().query(
+      `UPDATE project SET projectStatus = 'Ongoing' WHERE projectStatus = 'Overdue' AND endDate >= CURDATE() AND progress < 100 AND historyOf IS NULL`
+    )
+
+    // 3. Fetch active projects
+    const [data] = await db.promise().query(
+      'SELECT * FROM project WHERE historyOf IS NULL'
+    )
 
     // Convert UTC dates to local time and format as YYYY-MM-DD
     const activeProjects = data.map((project) => ({
@@ -98,7 +110,10 @@ export const getActiveProjects = asyncHandler(async (req, res) => {
           'Active projects retrieved successfully.'
         )
       )
-  })
+  } catch (err) {
+    console.error('Error retrieving active projects:', err)
+    return res.status(400).json(new ApiError(400, 'Error retrieving active projects'))
+  }
 })
 
 // get history projects whose historyOf == pNo

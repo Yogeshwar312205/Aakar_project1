@@ -5,12 +5,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AddBOM from "../AddBOM/AddBOM.jsx"
 import TableComponent from '../Table/TableComponent.jsx'
 import ImportBOMDialog from '../ImportBOM/ImportBOMDialog.jsx'
+import ImportBOMExcelDialog from '../ImportBOMExcel/ImportBOMExcelDialog.jsx'
 import { useDispatch, useSelector } from "react-redux"
 import { fetchBom, deleteBomDesign } from "../../../features/BOM.js"
 import { fetchActiveStagesByProjectNumber } from "../../../features/stageSlice.js"
 import { Tabs, Tab } from '@mui/material'
 import { FiPlusCircle } from 'react-icons/fi'
 import * as XLSX from 'xlsx'
+import axios from 'axios'
 
 const BOMPage = ({ view = "designer" }) => {
   const dispatch = useDispatch()
@@ -21,6 +23,7 @@ const BOMPage = ({ view = "designer" }) => {
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedStageIdx, setSelectedStageIdx] = useState(0)
   const [importOpen, setImportOpen] = useState(false)
+  const [excelImportOpen, setExcelImportOpen] = useState(false)
 
   const bom = useSelector((state) => state.BOM.BOMDesign)
   const activeProjects = useSelector((state) => state.projects.activeProjects)
@@ -99,6 +102,24 @@ const BOMPage = ({ view = "designer" }) => {
     XLSX.writeFile(workbook, `BOM_Project_${projectId}.xlsx`)
   }
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/v1/bom/downloadTemplate', {
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'BOM_Template.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      window.alert('Failed to download template: ' + (error.message || 'Unknown error'))
+    }
+  }
+
   const columns = [
     { id: "itemName", label: "Item Name", align: "left" },
     { id: "itemCode", label: "Item Code", align: "left" },
@@ -132,6 +153,12 @@ const BOMPage = ({ view = "designer" }) => {
         <div className="bom-page-header-right">
           <button className="bom-import-btn" onClick={() => setImportOpen(true)}>
             <FiDownload size={18} /> Import
+          </button>
+          <button className="bom-import-btn" onClick={() => setExcelImportOpen(true)}>
+            <FiDownload size={18} /> Import Excel
+          </button>
+          <button className="bom-import-btn" onClick={handleDownloadTemplate}>
+            <FiDownload size={18} /> Download Template
           </button>
           <button className="bom-export-btn" onClick={handleExportExcel}>
             <FiDownload size={18} /> Export Excel
@@ -249,6 +276,12 @@ const BOMPage = ({ view = "designer" }) => {
         onClose={() => setImportOpen(false)}
         targetProjectNumber={projectId}
         targetStageId={currentStageId}
+      />
+      <ImportBOMExcelDialog
+        open={excelImportOpen}
+        onClose={() => setExcelImportOpen(false)}
+        projectNumber={projectId}
+        stageId={currentStageId}
       />
     </div>
   )

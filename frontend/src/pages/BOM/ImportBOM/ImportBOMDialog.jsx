@@ -60,16 +60,28 @@ const ImportBOMDialog = ({ open, onClose, targetProjectNumber, targetStageId }) 
 
   const handleImport = async () => {
     if (selectedIds.length === 0) return
+    if (!targetStageId) {
+      window.alert('Please select a target stage before importing BOM items.')
+      return
+    }
+
     setImporting(true)
-    await dispatch(importBomItems({
-      sourceProjectNumber: sourceProject,
-      targetProjectNumber: targetProjectNumber,
-      targetStageId: targetStageId,
-      bomIds: selectedIds,
-    }))
-    await dispatch(fetchBom(targetProjectNumber))
-    setImporting(false)
-    onClose()
+    try {
+      await dispatch(importBomItems({
+        sourceProjectNumber: sourceProject,
+        targetProjectNumber: targetProjectNumber,
+        targetStageId: targetStageId,
+        bomIds: selectedIds,
+      })).unwrap()
+
+      await dispatch(fetchBom(targetProjectNumber)).unwrap()
+      onClose()
+    } catch (error) {
+      const message = error?.message || error?.error || 'Failed to import BOM items.'
+      window.alert(message)
+    } finally {
+      setImporting(false)
+    }
   }
 
   const cellSx = { fontSize: '13px', padding: '6px 10px' }

@@ -799,3 +799,62 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
     return res.status(500).send(new ApiError(500, 'Error fetching history'))
   }
 })
+
+// Get stuck (incomplete) stages and substages for given project numbers
+export const getStuckStagesForProjects = asyncHandler(async (req, res) => {
+  const { projectNumbers } = req.body
+
+  if (!projectNumbers || !Array.isArray(projectNumbers) || projectNumbers.length === 0) {
+    return res.status(400).json(new ApiError(400, 'projectNumbers array is required'))
+  }
+
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-CA') : null
+
+  try {
+    // Get incomplete stages
+    const [stages] = await db.promise().query(
+      `SELECT s.stageId, s.projectNumber, s.stageName, s.progress, s.startDate, s.endDate,
+              eo.employeeName AS ownerName
+       FROM stage s
+       LEFT JOIN employee eo ON s.owner = eo.employeeId
+       WHERE s.projectNumber IN (?) AND s.historyOf IS NULL AND s.progress < 100`,
+      [projectNumbers]
+    )
+
+    // Get incomplete substages for those projects
+    const [substages] = await db.promise().query(
+      `SELECT ss.substageId, ss.stageId, ss.projectNumber, ss.substageName, ss.progress,
+              ss.startDate, ss.endDate, eo.employeeName AS ownerName
+       FROM substage ss
+       LEFT JOIN employee eo ON ss.owner = eo.employeeId
+       WHERE ss.projectNumber IN (?) AND ss.historyOf IS NULL AND ss.progress < 100`,
+      [projectNumbers]
+    )
+
+    // Group by projectNumber
+    const result = {}
+    for (const pn of projectNumbers) {
+      result[pn] = {
+        stages: stages
+          .filter(s => s.projectNumber === pn)
+          .map(s => ({
+            ...s,
+            startDate: formatDate(s.startDate),
+            endDate: formatDate(s.endDate),
+          })),
+        substages: substages
+          .filter(ss => ss.projectNumber === pn)
+          .map(ss => ({
+            ...ss,
+            startDate: formatDate(ss.startDate),
+            endDate: formatDate(ss.endDate),
+          })),
+      }
+    }
+
+    res.status(200).json(new ApiResponse(200, result, 'Stuck stages retrieved successfully.'))
+  } catch (err) {
+    console.error('Error fetching stuck stages:', err)
+    return res.status(500).json(new ApiError(500, 'Error fetching stuck stages'))
+  }
+})

@@ -45,6 +45,7 @@ import 'jspdf-autotable'
 import * as XLSX from 'xlsx'
 import { FiDownload } from 'react-icons/fi'
 import { IoIosSearch } from 'react-icons/io'
+import axios from 'axios'
 
 const TableComponent = ({
   whose,
@@ -93,7 +94,24 @@ const TableComponent = ({
   const handleClose = () => {
     setAnchorEl(null)
   }
-  const exportToExcel = (rows) => {
+  const isStuckFilter = whose === 'project' && (activeFilter === 'overdue' || activeFilter === 'ongoing')
+
+  const fetchStuckData = async (rows) => {
+    const projectNumbers = rows.map((r) => r.projectNumber).filter(Boolean)
+    if (projectNumbers.length === 0) return null
+    try {
+      const response = await axios.post(
+        'http://localhost:3000/api/projects/stuck-stages',
+        { projectNumbers },
+        { withCredentials: true }
+      )
+      return response.data?.data || null
+    } catch {
+      return null
+    }
+  }
+
+  const exportToExcel = (rows, stuckData) => {
     const exportData = rows.map((row) => {
       const mappedRow = {}
       columns.forEach((col) => {
@@ -103,23 +121,117 @@ const TableComponent = ({
     })
     const worksheet = XLSX.utils.json_to_sheet(exportData)
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data')
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Projects')
+
+    if (stuckData) {
+      const stuckRows = []
+      rows.forEach((row) => {
+        const pn = row.projectNumber
+        const data = stuckData[pn]
+        if (!data) return
+        data.stages.forEach((stage) => {
+          const stageSubstages = data.substages.filter(
+            (ss) => ss.stageId === stage.stageId
+          )
+          if (stageSubstages.length === 0) {
+            stuckRows.push({
+              'Project Number': pn,
+              'Stage Name': stage.stageName,
+              'Substage Name': '-',
+              'Owner': stage.ownerName || '-',
+              'Progress (%)': stage.progress,
+              'Planned Start Date': stage.startDate || '-',
+              'Planned End Date': stage.endDate || '-',
+            })
+          } else {
+            stageSubstages.forEach((ss) => {
+              stuckRows.push({
+                'Project Number': pn,
+                'Stage Name': stage.stageName,
+                'Substage Name': ss.substageName || '-',
+                'Owner': ss.ownerName || stage.ownerName || '-',
+                'Progress (%)': ss.progress,
+                'Planned Start Date': ss.startDate || '-',
+                'Planned End Date': ss.endDate || '-',
+              })
+            })
+          }
+        })
+      })
+      if (stuckRows.length > 0) {
+        const stuckSheet = XLSX.utils.json_to_sheet(stuckRows)
+        XLSX.utils.book_append_sheet(workbook, stuckSheet, 'Stuck Stages & Substages')
+      }
+    }
+
     const fileName = `${whose || 'data'}${activeFilter && activeFilter !== 'all' ? '_' + activeFilter : ''}_export.xlsx`
     XLSX.writeFile(workbook, fileName)
   }
 
-  const exportToPDF = (rows) => {
+  const exportToPDF = (rows, stuckData) => {
     const doc = new jsPDF()
     doc.autoTable({
       head: [columns.map((col) => col.label)],
       body: rows.map((row) => columns.map((col) => row[col.id])),
     })
+
+    if (stuckData) {
+      const stuckHead = [['Project Number', 'Stage Name', 'Substage Name', 'Owner', 'Progress (%)', 'Planned Start', 'Planned End']]
+      const stuckBody = []
+      rows.forEach((row) => {
+        const pn = row.projectNumber
+        const data = stuckData[pn]
+        if (!data) return
+        data.stages.forEach((stage) => {
+          const stageSubstages = data.substages.filter(
+            (ss) => ss.stageId === stage.stageId
+          )
+          if (stageSubstages.length === 0) {
+            stuckBody.push([
+              pn,
+              stage.stageName,
+              '-',
+              stage.ownerName || '-',
+              stage.progress,
+              stage.startDate || '-',
+              stage.endDate || '-',
+            ])
+          } else {
+            stageSubstages.forEach((ss) => {
+              stuckBody.push([
+                pn,
+                stage.stageName,
+                ss.substageName || '-',
+                ss.ownerName || stage.ownerName || '-',
+                ss.progress,
+                ss.startDate || '-',
+                ss.endDate || '-',
+              ])
+            })
+          }
+        })
+      })
+      if (stuckBody.length > 0) {
+        doc.addPage()
+        doc.text('Stuck Stages & Substages', 14, 15)
+        doc.autoTable({
+          startY: 20,
+          head: stuckHead,
+          body: stuckBody,
+        })
+      }
+    }
+
     const pdfFileName = `${whose || 'data'}${activeFilter && activeFilter !== 'all' ? '_' + activeFilter : ''}_export.pdf`
     doc.save(pdfFileName)
   }
 
-  const downloadFile = (type) => {
-    type === 'excel' ? exportToExcel(sortedRows) : exportToPDF(sortedRows)
+  const downloadFile = async (type) => {
+    let stuckData = null
+    if (isStuckFilter) {
+      stuckData = await fetchStuckData(sortedRows)
+    }
+    type === 'excel' ? exportToExcel(sortedRows, stuckData) : exportToPDF(sortedRows, stuckData)
     handleClose()
   }
   const historyData = useMemo(

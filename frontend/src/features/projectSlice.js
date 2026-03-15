@@ -144,6 +144,18 @@ export const fetchProjectHistory = createAsyncThunk(
   }
 )
 
+export const fetchStuckStages = createAsyncThunk(
+  'projects/fetchStuckStages',
+  async (projectNumbers) => {
+    const response = await axios.post(
+      'http://localhost:3000/api/projects/stuck-stages',
+      { projectNumbers },
+      { withCredentials: true }
+    )
+    return response.data
+  }
+)
+
 const initialState = {
   projects: [],
   historyProjects: [],

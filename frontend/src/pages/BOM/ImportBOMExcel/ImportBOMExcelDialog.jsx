@@ -300,6 +300,13 @@ const ImportBOMExcelDialog = ({ open, onClose, projectNumber, stageId }) => {
                     </Box>
                 )}
 
+                {/* Error message without validation errors (e.g. duplicate items) */}
+                {importStatus === 'error' && importMessage && validationErrors.length === 0 && (
+                    <Alert severity="error" sx={{ mt: 2 }}>
+                        {importMessage}
+                    </Alert>
+                )}
+
                 {/* Success Message */}
                 {step === 'complete' && importStatus === 'success' && (
                     <Alert severity="success" sx={{ mt: 2 }}>

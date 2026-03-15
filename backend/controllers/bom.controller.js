@@ -227,6 +227,24 @@ const importBomFromProject = asyncHandler(async (req, res) => {
             return res.status(404).json(new ApiError(404, 'No matching BOM items found in source project.'));
         }
 
+        // Check for duplicate itemCodes in target stage
+        const sourceItemCodes = sourceItems.map((item) => item.itemCode);
+        const [existingItems] = await connection.promise().query(
+            `SELECT im.itemCode
+             FROM itemmaster im
+             JOIN bomdetails bd ON im.itemId = bd.itemId
+             WHERE bd.projectNumber = ? AND bd.stageId = ?
+             AND im.itemCode IN (?)`,
+            [targetProjectNumber, targetStageId, sourceItemCodes]
+        );
+
+        if (existingItems.length > 0) {
+            const duplicateItems = existingItems.map((r) => r.itemCode).join(', ');
+            return res.status(400).json(
+                new ApiError(400, `Items already exist in this stage: ${duplicateItems}`)
+            );
+        }
+
         await connection.promise().beginTransaction();
 
         for (const item of sourceItems) {

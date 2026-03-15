@@ -1,16 +1,74 @@
-/* .designer-bom-dashboard{
-    background-color: aqua;
-} */
-
-
- 
-.bom-designer-infocard-container-parent .infocard-container{
-    margin-top: 15px;
+.bom-project-page {
+    padding: 12px;
+    border-radius: 16px;
+    background:
+        radial-gradient(circle at 10% 0%, rgba(14, 77, 121, 0.08) 0%, transparent 35%),
+        #f4f8fc;
+}
+.bom-project-header {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    justify-content: flex-start;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+.bom-project-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #173048;
 }
 
+.bom-project-subtitle {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: #5b7085;
+}
+
+.bom-project-search {
+    align-self: flex-end;
+}
+
+.bom-project-stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.bom-project-stat-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0e4d79;
+    background: #e8f3fc;
+    border: 1px solid #cde0f1;
+}
+
+.bom-project-stat-chip-secondary {
+    color: #6f4b00;
+    background: #fff5de;
+    border-color: #f4d79b;
+}
+
+@media (max-width: 820px) {
+    .bom-project-page {
+        padding: 8px;
+    }
+
+    .bom-project-header {
+        flex-direction: column;
+    }
+
+    .bom-project-search {
+        align-self: stretch;
+    }
+
+    .bom-project-search .MuiTextField-root {
+        width: 100%;
+    }
+}

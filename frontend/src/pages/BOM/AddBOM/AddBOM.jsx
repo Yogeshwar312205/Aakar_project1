@@ -1,256 +1,140 @@
-import React,{useEffect, useState} from 'react'
+import React, { useEffect } from 'react'
 import "./AddBOM.css"
-import { FiArrowLeftCircle, FiSave, FiPlusCircle } from 'react-icons/fi';
-import { useForm, Controller } from 'react-hook-form';
-import TextField from '@mui/material/TextField';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { DatePicker } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { RiDeleteBin6Line } from 'react-icons/ri';
-import { useDispatch,useSelector } from 'react-redux';
-import { updateBomDesign,fetchBom ,addBomDesign} from '../../../features/BOM.js';
-import { useParams } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form'
+import TextField from '@mui/material/TextField'
+import { useDispatch } from 'react-redux'
+import { updateBomDesign, fetchBom, addBomDesign } from '../../../features/BOM.js'
+import { useParams } from 'react-router-dom'
 
-const AddBOM = ({view,triggerEdit,setTriggerEdit}) => {
-  const{projectId}=useParams();
-  const dispatch = useDispatch();
-     const [addBOM,setAddBOM] = useState(false);
+const AddBOM = ({ view, triggerEdit, setTriggerEdit, stageId, onClose }) => {
+  const { projectId } = useParams()
+  const dispatch = useDispatch()
 
-      console.log("item to be edited is ",triggerEdit.bom);
+  const defaultValues = {
+    itemCode: '', itemName: '', specification: '', material: '', grade: '',
+    ALength: '', AWidth: '', AHeight: '', AQuantity: '',
+    unit: '', weight: '', rate: '', remark: ''
+  }
 
-     var defaultVal={};
-     if(view==="designer"){
-       defaultVal={
-        itemName: "",
-        itemCode:"",
-        specification: '',
-        ALength: '',
-        AHeight: '',
-        AWidth: '',
-        AQuantity:""
-       }
-     }
-     else if(view==="manufacturer"){
-      defaultVal={
-        ELength:"",
-        EHeight:"",
-        EWidth:"",
-        EQuantity:""
- 
-      }
-     }
+  const { control, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm({ defaultValues })
 
+  const watchQty = watch('AQuantity')
+  const watchRate = watch('rate')
 
-    const { control, handleSubmit, setValue, reset,getValues,isFieldActive, formState: { errors } } = useForm({
-         defaultValues: defaultVal
-       });
-         
+  useEffect(() => {
+    if (triggerEdit.active && triggerEdit.bom && Object.keys(triggerEdit.bom).length > 0) {
+      const b = triggerEdit.bom
+      setValue('itemCode', b.itemCode || '')
+      setValue('itemName', b.itemName || '')
+      setValue('specification', b.specification || '')
+      setValue('material', b.material || '')
+      setValue('grade', b.grade || '')
+      setValue('ALength', b.ALength || '')
+      setValue('AWidth', b.AWidth || '')
+      setValue('AHeight', b.AHeight || '')
+      setValue('AQuantity', b.AQuantity || '')
+      setValue('unit', b.unit || '')
+      setValue('weight', b.weight || '')
+      setValue('rate', b.rate || '')
+      setValue('remark', b.remark || '')
+    }
+  }, [triggerEdit.active, triggerEdit.bom, setValue])
 
-       useEffect(()=>{
-      
-         if(triggerEdit.active && view==="designer"){
-          setAddBOM(true);
-          setValue('itemCode', triggerEdit.bom.itemCode);
-          setValue('itemName', triggerEdit.bom.itemName);
-          setValue('specification', triggerEdit.bom.specification);
-          setValue('ALength', triggerEdit.bom.ALength);
-          setValue('AHeight', triggerEdit.bom.AHeight);
-          setValue('AWidth', triggerEdit.bom.AWidth);
-          setValue('AQuantity', triggerEdit.bom.AQuantity);
-          
-           
-        }
-        else if(triggerEdit.active && view==="manufacturer"){
-          setAddBOM(true);
+  const computedAmount = (watchQty && watchRate) ? (parseFloat(watchQty) * parseFloat(watchRate)).toFixed(2) : ''
 
-          setValue('ELength', triggerEdit.bom.ELength);
-          setValue('EHeight', triggerEdit.bom.EHeight);
-          setValue('EWidth', triggerEdit.bom.EWidth);
-          setValue('EQuantity', triggerEdit.bom.EQuantity);
-        }
-      
-       },[triggerEdit,triggerEdit.bom,triggerEdit.id,triggerEdit.active])
-       const fields = view === "designer"
-  ? [
-      { name: "itemCode", label: "Item Code", type: "text", validation: { required: "Item Code is required" } },
-      { name: "itemName", label: "Item Name", type: "text", validation: { required: "Item Name is required" } },
-      { name: "specification", label: "Specification", type: "text", validation: { required: "Specification is required" } },
-      { name: "ALength", label: "Length", type: "number", validation: { required: "Length is required" } },
-      { name: "AWidth", label: "Width", type: "number", validation: { required: "Width is required" } },
+  const fields = view === "designer" ? [
+    { name: "itemCode", label: "Item Code", type: "text", rules: { required: "Required" } },
+    { name: "itemName", label: "Item Name", type: "text", rules: { required: "Required" } },
+    { name: "specification", label: "Specification", type: "text", rules: { required: "Required" } },
+    { name: "material", label: "Material", type: "text" },
+    { name: "grade", label: "Grade / Type", type: "text" },
+    { name: "ALength", label: "Length", type: "number" },
+    { name: "AWidth", label: "Width", type: "number" },
+    { name: "AHeight", label: "Height", type: "number" },
+    { name: "AQuantity", label: "Quantity", type: "number", rules: { required: "Required" } },
+    { name: "unit", label: "Unit", type: "text" },
+    { name: "weight", label: "Weight (Kg)", type: "number" },
+    { name: "rate", label: "Rate", type: "number" },
+    { name: "remark", label: "Remark", type: "text" },
+  ] : [
+    { name: "ALength", label: "Length", type: "number" },
+    { name: "AWidth", label: "Width", type: "number" },
+    { name: "AHeight", label: "Height", type: "number" },
+    { name: "AQuantity", label: "Quantity", type: "number" },
+  ]
 
-      { name: "AHeight", label: "Height", type: "number", validation: { required: "Height is required" } },
-      { name: "AQuantity", label: "Quantity", type: "number", validation: { required: "Quantity is required" } },
-    ]
-  : view === "manufacturer"
-  ? [
-      { name: "ELength", label: "Length", type: "number", validation: { required: "Length is required" } },
-      { name: "EHeight", label: "Height", type: "number", validation: { required: "Height is required" } },
-      { name: "EWidth", label: "Width", type: "number", validation: { required: "Width is required" } },
-      { name: "EQuantity", label: "Quantity", type: "number", validation: { required: "Quantity is required" } },
-    ] :[]
-  
-    const handleAsyncProcess=async (data)=>{
-      
-       try {
-            if(triggerEdit.active){
-
-              await dispatch(updateBomDesign([triggerEdit.id,data]));
-               setTriggerEdit((val)=>({...val,active:false,id:null,bom:{}}))
-            }
-            else{
-              //we have to add bom 
-              await dispatch(addBomDesign(data));
-            }
-            await dispatch(fetchBom(projectId));
-            reset(defaultVal);
-            setAddBOM(false);
-        
-       } catch (error) {
-        return error;
-        
-       }
-      
-
+  const onSubmit = async (data) => {
+    const payload = {
+      ...data,
+      ELength: data.ALength, EWidth: data.AWidth, EHeight: data.AHeight, EQuantity: data.AQuantity,
+      projectNumber: projectId,
+      stageId: stageId,
+      amount: computedAmount || null,
     }
 
-    const onSubmit = (data)=>{
-      let updateData;
-      if(view==="designer"){
-              if(triggerEdit.active){
-
-                     updateData={...data,
-                      EHeight: data.AHeight,
-                      EWidth: data.AWidth,
-                      ELength:data.ALength,
-                      EQuantity:data.AQuantity,
-                      itemId:triggerEdit.bom.itemId,
-                      projectNumber:projectId
-                      
-                    }
-              }
-              else{
-                     updateData={...data,
-                      EHeight: data.AHeight,
-                      EWidth: data.AWidth,
-                      ELength:data.ALength,
-                      EQuantity:data.AQuantity,
-                      projectNumber:projectId
-                      
-                    }
-                    console.log(updateData)
-
-       }
-        
-      }else if(view==="manufacturer"){
-        if(triggerEdit.active){
-         updateData={...triggerEdit.bom,
-          EHeight: data.EHeight,
-          EWidth: data.EWidth,
-          ELength:data.ELength,
-          EQuantity:data.EQuantity,
-          
-         }
-          console.log(updateData)
-        }
-
+    try {
+      if (triggerEdit.active) {
+        payload.itemId = triggerEdit.bom.itemId
+        await dispatch(updateBomDesign([triggerEdit.id, payload])).unwrap()
+      } else {
+        await dispatch(addBomDesign(payload)).unwrap()
       }
 
-      handleAsyncProcess(updateData);
+      await dispatch(fetchBom(projectId)).unwrap()
+      reset(defaultValues)
+      setTriggerEdit({ active: false, id: null, bom: {} })
+      if (onClose) onClose()
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to save BOM item.'
+      window.alert(message)
     }
-
+  }
 
   return (
-    <div className="add-bom-section">
-        <div className="add-bom-header">
-             <h3 style={{ fontSize: "18px", marginBottom: "10px", color: "#7D7D7D" }}>Purchase details</h3>
-             {!addBOM ? (
-                 view === "designer" && (
-                        <button
-                             className="add-bom-btn"
-                             onClick={() => setAddBOM(true)}
-                        >
-               
-                               <FiPlusCircle
-                                    style={{ marginRight: "10px", width: "25px", height: "25px" }}
-                                />
-                                   Add Item
-                        </button>
-                    )
-                      ) : (
-                        <button
-                         type="submit"
-                         onClick={handleSubmit(onSubmit)}
-
-                          className="save-bom-btn">
-                        <FiSave className="save-icon" />
-                        Save details
-                      </button>
-                    )
-                    }
-
-        </div>
-        { addBOM && (
-
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="add-bom-body" >
-          <div className="bom-details">
-            {fields.map((eachField,index)=>{
-              return(
-                <Controller
-                key={index}
-                name={eachField.name}
-                control={control}
-                rules={eachField.validation}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label={eachField.label}
-                    variant="outlined"
-                    type={eachField.type}
-                    sx={{
-                      width: "250px",
-                      marginBottom: "15px",
-                      "& .MuiOutlinedInput-root": {
-                        height: "50px",
-                      },
-                    }}
-                    error={!!errors[name]}
-                    helperText={errors[name]?.message}
-                  />
-                )}
-              />
-              )
-            })}
-            
-          </div>
-
-          
-           
-          
- 
-
-
-
-          <div className="delete-icon">
-            <RiDeleteBin6Line
-              size={20}
-              onClick={() =>{
-                setAddBOM(false);
-                setTriggerEdit((val)=>({...val,active:false,id:null,bom:{}}))
-
-                reset(defaultVal);
-              }}
+    <div className="add-bom-form">
+      <form id="addBomForm" onSubmit={handleSubmit(onSubmit)}>
+        <div className="add-bom-fields">
+          {fields.map((f) => (
+            <Controller
+              key={f.name}
+              name={f.name}
+              control={control}
+              rules={f.rules || {}}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label={f.label}
+                  required={!!f.rules?.required}
+                  variant="outlined"
+                  type={f.type}
+                  size="small"
+                  error={!!errors[f.name]}
+                  helperText={errors[f.name]?.message}
+                  sx={{ '& .MuiOutlinedInput-root': { height: '38px', fontSize: '13px' } }}
+                />
+              )}
             />
-          </div>
-        </form>
-          
-
-        
-      )}
-    
+          ))}
+          {view === "designer" && (
+            <TextField
+              label="Amount"
+              variant="outlined"
+              size="small"
+              value={computedAmount}
+              disabled
+              sx={{ '& .MuiOutlinedInput-root': { height: '38px', fontSize: '13px' } }}
+            />
+          )}
+        </div>
+        <div className="add-bom-actions">
+          <button type="button" className="cancel-btn" onClick={onClose}>Cancel</button>
+          <button type="submit" className="submit-btn">
+            {triggerEdit.active ? 'Update' : 'Add Item'}
+          </button>
+        </div>
+      </form>
     </div>
-    
-    
   )
 }
-export default AddBOM;
+
+export default AddBOM

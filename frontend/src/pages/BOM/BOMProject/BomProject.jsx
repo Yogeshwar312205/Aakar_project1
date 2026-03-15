@@ -1,108 +1,74 @@
-import React, { useEffect } from 'react'
-import Infocard from '../../../components/Infocard/Infocard.jsx';
+import React, { useEffect, useState } from 'react'
+import { TextField, Box } from '@mui/material'
+import { IoIosSearch } from 'react-icons/io'
+import TableComponent from '../Table/TableComponent.jsx'
+import { useDispatch, useSelector } from 'react-redux'
+import { fetchActiveProjects } from '../../../features/projectSlice.js'
 import "./BomProject.css"
-import {FiPlusCircle} from "react-icons/fi";
-import Searchbar from '../Searchbox/Searchbar.jsx';
-import TableComponent from '../Table/TableComponent.jsx';
-import { useDispatch,useSelector } from 'react-redux';
-// import { fetchBom } from '../../../features/BOM.js';
-import {
-  fetchActiveProjects,
-  
-} from '../../../features/projectSlice.js';
 
 const BomProject = () => {
+  const dispatch = useDispatch()
+  const { activeProjects } = useSelector((state) => state.projects)
+  const [searchTerm, setSearchTerm] = useState('')
 
-  const dispatch =useDispatch();
-//   const columns = [
-//     { id: 'projectNumber', label: 'Project No.', align: 'left' },
-//     { id: 'dieName', label: ' Project Name', align: 'left' },
-//     { id: 'projectStatus', label: 'Status', align: 'left' },
-//     { id: 'startDate', label: 'Start Date', align: 'left' },
-//     { id: 'endDate', label: 'End Date', align: 'left' },
-//     { id: 'detailPage', label: ' ', align: 'left' },
-   
-// ];
+  const columns = [
+    { label: 'Project Number', id: 'projectNumber', align: 'left' },
+    { label: 'Company Name', id: 'companyName', align: 'left' },
+    { label: 'Die Name', id: 'dieName', align: 'left' },
+    { label: 'Status', id: 'projectStatus', align: 'left' },
+    { label: 'Progress(%)', id: 'progress', align: 'left' },
+  ]
 
+  useEffect(() => {
+    dispatch(fetchActiveProjects())
+  }, [dispatch])
 
-const columns = [
-  {
-    label: 'Project Number',
-    id: 'projectNumber',
-    align: 'left',
-  },
-  {
-    label: 'Company Name',
-    id: 'companyName',
-    align: 'left',
-  },
-  {
-    label: 'Die Name',
-    id: 'dieName',
-    align: 'left',
-  },
-  {
-    label: 'Status',
-    id: 'projectStatus',
-    align: 'left',
-  },
-  {
-    label: 'Start Date*',
-    id: 'startDate',
-    align: 'left',
-  },
-  {
-    label: 'End Date*',
-    id: 'endDate',
-    align: 'left',
-  },
-  {
-    label: 'Progress(%)',
-    id: 'progress',
-    align: 'left',
-  },
-];
+  const filteredProjects = activeProjects.filter((row) =>
+    columns.some((col) => {
+      const val = row[col.id]
+      return val ? val.toString().toLowerCase().includes(searchTerm.toLowerCase()) : false
+    })
+  )
 
-
-
-    const project = useSelector((state)=>state.projects.activeProjects)
-      const { activeProjects, status, error } = useSelector(
-        (state) => state.projects
-      )
-    
-
-
-    useEffect(()=>{
-         dispatch(fetchActiveProjects());
-    },[])
-
-
-
-  
   return (
-    <div className="designer-bom-dashboard">
-         <div className='bom-designer-infocard-container-parent'>
-                <div className='infocard-container'>
-                    <Infocard
-                        icon={`<FiUser />`}
-                        number={20}
-                        text={'All Project'}
-                        className={'selected'}
-                        width={200}
-                    />
-
-                </div>
-                
-            </div>
-            <Searchbar
-            //  lst={items} 
-             /> {/* Updated to pass the fetched items */}
-             <TableComponent  rows={activeProjects} columns={columns} linkBasePath={`/bom-project/bom`}/>
-             {/* <DropDownTable rows={items} columns={columns} linkBasePath={`/inventory`}  /> */}
-
+    <div className="bom-project-page">
+      <div className="bom-project-header">
+        <div>
+          <h2 className="bom-project-title">BOM Project Directory</h2>
+          <p className="bom-project-subtitle">Select a project to manage stage-wise bill of materials.</p>
+        </div>
+        <Box className="bom-project-search">
+          <TextField
+            label={
+              <span style={{ display: 'flex', alignItems: 'center' }}>
+                <IoIosSearch style={{ marginRight: '5px', fontSize: '18px' }} />
+                Search
+              </span>
+            }
+            variant="outlined"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search projects..."
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                height: '42px',
+                fontSize: '14px',
+                borderRadius: '10px',
+                backgroundColor: '#fff',
+              },
+              '& .MuiInputLabel-root': { fontSize: '12px', top: '-5px' },
+              width: 300,
+            }}
+          />
+        </Box>
+      </div>
+      <div className="bom-project-stats">
+        <span className="bom-project-stat-chip">Visible Projects: {filteredProjects.length}</span>
+        <span className="bom-project-stat-chip bom-project-stat-chip-secondary">Total Active: {activeProjects.length}</span>
+      </div>
+      <TableComponent rows={filteredProjects} columns={columns} linkBasePath="/bom-project/bom" />
     </div>
   )
 }
 
-
-export default BomProject;
+export default BomProject

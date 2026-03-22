@@ -192,7 +192,7 @@ function TicketForm() {
     const removeAttachment = (index) => {
         setAttachments(attachments.filter((_, i) => i !== index));
     };
-    
+
 
     return (
         <div className="content-container">
@@ -362,9 +362,8 @@ function TicketForm() {
                                     </Box>
                                     ))}
                                 </Box>
-        
-    
-                            
+
+
 
                             <Box
                                 sx={{
@@ -380,11 +379,11 @@ function TicketForm() {
                                     Basic Solutions
                                 </Typography>
                             </Box>
-                            
-                            
+
+
 
                             <Box>
-                                
+
 
 
                                 {basicSolutions.map((solution, index) => (

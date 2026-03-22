@@ -164,12 +164,12 @@ const SubstageForm = ({
             label="Planned Start Date*"
             value={inputValues.startDate ? dayjs(inputValues.startDate) : null}
             onChange={(date) => handleDateChange(date, 'startDate')}
-            sx={{ width: '150px' }}
+            sx={{ width: '180px' }}
             renderInput={(params) => (
               <TextField
                 {...params}
                 sx={{
-                  width: '150px',
+                  width: '180px',
                   '& .MuiInputBase-input': { height: '50px', fontSize: '1rem' },
                 }}
               />
@@ -183,12 +183,12 @@ const SubstageForm = ({
             label="Planned End Date*"
             value={inputValues.endDate ? dayjs(inputValues.endDate) : null}
             onChange={(date) => handleDateChange(date, 'endDate')}
-            sx={{ width: '150px' }}
+            sx={{ width: '180px' }}
             renderInput={(params) => (
               <TextField
                 {...params}
                 sx={{
-                  width: '150px',
+                  width: '180px',
                   '& .MuiInputBase-input': { height: '50px', fontSize: '1rem' },
                 }}
               />

@@ -14,10 +14,10 @@ const TrainerTrainingDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sessionData, setSessionData] = useState([]);
-  const { 
-    trainingId, 
-    trainingTitle,  
-    startTrainingDate, 
+  const {
+    trainingId,
+    trainingTitle,
+    startTrainingDate,
     endTrainingDate,
     skillNames,
     active
@@ -37,7 +37,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
 
   // Fetch session data on component mount or refresh
   useEffect(() => {
-    console.log("hgjh",active)
+    console.log("Training id:",trainingId)
     if (!trainingId) {
       console.error('No trainingId found in location.state.');
       navigate(-1); // Navigate back if trainingId is missing
@@ -48,7 +48,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
       const data = await fetchAllSessions(trainingId);
       const updatedData = data.map(data => ({
         ...data ,
-        sessionDate: dayjs(data.sessionDate).format("DD-MM-YYYY"),  
+        sessionDate: dayjs(data.sessionDate).format("DD-MM-YYYY"),
       }))
       setSessionData(updatedData);
   };
@@ -76,11 +76,11 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
     console.log("End date:", endDate);
     console.log("Selected date:", selectedDate);
     console.log("Today date:", today);
-    
+
     if (selectedDate >= startDate && selectedDate <= endDate && selectedDate >= today) {
         setNewSession(prevState => ({
             ...prevState,
-            [name]: dayjs(date), 
+            [name]: dayjs(date),
         }));
     } else {
         toast.error("Select date between range");
@@ -98,7 +98,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
     const isActive = today > trainingEndDate ? 1 : 0;
     navigate('/EmployeeTrainingEnrolled', { state: { trainingId, active: isActive} });
   };
-  
+
   const handleSave = async () => {
     const formatTime = (time) => {
       if (!time) return null;
@@ -108,7 +108,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
       const seconds = String(dateObj.getSeconds()).padStart(2, '0');
       return `${hours}:${minutes}:${seconds}`;
     };
-  
+
     const formattedSession = {
       ...newSession,
       sessionStartTime: formatTime(newSession.startTime),
@@ -118,7 +118,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
     console.log("MY data: ", formattedSession);
     try {
       const response = await saveSession(formattedSession, editingSession?.sessionId);
-  
+
       if (editingSession) {
         const updatedSessions = sessionData.map(session =>
           session.sessionId === editingSession.sessionId ? response : session
@@ -140,7 +140,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
         ]);
         toast.success("Session added successfully!");
       }
-  
+
       // Reset form and states
       setNewSession({
         sessionName: '',
@@ -152,7 +152,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
       });
       setEditingSession(null);
       setRefreshTrigger((prev) => !prev);
-  
+
     } catch (error) {
       console.error('Error saving session:', error);
       toast.error("Failed to save the session. Please try again.");
@@ -188,8 +188,8 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
       sessionDescription: '',
       trainingId: trainingId,
     });
-    setEditingSession(null); 
-  };  
+    setEditingSession(null);
+  };
 
   const sessionColumns = [
     { id: 'sessionName', label: 'Session Name', align: 'center' },
@@ -204,8 +204,8 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
         const today = dayjs(new Date()).format("DD-MM-YYYY");
         const sessionDate = row.sessionDate;
         const isTrainingEditable = dayjs(new Date()).format("DD-MM-YYYY") <= endTrainingDate;
-        const isSessionFutureOrToday = sessionDate >= today; 
-        
+        const isSessionFutureOrToday = sessionDate >= today;
+
         return (
           <div className='trainer-training-details-actions'>
             {isTrainingEditable && isSessionFutureOrToday ? (
@@ -216,7 +216,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
                 style={{ color: '#0061A1', fontWeight: '900' }}
               />
             ) : null}
-            
+
             {!isSessionFutureOrToday || today === sessionDate ? (
             <FiEdit2
               onClick={() => handleAttendanceClick(row)}
@@ -225,13 +225,13 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
               style={{ color: '#0061A1', fontWeight: '900' }}
             />
             ) : null}
-  
+
             {isTrainingEditable && isSessionFutureOrToday ? (
-              <FiTrash 
-                onClick={() => handleDeleteSession(row.sessionId)} 
-                className="action-icon" 
-                size={18} 
-                style={{ color: '#0061A1', fontWeight: '900' }} 
+              <FiTrash
+                onClick={() => handleDeleteSession(row.sessionId)}
+                className="action-icon"
+                size={18}
+                style={{ color: '#0061A1', fontWeight: '900' }}
               />
             ) : null}
           </div>
@@ -239,7 +239,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
       },
     },
   ];
-  
+
 
 return (
   <div className="training-details-page">
@@ -248,7 +248,7 @@ return (
         <FiArrowLeftCircle className="employeeSwitch-back-button" onClick={() => navigate(`/TrainerSwitch`)} title="Go back"/>
         <h4 className='employeeSwitch-title'>Training Details</h4>
       </header>
-      
+
       <section className="training-details-section">
         <h3>Training Details
           <button className="training-details-employee-button" onClick={handleEmployees}>Employees</button>
@@ -262,7 +262,7 @@ return (
       </section>
       {active === 0 && (
       <section className="training-details-add-session-details-section">
-      
+
         <div className="training-details-add-session-header">
           <h3>{editingSession ? 'Update session' : 'Add session details'}</h3>
           <button onClick={handleCancelClick} className="cancel-session-btn">
@@ -270,7 +270,7 @@ return (
           </button>
           <button className="training-details-save-button" onClick={handleSave}>Save</button>
         </div>
-        
+
         <div className="training-details-session-form">
           <Textfield
               label="Session Name"
@@ -304,7 +304,7 @@ return (
         </div>
       </section>
       )}
-      
+
       <section className="training-details-session-details-section">
         <TableComponent
           rows={sessionData}

@@ -47,43 +47,44 @@ const Sidebar = () => {
   const [employeeAccess1, setEmployeeAccess1] = useState('0')
   const [trainerAccess, setTrainerAccess] = useState('0')
 
-  
-  const access = useSelector(
+  const employeeAccess = useSelector(
     (state) => state?.auth?.user?.employeeAccess
-  ).split(',')
-  
+  ) || '';
+  const access = employeeAccess ? employeeAccess.split(',') : ['', '', '', ''];
 
-  // const  access = ['1', '1', '1', '1'];
-
- 
   const employeeId = useSelector((state) => state.auth.user?.employeeId);
-  
-    console.log("Employee ID: ", employeeId);
-  // const employeeId = "EMP001";
+
+  console.log("Employee ID: ", employeeId);
 
   useEffect(() => {
     const fetchAccess = async () => {
       try {
-        // Simulate API response with dummy values
-        setEmployeeAccess1('1');
-        setTrainerAccess('1');
+        const response = await axios.get(`http://localhost:3000/GetEmployeeAccess`, {
+          params: { employeeId }, // Send employeeId as a query parameter
+        })
+        const { isRegistered, isTrainer } = response.data;
+        console.log("Responses: ", isRegistered ? '1' : '0');
+
+        // Update access based on API response
+        setEmployeeAccess1(isRegistered ? '1' : '0');
+        setTrainerAccess(isTrainer ? '1' : '0');
       } catch (error) {
         console.error('Error fetching access:', error)
       }
     }
-  
+
     if (employeeId) fetchAccess();
   }, [employeeId]);
 
   console.log("EMP: ", employeeAccess1);
-        console.log("TRAINER: ", trainerAccess);
-  
+  console.log("TRAINER: ", trainerAccess);
+
   const HRManagementAccess = access[0]
   const ProjectManagementAccess = access[1]
   const TrainingManagementAccess = access[2]
   const TicketManagementAccess = access[3]
 
-  // console.log("TRaining management: ", TrainingManagementAccess[0]);
+  console.log("Training management: ", TrainingManagementAccess[0]);
 
   const toggleSection = (section) => {
     setOpenSection((prev) => (prev === section ? null : section))
@@ -130,7 +131,7 @@ const Sidebar = () => {
           icon: 'BsListTask',
           access: ProjectManagementAccess[0],
         },
-         {
+        {
           name: 'BOM',
           slug: '/bom-project',
           icon: 'BsListTask',
@@ -159,45 +160,44 @@ const Sidebar = () => {
           name: 'Dashboard',
           slug: '/tickettracking',
           icon: 'BsTicket',
-          // access: TicketManagementAccess[0],  commented --------
-          access: "admin",
+          access: TicketManagementAccess[0],
         },
         {
           name: 'My Tickets',
           slug: '/dashboard/1',
           icon: 'BsTicket',
-          access: TicketManagementAccess[1],
+          access: TicketManagementAccess[0],
         },
         {
           name: 'Department Created Tickets',
           slug: '/dashboard/2',
           icon: 'BsTicket',
-          access: TicketManagementAccess[2],
+          access: TicketManagementAccess[1],
         },
         {
           name: 'Department Assigned Tickets',
           slug: '/dashboard/3',
           icon: 'BsTicket',
-          access: TicketManagementAccess[3],
+          access: TicketManagementAccess[2],
         },
         {
           name: 'All Tickets',
           slug: '/dashboard/4',
           icon: 'BsTicket',
-          access: TicketManagementAccess[4],
+          access: TicketManagementAccess[3],
         },
         {
           name: 'Assigned Tickets',
           slug: '/dashboard/5',
           icon: 'BsTicket',
-          access: TicketManagementAccess[5],
+          access: TicketManagementAccess[4],
         },
       ],
     },
     {
       name: 'Training',
       icon: 'MdOutlineModelTraining',
-      access: employeeAccess1 || trainerAccess || TrainingManagementAccess[0],
+      access: (employeeAccess1 === '1' || trainerAccess === '1' || TrainingManagementAccess?.[0] === '1') ? '1' : '0',
       children: [
         {
           name: 'My Status',
@@ -209,25 +209,25 @@ const Sidebar = () => {
           name: 'Skills',
           slug: '/Update_skills',
           icon: 'GiSkills',
-          access: TrainingManagementAccess[2],
+          access: TrainingManagementAccess?.[2] === '1' ? '1' : '0',
         },
         {
           name: 'Skill Matrix',
           slug: '/SearchBar',
           icon: 'IoIosGrid',
-          access: TrainingManagementAccess[6] || TrainingManagementAccess[10],
+          access: (TrainingManagementAccess?.[6] === '1' || TrainingManagementAccess?.[10] === '1') ? '1' : '0',
         },
         {
           name: 'Assign Training',
           slug: '/SendAndGiveTraining',
           icon: 'FaChalkboardTeacher',
-          access: TrainingManagementAccess[14],
+          access: TrainingManagementAccess?.[14] === '1' ? '1' : '0',
         },
         {
           name: 'Training Plan',
           slug: '/trainings',
           icon: 'MdBook',
-          access: TrainingManagementAccess[18],
+          access: TrainingManagementAccess?.[18] === '1' ? '1' : '0',
         },
         {
           name: 'Trainer Status',

@@ -144,7 +144,7 @@ export const fetchSessionAttendance = async (sessionId) => {
       throw error;
     }
   };
-  
+
   export const fetchEmployeesEnrolled = async (trainingId) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/ManagerPOV/employeesEnrolled/${trainingId}`)

@@ -21,9 +21,9 @@ const BasicSolutionForm = ({ solution, onSave, onClose }) => {
 
     // Set the form data when the solution prop changes (i.e., when editing)
     if (solution) {
-      setFormData({ 
+      setFormData({
         issue: solution.issue_type, // Ensure this matches the data structure returned from the API
-        solution: solution.solution 
+        solution: solution.solution
       });
     }
   }, [solution]); // Run effect when solution changes
@@ -78,18 +78,18 @@ const BasicSolutionForm = ({ solution, onSave, onClose }) => {
         fullWidth
         margin="normal"
       />
-      <Button 
-        variant="contained" 
-        color="primary" 
+      <Button
+        variant="contained"
+        color="primary"
         onClick={handleSubmit}
         style={{ marginTop: '16px' }}
       >
         Save
       </Button>
-      <Button 
-        variant="outlined" 
-        color="secondary" 
-        onClick={onClose} 
+      <Button
+        variant="outlined"
+        color="secondary"
+        onClick={onClose}
         style={{ marginTop: '16px', marginLeft: '8px' }}
       >
         Cancel

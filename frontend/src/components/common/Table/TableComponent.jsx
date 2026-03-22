@@ -475,7 +475,7 @@ const TableComponent = ({
                             ? `${linkBasePath}/${
                                 row.empId || row.deptId || row.projectNumber
                               }
-                            }`
+                            `
                             : undefined
                         }
                       >
@@ -502,6 +502,8 @@ const TableComponent = ({
                                 ? 'overdue'
                                 : row[column.id] === 'Ongoing'
                                 ? 'ongoing'
+                                : row[column.id] === 'Pending'
+                                ? 'pending'
                                 : ''
                             }
                           >

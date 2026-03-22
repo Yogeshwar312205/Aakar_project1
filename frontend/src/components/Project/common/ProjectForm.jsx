@@ -263,6 +263,7 @@ const ProjectForm = ({ inputValues, setInputValues, action }) => {
               <em>None</em>
             </MenuItem>
             <MenuItem value="Ongoing">Ongoing</MenuItem>
+            <MenuItem value="Pending">Pending</MenuItem>
             <MenuItem value="Completed">Completed</MenuItem>
             <MenuItem value="Overdue">Overdue</MenuItem>
           </Select>

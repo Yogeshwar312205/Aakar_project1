@@ -30,7 +30,7 @@ const AddStage = ({
   const handleAddStage = () => {
     const startDate =
       stages.length > 0 ? stages[stages.length - 1].endDate : getTodayDate()
-    
+
     const newStage = {
       id: uuid4(),
       stageName: '',
@@ -50,7 +50,7 @@ const AddStage = ({
       progress: '',
       substages: [], // Add substages array for tree view
     }
-    
+
     setStages([...stages, newStage])
     setIsChanged([...isChanged, false])
   }

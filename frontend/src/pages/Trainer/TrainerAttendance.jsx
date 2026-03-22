@@ -16,8 +16,9 @@ const AttendancePage = () => {
 
   // Fetch employee data for the training session
   useEffect(() => {
+    console.log("Training id in TrainerAttendance: ", trainingId);
     if (!trainingId) {
-      toast.error('Training ID is missing.');
+      console.log("trainerattendance");
       navigate(-1);
       return;
     }
@@ -33,7 +34,7 @@ const AttendancePage = () => {
             employeeId: employee.employeeId || employee.id,
           }))
         );
-    } 
+    }
   };
 
   // Handle checkbox selection changes
@@ -47,7 +48,7 @@ const AttendancePage = () => {
       console.error('Expected selectedRows to be an array, but received:', selectedRows);
     }
   };
-  
+
   const handleSaveAttendance = async () => {
     const attendanceData = employeeData.map((employee) => ({
       employeeId: employee.employeeId,
@@ -58,10 +59,9 @@ const AttendancePage = () => {
     try {
       await saveAttendance(attendanceData);
       toast.success('Attendance saved successfully.');
-      navigate('/TrainerViewAttendance', { state: { sessionId } });
+      navigate('/TrainerViewAttendance', { state: { trainingId, sessionId } });
     } catch (error) {
-      //toast.error('Failed to save attendance. Please try again.');
-      navigate('/TrainerViewAttendance', { state: { sessionId } });
+      toast.error('Failed to save attendance. Please try again.');
     }
   };
 

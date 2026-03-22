@@ -110,7 +110,6 @@ const CategoryWiseTickets = ({ categories }) => (
 // Updated fetchTickets function to pass the correct user info and params based on currentRole
 const fetchTickets = async (role, user, setTickets, setDepartmentTickets, setTicketSummary) => {
   try {
-    // let endpoint = "http://localhost:3000/tickets/tickets";
     let params = {};
 
     if (role?.designation === "Executive") {
@@ -128,7 +127,7 @@ const fetchTickets = async (role, user, setTickets, setDepartmentTickets, setTic
 
     const response = await axios.get(endpoint, { params });
     setTicketSummary(response.data);
-    
+
   } catch (error) {
     console.error("Error fetching tickets:", error);
   }
@@ -150,17 +149,12 @@ function App() {
   const handleRoleSelection = (role,updateCurrentRole) => {
     updateCurrentRole(role);
     setSelectedRole(role); // Set selected role
-    
-    
+
+
   };
   useEffect(() => {
-    
+
     setSelectedRole(currentRole);
-    // const interval = setInterval(() => {
-    //   if (currentRole) {
-    //     setSelectedRole(currentRole);
-    //   }
-    // }, 10000);
 
     return () => {}; // Clean up on component unmount
   }, [currentRole]);
@@ -217,7 +211,7 @@ function App() {
 
   // Calculate summary data
   const summaryData = useMemo(() => {
-    
+
     return [
       { label: 'Overdue', value: ticketSummary?.summary?.overdue ?? 0 },
       { label: 'Due today', value: ticketSummary?.summary?.dueToday ?? 0 },
@@ -230,7 +224,7 @@ function App() {
 
   // Calculate status data
   const statusData = useMemo(() => {
-    
+
     const total = ticketSummary?.summary?.allTickets ?? 0;
 
     // Provide a fallback to an empty array if `statusData` is undefined or null
@@ -260,14 +254,14 @@ function App() {
 
   }, [tickets,ticketSummary]);
 
-  
-  
+
+
 
   return (
-    
+
     <Box p={{ xs: '8px', sm: '16px' }}>
     {console.log("rendering dashboard")}
-      
+
       <div className="topline">
         <NavigationHeader title={'back'} subtitle={'back'} user={user} selectedRole={selectedRole} />
         <div className="dropdown">
@@ -301,9 +295,6 @@ function App() {
       <Grid container spacing={2}>
         <Grid item xs={12} md={4}>
         <DonutChart  priorityCount={ticketSummary.priority} />
-          {/* <Paper elevation={3} style={{ padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-           
-          </Paper> */}
         </Grid>
         <Grid item xs={12} md={4}>
           <Paper elevation={3} style={{ padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -321,5 +312,3 @@ function App() {
 }
 
 export default App;
-
-{/* <SummaryBoxes summaryData={summaryData} onCardClick={handleCardClick} />  */ }

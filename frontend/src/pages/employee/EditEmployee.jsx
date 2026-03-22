@@ -89,6 +89,13 @@ const EditEmployee = () => {
     const handleSave = (e) => {
         e.preventDefault();
 
+        // Validate required fields
+        if (!employeeInputValues.customEmployeeId || !employeeInputValues.employeeName ||
+            !employeeInputValues.employeeEmail) {
+            toast.error('Please fill in all required fields: Employee ID, Name, and Email');
+            return;
+        }
+
         // Create payload object
         const payload = {
             employee: {
@@ -104,16 +111,17 @@ const EditEmployee = () => {
             })),
         };
 
+        console.log('Updating employee:', payload);
+
         // Dispatch Redux action
-        // console.log(payload);
         dispatch(updateEmployee({ employeeId: payload.employee.employeeId, payload }))
             .unwrap()
             .then(() => {
                 notify();
                 navigate('/employees');
             })
-            .catch(() => {
-                toast.error('Failed to update employee.');
+            .catch((errorMessage) => {
+                toast.error(errorMessage || 'Failed to update employee.');
             });
     };
 

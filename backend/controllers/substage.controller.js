@@ -51,7 +51,7 @@ export const getHistorySubStagesBySubStageId = asyncHandler(
        FROM substage ss
        INNER JOIN employee eo ON ss.owner = eo.employeeId
        INNER JOIN employee cb ON ss.createdBy = cb.employeeId
-       WHERE ss.historyOf = ? 
+       WHERE ss.historyOf = ?
        ORDER BY ss.timestamp DESC;`
 
     db.query(query, [subStageId], (err, data) => {
@@ -102,7 +102,7 @@ export const getActiveSubStagesByStageId = asyncHandler(async (req, res) => {
 FROM substage ss
 INNER JOIN employee eo ON ss.owner = eo.employeeId
 INNER JOIN employee cb ON ss.createdBy = cb.employeeId
-WHERE ss.stageId = ? 
+WHERE ss.stageId = ?
 AND ss.historyOf IS NULL;`
 
   db.query(query, [stageId], (err, data) => {
@@ -243,14 +243,14 @@ export const updateSubStage = asyncHandler(async (req, res) => {
   const selectQuery = `SELECT * FROM substage WHERE substageId = ?`;
   const insertQuery = `
     INSERT INTO substage (
-      stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration, 
+      stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration,
       seqPrevStage, createdBy, progress, historyOf, updateReason, projectNumber
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const updateQuery = `
-    UPDATE substage SET 
-      stageId = ?, parentSubstageId = ?, substageName = ?, startDate = ?, endDate = ?, 
-      owner = ?, machine = ?, duration = ?, seqPrevStage = ?, 
+    UPDATE substage SET
+      stageId = ?, parentSubstageId = ?, substageName = ?, startDate = ?, endDate = ?,
+      owner = ?, machine = ?, duration = ?, seqPrevStage = ?,
       createdBy = ?, timestamp = ?, progress = ?, historyOf = NULL
     WHERE substageId = ?
   `;
@@ -429,7 +429,7 @@ export const createSubStage = asyncHandler(async (req, res) => {
     const employeeId = result[0].employeeId
 
     const stageQuery = `INSERT INTO substage (
-      stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration, 
+      stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration,
       seqPrevStage, createdBy, progress, ProjectNumber
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -538,10 +538,10 @@ export const deleteSubStage = asyncHandler(async (req, res) => {
 export const getSingleSubStageById = asyncHandler(async (req, res) => {
   const subStageId = req.params.id
   console.log('Fetching substage with ID:', subStageId)
-  const query = `SELECT ss.*, ss.parentSubstageId, eo.employeeName AS owner, cb.employeeName AS createdBy, 
+  const query = `SELECT ss.*, ss.parentSubstageId, eo.employeeName AS owner, cb.employeeName AS createdBy,
                         eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById
                  FROM substage ss
-                 INNER JOIN employee eo ON ss.owner = eo.employeeId 
+                 INNER JOIN employee eo ON ss.owner = eo.employeeId
                  INNER JOIN employee cb ON ss.createdBy = cb.employeeId
                  WHERE ss.subStageId = ? AND ss.historyOf IS NULL`
 
@@ -670,12 +670,12 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
           //    executedStartDate = MIN of substages' executedStartDate
           //    executedEndDate = MAX of substages' executedEndDate (only if ALL substages completed)
           const stageExecDateQuery = `
-            SELECT 
+            SELECT
               MIN(executedStartDate) as stageExecStart,
               MAX(executedEndDate) as stageExecEnd,
               COUNT(*) as totalSubs,
               SUM(isCompleted) as completedSubs
-            FROM substage 
+            FROM substage
             WHERE stageId = ? AND historyOf IS NULL
           `
           db.query(stageExecDateQuery, [stageId], (err, execStats) => {
@@ -699,12 +699,12 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
 
                         // 7. Auto-compute project executed dates from stages
                         const projExecDateQuery = `
-                          SELECT 
+                          SELECT
                             MIN(executedStartDate) as projExecStart,
                             MAX(executedEndDate) as projExecEnd,
                             COUNT(*) as totalStages,
                             SUM(CASE WHEN progress = 100 THEN 1 ELSE 0 END) as completedStages
-                          FROM stage 
+                          FROM stage
                           WHERE projectNumber = ? AND historyOf IS NULL
                         `
                         db.query(projExecDateQuery, [projectNumber], (err, projExecStats) => {
@@ -826,12 +826,12 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
 
           // 4. Auto-compute stage executed dates
           const stageExecDateQuery = `
-            SELECT 
+            SELECT
               MIN(executedStartDate) as stageExecStart,
               MAX(executedEndDate) as stageExecEnd,
               COUNT(*) as totalSubs,
               SUM(isCompleted) as completedSubs
-            FROM substage 
+            FROM substage
             WHERE stageId = ? AND historyOf IS NULL
           `
           db.query(stageExecDateQuery, [stageId], (err, execStats) => {
@@ -855,12 +855,12 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
 
                         // 7. Auto-compute project executed dates
                         const projExecDateQuery = `
-                          SELECT 
+                          SELECT
                             MIN(executedStartDate) as projExecStart,
                             MAX(executedEndDate) as projExecEnd,
                             COUNT(*) as totalStages,
                             SUM(CASE WHEN progress = 100 THEN 1 ELSE 0 END) as completedStages
-                          FROM stage 
+                          FROM stage
                           WHERE projectNumber = ? AND historyOf IS NULL
                         `
                         db.query(projExecDateQuery, [projectNumber], (err, projExecStats) => {
@@ -929,4 +929,3 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
     })
   })
 })
-

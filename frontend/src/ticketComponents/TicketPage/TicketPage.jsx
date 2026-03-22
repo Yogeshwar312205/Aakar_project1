@@ -37,7 +37,7 @@ function TicketPage() {
   useEffect(() => {
     console.log("Updated prop changed:", updated);
   }, [updated]);
-  
+
 
 
   useEffect(() => {
@@ -161,7 +161,7 @@ function TicketPage() {
           <button onClick={handleNewMessageClick}>
             {showTicketMessage ? 'Hide Message Form' : 'Create New Message'}
           </button>
-          
+
         </div>
         {showTicketMessage && (
             <TicketMessage ticketId={id} employeeId={1} />

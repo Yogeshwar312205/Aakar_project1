@@ -61,6 +61,7 @@ const StageComponent = ({
         const { name, value } = e.target
 
         if (name === 'progress') {
+          // Ensure progress stays within bounds (0-100)
           const numericValue = Math.min(100, Math.max(0, Number(value)))
           updatedStages[index][name] = isNaN(numericValue) ? 0 : numericValue
         } else {
@@ -104,6 +105,7 @@ const StageComponent = ({
           freeSolo
           value={stage.stageName || ''}
           onInputChange={(event, newInputValue) => {
+            // Only update if the new value is different from the current value
             if (newInputValue !== stage.stageName) {
               handleChange({
                 target: { name: 'stageName', value: newInputValue },

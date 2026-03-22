@@ -134,7 +134,7 @@ function StatusUpdate({ ticketId, currentStatus, onUpdate={} }) {
       setPendingStatusChange(null);
       setSnackbarMessage('Status updated successfully.');
       setShowDropdown(false);
-      
+
 
       // Optional: Refresh ticket data or handle success UI feedback
     } catch (err) {
@@ -145,7 +145,7 @@ function StatusUpdate({ ticketId, currentStatus, onUpdate={} }) {
       setSnackbarOpen(true);
     }
 
-    
+
   };
 
 

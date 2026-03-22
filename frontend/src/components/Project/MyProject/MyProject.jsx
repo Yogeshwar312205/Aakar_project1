@@ -291,7 +291,7 @@ const MyProject = () => {
                   fontWeight: 600,
                 }}
               >
-                📄 PO Document
+                PO Document
               </a>
             )}
             {projectDesignDocLink && (
@@ -309,7 +309,7 @@ const MyProject = () => {
                   fontWeight: 600,
                 }}
               >
-                📐 Design Document
+                Design Document
               </a>
             )}
           </div>
@@ -337,7 +337,7 @@ const MyProject = () => {
                 marginBottom: '-2px',
               }}
             >
-              📋 Stages ({activeStages.length})
+              Stages ({activeStages.length})
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -587,4 +587,3 @@ const MyProject = () => {
 }
 
 export default MyProject
-

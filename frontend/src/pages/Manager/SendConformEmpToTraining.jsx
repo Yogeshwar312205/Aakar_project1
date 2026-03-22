@@ -31,9 +31,15 @@ const SendConformEmpToTraining = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const { skill } = location.state || {}; 
-    const departmentId = useSelector((state) => state.auth.user?.departmentId); 
+    const { skill } = location.state || {};
     const employeeAccess = useSelector((state) => state.auth.user?.employeeAccess).split(",")[2];
+
+    const predepartmentId = useSelector((state) => state.auth.user?.departmentId);
+    const selectedDepartmentId = useSelector((state) => state.department.selectedDepartmentId);
+    const effectiveDepartmentId = predepartmentId || selectedDepartmentId;
+    const [departmentId , setDepartmentId] = useState(effectiveDepartmentId);
+    const departmentName = useSelector((state) => state.auth.user?.departmentName);
+    const selectedDepartmentName = useSelector((state) => state.department.selectedDepartmentName);
 
     const Add = employeeAccess[13] === "1" ;
     const Read = employeeAccess[14] === "1" ;
@@ -88,12 +94,12 @@ const SendConformEmpToTraining = () => {
 
     const handelToSend = (trainingId) => {
         if (selectToSend.length > 0 || removeEmpIds.length > 0) {
-          console.log("Employees to send:", selectToSend); 
-          
+          console.log("Employees to send:", selectToSend);
+
           axios.post('http://localhost:3000/send-multiple-emps-to-trainings', {
             trainingId: trainingId,
             selectedEmployees: selectToSend,
-            selectedEmpToRemove : removeEmpIds 
+            selectedEmpToRemove : removeEmpIds
           })
           .then((response) => {
             console.log("Employees successfully sent to training:", response.data);
@@ -106,27 +112,26 @@ const SendConformEmpToTraining = () => {
           console.log("No employees selected.");
         }
       };
-      
-    
+
+
     useEffect(() => {
         axios.get('http://localhost:3000/GetEmpFormRegister')
             .then((response) => {
-                const preSelectedEmpIds = response.data.map(emp => emp.employeeId);  
-                setPreSelectedEmp(preSelectedEmpIds); 
+                const preSelectedEmpIds = response.data.map(emp => emp.employeeId);
+                setPreSelectedEmp(preSelectedEmpIds);
                 setTrainingPreselectedemp(response.data);
-                console.log("skillsssss",skill) 
+                console.log("skillsssss",skill)
                 console.log("Add",Add);
-                console.log("Read",Read);   
+                console.log("Read",Read);
                 console.log("Update",Update);
                 console.log("Delete",Delete);
-                //setSelectToSend(preSelectedEmpIds);  
             })
             .catch((error) => {
                 console.error("Error fetching pre-selected employees:", error);
             });
     }, [selectedTrainingId]);
-    
-    
+
+
     useEffect(() => {
         axios
             .get("http://localhost:3000/departments")
@@ -149,7 +154,6 @@ const SendConformEmpToTraining = () => {
             .get(`http://localhost:3000/get-department-needed-trainings/${departmentId}`)
             .then((response) => {
                 const today = formatDateToYYYYMMDD(new Date());
-                //console.log("Start Date : " , startDate);
                 console.log("Todays Date : " , today)
                 const filteredData = response.data
                     .filter((train) => {
@@ -161,7 +165,7 @@ const SendConformEmpToTraining = () => {
                     })
                     .map((train) => ({
                         ...train,
-                        evaluationType: reverseEvaluationType(train.evaluationType), // Map evaluationType here
+                        evaluationType: reverseEvaluationType(train.evaluationType),
                     }));
 
                 console.log("Newly given:  ", filteredData);
@@ -183,7 +187,7 @@ const SendConformEmpToTraining = () => {
                     })
                     .map((train) => ({
                         ...train,
-                        evaluationType: reverseEvaluationType(train.evaluationType), // Map evaluationType here
+                        evaluationType: reverseEvaluationType(train.evaluationType),
                     }));
                 setFilterTrainingData(filteredData);
                 console.log("Depatemtn trainng data : ", filterTrainingData)
@@ -192,7 +196,7 @@ const SendConformEmpToTraining = () => {
                 console.error("Error fetching trainings:", error);
             });
         }
-        
+
     }, [departmentId]);
 
 
@@ -203,7 +207,6 @@ const SendConformEmpToTraining = () => {
             .get(`http://localhost:3000/eligible-employee-to-send-to-training`,{params : train_dept_data})
             .then((response) => {
                 const empFromAssignedTrining = response.data
-                // setEligibleEmployees(response.data.filter(emp =>!PreSelectedEmp.includes(emp.employeeId)));
                 const emp_ids =TrainingPreselectedemp.filter(emp => emp.trainingId === selectedTrainingId).map(emp => emp.employeeId);
                 const uniqueEmployees = response.data.filter(
                     (item, index, array) =>
@@ -211,7 +214,6 @@ const SendConformEmpToTraining = () => {
                   );
                 console.log("Uniques employees : ",uniqueEmployees)
                 setEligibleEmployees(uniqueEmployees);
-                //setEligibleEmployees(response.data);
                 setTrainingPreselectedempId(emp_ids);
                 setConstEmpId(emp_ids);
                 console.log("Eligible employee data : ",emp_ids)
@@ -233,7 +235,6 @@ const SendConformEmpToTraining = () => {
     };
 
         const onSelectionChange = (emp_id, isChecked) => {
-            // Update `selectToSend`
             setSelectToSend((prev = []) => {
                 const updated = isChecked
                     ? constEmpId.includes(emp_id)?[...prev]:[...prev, emp_id]
@@ -241,8 +242,7 @@ const SendConformEmpToTraining = () => {
                 console.log("Updated selectToSend:", updated);
                 return updated;
             });
-        
-            // Update `preSelectedEmp`
+
             setPreSelectedEmp((prev = []) => {
                 const updated = isChecked
                     ? [...prev, emp_id]
@@ -250,8 +250,7 @@ const SendConformEmpToTraining = () => {
                 console.log("Updated preSelectedEmp:", updated);
                 return updated;
             });
-        
-            // Update `trainingPreselectedempId`
+
             setTrainingPreselectedempId((prev = []) => {
                 const updated = isChecked
                     ? [...prev, emp_id]
@@ -259,22 +258,20 @@ const SendConformEmpToTraining = () => {
                 console.log("Updated trainingPreselectedempId:", updated);
                 return updated;
             });
-        
-            // Update `removedEmpIds` only if the employee was previously selected for this training
+
             setRemovedEmpIds((prev = []) => {
                 const updated = isChecked
-                    ? prev.filter((id) => id !== emp_id) // Remove if selected again
-                    : constEmpId.includes(emp_id) // Only add if previously selected for training
+                    ? prev.filter((id) => id !== emp_id)
+                    : constEmpId.includes(emp_id)
                     ? [...prev, emp_id]
-                    : prev; // Do nothing if not previously selected for training
+                    : prev;
                 console.log("Updated removedEmpIds:", updated);
                 return updated;
             });
-        
-            // Log action
+
             console.log(`Employee ${isChecked ? "selected" : "deselected"}:`, emp_id);
         };
-    
+
 
     const handleTrainingAdded = (training) => {
         console.log("Training added:", training);
@@ -287,19 +284,27 @@ const SendConformEmpToTraining = () => {
             evaluationType: reverseEvaluationType(training.evaluationType),
         }
         console.log("Added data:", addedData);
-        setFilterTrainingData((prevData) => [...prevData, addedData]);
+
+        setFilterTrainingData((prevData) => {
+            const existingTraining = prevData.find(t => t.trainingId === training.trainingId);
+            if (existingTraining) {
+                console.log("Training already exists in the list, not adding duplicate");
+                return prevData;
+            }
+            return [...prevData, addedData];
+        });
     }
 
     useEffect(() => {
         console.log("Updated filterTrainingData:", filterTrainingData);
     }, [filterTrainingData]);
-    
+
     function reverseEvaluationType(value) {
         const evaluationTypeMapping = {
           1: 'Multiple Choice Questions',
           2: 'Assignments',
         };
-        return evaluationTypeMapping[value] || null; 
+        return evaluationTypeMapping[value] || null;
     }
 
     const columns = [
@@ -328,7 +333,7 @@ const SendConformEmpToTraining = () => {
         },
         {label: "Evaluation Type", id: "evaluationType"},
     ];
-   
+
     return (
         <div>
             <header className="send-confirm-dash-header">
@@ -370,7 +375,7 @@ const SendConformEmpToTraining = () => {
                                 left: 0,
                                 right: 0,
                                 bottom: 0,
-                                border: '2px solid #ccc', 
+                                border: '2px solid #ccc',
                                 borderRadius: 'inherit',
                                 pointerEvents: 'none',
                                 zIndex: 1,
@@ -382,7 +387,7 @@ const SendConformEmpToTraining = () => {
                                 left: 0,
                                 right: 0,
                                 bottom: 0,
-                                height: '2px', 
+                                height: '2px',
                                 backgroundColor: '#1976d2',
                                 transform: 'scaleX(0)',
                                 transformOrigin: 'left',
@@ -390,7 +395,7 @@ const SendConformEmpToTraining = () => {
                                 zIndex: 2,
                             },
                             '&.Mui-focused::before': {
-                                border: 'none', 
+                                border: 'none',
                             },
                         },
                         '& .MuiInputLabel-root': {
@@ -478,7 +483,7 @@ const SendConformEmpToTraining = () => {
                                                                             <td>
                                                                                 <GenralCheckBox
                                                                                     emp_id={emp.employeeId}
-                                                                                    selectToSend={trainingPreSelectedEmpId}  
+                                                                                    selectToSend={trainingPreSelectedEmpId}
                                                                                     onSelectionChnge={onSelectionChange}
                                                                                 />
                                                                             </td>
@@ -487,7 +492,7 @@ const SendConformEmpToTraining = () => {
                                                                     </tr>
                                                                 ))}
 
-                                                                
+
                                                                 {(Update || Add) && (
                                                                     <tr>
                                                                         <td colSpan={columns.length} style={{ textAlign: 'right' }}>
@@ -500,7 +505,7 @@ const SendConformEmpToTraining = () => {
                                                                         </td>
                                                                     </tr>
                                                                 )}
-                                                                
+
                                                             </tbody>
                                                         </table>
                                                             ) : (
@@ -525,4 +530,3 @@ const SendConformEmpToTraining = () => {
 };
 
 export default SendConformEmpToTraining;
-

@@ -1,0 +1,24 @@
+{
+  "_comment": "Session attendance for multiple employees , attendence.jsx",
+    "Training Attendance Report": {
+      "docNo": "TR-001",
+      "OriginDate": "2024-01-10",
+      "revNo": "0200",
+      "revDate": "2024-02-15"
+    },
+    "_comment1": "Training madhe konte konte session ahet , traningdetails.jsx",
+    "Safety Training Report": {
+      "docNo": "ST-002",
+      "OriginDate": "2023-11-05",
+      "revNo": "01",
+      "revDate": "2023-12-01"
+    },
+    "_comment2": "Employee pratek session attendence, ManagerEmployeeTrainingEnrolled.jsx",
+    "Employee Training Report": {
+      "docNo": "ET-003",
+      "OriginDate": "2024-02-01",
+      "revNo": "03",
+      "revDate": "2024-02-20"
+    }
+  }
+  

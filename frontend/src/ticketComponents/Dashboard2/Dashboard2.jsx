@@ -94,8 +94,6 @@ const CategoryWiseTickets = ({ categories }) => (
 const fetchTickets = async (user, setTickets, setDepartmentTickets, setTicketSummary, department, AccessLevelValue) => {
   console.log(AccessLevelValue);
   try {
-    // let endpoint = "http://localhost:3000/tickets/tickets";
-
     let params = {};
 
     if (AccessLevelValue === 1) {
@@ -248,7 +246,7 @@ function App() {
                 AccessLevelValue === 4 ? "All Tickets" :
                   AccessLevelValue === 5 ? "Assigned Tickets" : ""
         } />
-        
+
         {(AccessLevelValue === 2 || AccessLevelValue === 3) && <div className="dropdown">
           <button
             className="dropdown-toggle"

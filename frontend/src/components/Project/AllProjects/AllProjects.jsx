@@ -92,6 +92,8 @@ const AllProjects = () => {
         return activeProjects.filter((op) => op.projectStatus === 'Overdue')
       case 'ongoing':
         return activeProjects.filter((op) => op.projectStatus === 'Ongoing')
+      case 'pending':
+        return activeProjects.filter((op) => op.projectStatus === 'Pending')
       case 'completed':
         return activeProjects.filter((op) => op.projectStatus === 'Completed')
       case 'activities':
@@ -115,6 +117,8 @@ const AllProjects = () => {
       overdue: activeProjects.filter((op) => op.projectStatus === 'Overdue')
         .length,
       ongoing: activeProjects.filter((op) => op.projectStatus === 'Ongoing')
+        .length,
+      pending: activeProjects.filter((op) => op.projectStatus === 'Pending')
         .length,
       completed: activeProjects.filter((op) => op.projectStatus === 'Completed')
         .length,
@@ -200,59 +204,7 @@ const AllProjects = () => {
       {/* Handle loading and error states */}
       {status === 'loading' && <p>Loading projects...</p>}
       {error && <p className="error-message">{error}</p>}
-      {selectedTab == 'activities' && (
-        <div>
-          <FormControl sx={{ m: 1, width: 300, marginTop: '15px' }}>
-            <InputLabel
-              id="demo-multiple-checkbox-label"
-              sx={{ fontSize: '14px' }} // Smaller font size for the label
-            >
-              {name}
-            </InputLabel>
-            <Select
-              labelId="demo-multiple-checkbox-label"
-              id="demo-multiple-checkbox"
-              multiple
-              value={includedSubparts}
-              onChange={handleChange}
-              input={
-                <OutlinedInput
-                  label="Tag"
-                  sx={{
-                    height: '40px', // Reduced height for the input field
-                    fontSize: '14px', // Smaller font size for the input field
-                  }}
-                />
-              }
-              renderValue={(selected) =>
-                selected.map((item) => item.name).join(', ')
-              }
-              MenuProps={MenuProps}
-              sx={{ fontSize: '14px' }} // Smaller font size for the select component
-            >
-              {subpartsList.map((subpart) => (
-                <MenuItem
-                  key={subpart.id}
-                  value={subpart}
-                  sx={{ height: ITEM_HEIGHT, fontSize: '14px' }} // Smaller height and font size for menu items
-                >
-                  <Checkbox
-                    checked={includedSubparts.some(
-                      (item) => item.id === subpart.id
-                    )}
-                    sx={{ padding: '6px' }} // Smaller padding for checkboxes
-                  />
-                  <ListItemText
-                    primary={subpart.name}
-                    sx={{ fontSize: '14px' }}
-                  />{' '}
-                  {/* Smaller font size for list items */}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
-      )}
+
       {/* Only render TableComponent if not loading and no error */}
       {status !== 'loading' && !error && (
         <TableComponent

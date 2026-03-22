@@ -100,7 +100,7 @@ function App() {
           <div className="create-ticket-body">Create Ticket</div>
         </div>
       </div>
-      
+
 
       <div className="dropdown-container-2">
         <div className="dropdown">
@@ -123,11 +123,11 @@ function App() {
               <button className="dropdown-item dropdown-item-2">Status</button>
             </li>
           </ul>
-          
+
         </div>
-        
+
       </div>
-      
+
 
       <div className="new-container">
         <TicketTable tickets={tickets} />
@@ -160,8 +160,8 @@ function App() {
           <FiAlertCircle className="card-icon" />
           <div className="card-body">My Tickets</div>
         </div>
-        
-        
+
+
       </div>
     </>
   );

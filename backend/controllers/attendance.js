@@ -12,7 +12,7 @@ router.get('/api/sessions/attendance/:sessionId', (req, res) => {
       LEFT JOIN attendance a ON tr.employeeId = a.employeeId AND a.sessionId = ?
       JOIN employee e ON tr.employeeId = e.employeeId
       WHERE s.sessionId = ?`;
-  
+
     connection.query(sql, [sessionId, sessionId], (err, results) => {
       if (err) {
         // console.error('Error fetching attendance:', err.message);
@@ -21,21 +21,21 @@ router.get('/api/sessions/attendance/:sessionId', (req, res) => {
       if (results.length === 0) {
         return res.status(404).json({ message: 'No attendance records found for this session.' });
       }
-  
-      res.json(results); 
+
+      res.json(results);
     });
   });
-  
-  
+
+
   // Api for fetching Attendence data in EmployeePOV
   router.get('/api/attendance', (req, res) => {
     const { employeeId, sessionId } = req.query;
-  
+
     connection.query('SELECT attendanceStatus FROM attendance WHERE employeeId = ? AND sessionId = ?', [employeeId, sessionId], (err, results) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' });
       }
-  
+
       if (results.length > 0) {
         res.json({ attendanceStatus: results[0].attendanceStatus });
       } else {
@@ -45,21 +45,21 @@ router.get('/api/sessions/attendance/:sessionId', (req, res) => {
   });
 
   router.post('/saveAttendance', (req, res) => {
-    const attendanceData = req.body; 
+    const attendanceData = req.body;
     if (!attendanceData || attendanceData.length === 0) {
       return res.status(400).send('No attendance data provided.');
     }
-    const { sessionId } = attendanceData[0]; 
-  
+    const { sessionId } = attendanceData[0];
+
     const values = attendanceData
       .map(entry => `(${entry.employeeId}, ${sessionId}, ${entry.attendanceStatus})`) // Add parentheses around each set of values
       .join(',');
-  
+
     const sqlQuery = `
       INSERT INTO attendance (employeeId, sessionId, attendanceStatus)
       VALUES ${values}
       ON DUPLICATE KEY UPDATE attendanceStatus = VALUES(attendanceStatus);`;
-  
+
     connection.query(sqlQuery, (err, result) => {
       if (err) {
         // console.error('Error inserting attendance:', err);
@@ -78,18 +78,18 @@ router.get('/viewAttendance/:sessionId', (req, res) => {
       LEFT JOIN employeeDesignation ed ON e.employeeId = ed.employeeId
       LEFT JOIN department d ON ed.departmentId = d.departmentId
       WHERE a.sessionId = ?;`;
-  
+
     connection.query(query, [sessionId], (err, results) => {
       if (err) {
         // console.error('Database query error:', err);
         return res.status(500).send('Database query error.');
       }
-  
+
       if (results.length === 0) {
         // No attendance records found
         return res.status(404).send('No attendance record found.');
       }
-  
+
       res.json(results);
     });
   });
@@ -97,8 +97,8 @@ router.get('/viewAttendance/:sessionId', (req, res) => {
 // Endpoint to save feedback
 router.post('/saveFeedback', (req, res) => {
   const feedbackArray = req.body;
-  
-  const query = `UPDATE trainingRegistration SET trainerFeedback = ? 
+
+  const query = `UPDATE trainingRegistration SET trainerFeedback = ?
     WHERE employeeId = ? AND trainingId = ?`;
 console.log("fvibhwbhs")
   feedbackArray.forEach((feedback) => {
@@ -112,6 +112,42 @@ console.log("fvibhwbhs")
     });
   });
   res.status(200).json({ message: 'Feedback saved successfully' });
+});
+
+// API route to fetch the attendance report
+router.get('/api/attendance-report', (req, res) => {
+  console.log("helooooooo");
+  const { employeeId, trainingId } = req.query;
+
+  // Validate the presence of query parameters
+  if (!employeeId || !trainingId) {
+    return res.status(400).json({ error: 'Employee ID and Training ID are required' });
+  }
+
+  // Query to fetch attendance details for the given employee and training
+  const query = `
+    SELECT
+      s.sessionId,
+      s.sessionName,
+      s.sessionDate,
+      CASE
+        WHEN a.attendanceStatus = 1 THEN 'Pass'
+        ELSE 'Fail'
+      END AS attendanceStatus
+    FROM sessions s
+    LEFT JOIN attendance a ON a.sessionId = s.sessionId AND a.employeeId = ?
+    WHERE s.trainingId = ?
+    ORDER BY s.sessionDate;
+  `;
+  console.log("helooooooo");
+  connection.query(query, [employeeId, trainingId], (err, result) => {
+    if (err) {
+      console.error("Error fetching attendance report:", err);
+      return res.status(500).json({ error: 'Error fetching attendance report' });
+    }
+    res.json({ attendanceRecords: result });  // Wrap result in an object
+  // Send the result as a JSON response
+  });
 });
 
 // Export the router

@@ -78,32 +78,6 @@ function AssigneeUpdate({ ticketId, assigneeOptions, currentAssignee, onUpdate }
     }
   }, [ticketId]);
 
-  // const handleAssigneeChange = (event) => {
-  //   setSelectedAssignee(event.target.value);
-  // };
-
-  // const handleUpdateSubmit = async () => {
-  //   if (selectedAssignee === currentAssignee) {
-  //     setSnackbarMessage('Please select a different assignee.');
-  //     setSnackbarOpen(true);
-  //     return;
-  //   }
-
-  //   setLoading(true);
-  //   try {
-  //     await axios.put(`http://localhost:3000/tickets/tickets/${ticketId}/assignee`, { assignee: selectedAssignee });
-  //     // onUpdate(selectedAssignee); // Call the parent callback to update UI
-  //     setSnackbarMessage('Assignee updated successfully.');
-  //     setShowDropdown(false);
-  //   } catch (error) {
-  //     setSnackbarMessage('Error updating assignee.');
-  //     console.error('Error updating assignee:', error);
-  //   } finally {
-  //     setLoading(false);
-  //     setSnackbarOpen(true);
-  //   }
-  // };
-
   const handleCancel = () => {
     setShowDropdown(false);
     setSelectedAssignee(currentAssignee);
@@ -149,7 +123,7 @@ function AssigneeUpdate({ ticketId, assigneeOptions, currentAssignee, onUpdate }
       if (response.status === 200) {
         console.log(response.data);
         onUpdate(Date.now());
-        
+
       }
       setRow({...row,assignee:newAssignee});
       setSnackbarMessage('Assignee updated successfully.');
@@ -159,15 +133,15 @@ function AssigneeUpdate({ ticketId, assigneeOptions, currentAssignee, onUpdate }
 
     } catch (err) {
       setSnackbarMessage('Error updating assignee.');
-      console.error('Error updating assignee:', error);
+      console.error('Error updating assignee:', err);
     }finally {
           setLoading(false);
           setSnackbarOpen(true);
           handleCloseAssigneeDialog();
         }
 
-    
-    
+
+
   };
 
 
@@ -349,4 +323,3 @@ function AssigneeUpdate({ ticketId, assigneeOptions, currentAssignee, onUpdate }
 }
 
 export default AssigneeUpdate;
- 

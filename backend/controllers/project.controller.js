@@ -203,7 +203,7 @@ export const createProject = asyncHandler(async (req, res) => {
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
   const stageQuery = `INSERT INTO stage (
-    projectNumber, stageName, startDate, endDate, owner, machine, duration, 
+    projectNumber, stageName, startDate, endDate, owner, machine, duration,
     seqPrevStage, createdBy, progress
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -367,7 +367,7 @@ export const createProject = asyncHandler(async (req, res) => {
         .then((insertedStages) => {
           // Now insert substages for each stage
           const substageQuery = `INSERT INTO substage (
-            stageId, projectNumber, substageName, startDate, endDate, owner, 
+            stageId, projectNumber, substageName, startDate, endDate, owner,
             machine, duration, createdBy, progress, parentSubstageId
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -531,15 +531,15 @@ export const updateProject = asyncHandler(async (req, res) => {
   const countHistoryQuery = `SELECT COUNT(*) AS historyCount FROM project WHERE historyOf = ?`
 
   const insertQuery = `INSERT INTO project (
-    projectNumber, companyName, dieName, dieNumber, projectStatus, startDate, endDate, 
-    projectType, projectPOLink, projectDesignDocLink, projectCreatedBy, progress, 
+    projectNumber, companyName, dieName, dieNumber, projectStatus, startDate, endDate,
+    projectType, projectPOLink, projectDesignDocLink, projectCreatedBy, progress,
     historyOf, updateReason
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
   // Query to update the project
-  const updateQuery = `UPDATE project SET 
-    companyName = ?, dieName = ?, dieNumber = ?, projectStatus = ?, 
-    startDate = ?, endDate = ?, projectType = ?, projectPOLink = ?, 
+  const updateQuery = `UPDATE project SET
+    companyName = ?, dieName = ?, dieNumber = ?, projectStatus = ?,
+    startDate = ?, endDate = ?, projectType = ?, projectPOLink = ?,
     projectDesignDocLink = ?, projectCreatedBy = ?, progress = ?,
     timestamp = ?, historyOf = NULL
     WHERE projectNumber = ?`
@@ -680,8 +680,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
 
   // Get active stages for this project
   const activeStagesQuery = `
-    SELECT s.*, 
-      eo.employeeName AS ownerName, 
+    SELECT s.*,
+      eo.employeeName AS ownerName,
       cb.employeeName AS createdByName
     FROM stage s
     LEFT JOIN employee eo ON s.owner = eo.employeeId
@@ -692,8 +692,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
 
   // Get all stage history records for this project
   const stageHistoryQuery = `
-    SELECT s.*, 
-      eo.employeeName AS ownerName, 
+    SELECT s.*,
+      eo.employeeName AS ownerName,
       cb.employeeName AS createdByName
     FROM stage s
     LEFT JOIN employee eo ON s.owner = eo.employeeId
@@ -704,8 +704,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
 
   // Get all active substages for this project
   const activeSubstagesQuery = `
-    SELECT ss.*, 
-      eo.employeeName AS ownerName, 
+    SELECT ss.*,
+      eo.employeeName AS ownerName,
       cb.employeeName AS createdByName,
       st.stageName AS parentStageName
     FROM substage ss
@@ -718,8 +718,8 @@ export const getProjectHistory = asyncHandler(async (req, res) => {
 
   // Get all substage history records for this project
   const substageHistoryQuery = `
-    SELECT ss.*, 
-      eo.employeeName AS ownerName, 
+    SELECT ss.*,
+      eo.employeeName AS ownerName,
       cb.employeeName AS createdByName,
       st.stageName AS parentStageName
     FROM substage ss

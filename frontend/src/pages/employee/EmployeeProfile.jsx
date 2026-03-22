@@ -7,7 +7,8 @@ import TableComponent from "../../components/Table/TableComponent.jsx";
 import AccessTableOutput from "./AccessTableOutput.jsx";
 import { MdAutoDelete } from "react-icons/md";
 import './EmployeeDashboard.css';
-import {Bounce, toast} from "react-toastify";
+import {Bounce, toast, ToastContainer} from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 import AccessDisplay from "./AccessDisplay.jsx";
 
 function EmployeeProfile() {
@@ -15,8 +16,9 @@ function EmployeeProfile() {
     const dispatch = useDispatch(); // Use dispatch hook to dispatch actions
     const allEmployeesData = useSelector((state) => state?.employee); // Fetch employees from Redux store
     const employeesData = allEmployeesData.employees;
-    const access = useSelector((state) =>  state?.auth?.user?.employeeAccess).split(',')
-    const HRManagementAccess = access[0];
+    const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
+    const access = employeeAccess ? employeeAccess.split(',') : [];
+    const HRManagementAccess = access[0] || '';
 
     console.log(allEmployeesData)
 
@@ -42,10 +44,16 @@ function EmployeeProfile() {
         console.log("Are you sure you want to delete this employee?", employee.employee.employeeId)
         const confirmDelete = window.confirm("Are you sure you want to delete this employee?");
         if (confirmDelete) {
-            dispatch(deleteEmployee(employee.employee.employeeId)); // Dispatch delete action
-            navigate("/employees")
+            dispatch(deleteEmployee(employee.employee.employeeId))
+                .unwrap()
+                .then(() => {
+                    notify();
+                    navigate("/employees");
+                })
+                .catch((errorMessage) => {
+                    toast.error(errorMessage || 'Failed to delete employee.');
+                });
         }
-        notify()
     };
 
     const handleEdit = () => {
@@ -161,6 +169,7 @@ function EmployeeProfile() {
                     <TableComponent columns={columns} rows={[]} searchLabel={'Search by project name'}/>
                 </section>
             </div>
+            <ToastContainer />
         </div>
     );
 }

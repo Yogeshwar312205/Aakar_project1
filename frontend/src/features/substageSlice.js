@@ -1,6 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import axios from 'axios'
 
+const BASE_URL = 'http://localhost:3000'
+
 const initialSubStageState = {
   substage: {},
   substages: [],
@@ -14,7 +16,7 @@ export const addSubStage = createAsyncThunk(
   'subStages/addStage',
   async (stage) => {
     const response = await axios.post(
-      'http://localhost:3000/api/subStages',
+      `${BASE_URL}/api/subStages`,
       stage,
       {
         withCredentials: true,
@@ -29,7 +31,7 @@ export const updateSubStage = createAsyncThunk(
   async (s) => {
     console.log(s)
     const response = await axios.put(
-      `http://localhost:3000/api/subStages/${s.substageId}`,
+      `${BASE_URL}/api/subStages/${s.substageId}`,
       s,
       {
         withCredentials: true,
@@ -43,7 +45,7 @@ export const getActiveSubStagesByStageId = createAsyncThunk(
   'stage/getActiveSubStagesByStageId',
   async (id = '') => {
     const response = await axios.get(
-      `http://localhost:3000/api/activeSubStages/${id}`,
+      `${BASE_URL}/api/activeSubStages/${id}`,
       {
         withCredentials: true,
       }
@@ -56,7 +58,7 @@ export const getHistorySubStagesBySubStageId = createAsyncThunk(
   'stage/getHistorySubStagesBySubStageId',
   async (id = '') => {
     const response = await axios.get(
-      `http://localhost:3000/api/historySubStages/${id}`,
+      `${BASE_URL}/api/historySubStages/${id}`,
       {
         withCredentials: true,
       }
@@ -69,7 +71,7 @@ export const getSubStagesByStageId = createAsyncThunk(
   'stage/getSubStagesByStageId',
   async (id = '') => {
     const response = await axios.get(
-      `http://localhost:3000/api/subStages/${id}`,
+      `${BASE_URL}/api/subStages/${id}`,
       {
         withCredentials: true,
       }
@@ -82,7 +84,7 @@ export const getSubStagesByProjectNumber = createAsyncThunk(
   'stage/getSubStagesByProjectNumber',
   async (id = '') => {
     const response = await axios.get(
-      `http://localhost:3000/api/project/subStages/${id}`,
+      `${BASE_URL}/api/project/subStages/${id}`,
       {
         withCredentials: true,
       }
@@ -96,7 +98,7 @@ export const deleteSubStage = createAsyncThunk(
   async (id = '') => {
     console.log(id)
     const response = await axios.delete(
-      `http://localhost:3000/api/subStages/${id}`,
+      `${BASE_URL}/api/subStages/${id}`,
       {
         withCredentials: true,
       }
@@ -110,7 +112,7 @@ export const toggleSubStageCompletion = createAsyncThunk(
   'substages/toggleCompletion',
   async ({ substageId, isCompleted, executedStartDate, executedEndDate }) => {
     const response = await axios.put(
-      `http://localhost:3000/api/subStages/${substageId}/completion`,
+      `${BASE_URL}/api/subStages/${substageId}/completion`,
       { isCompleted, executedStartDate, executedEndDate },
       { withCredentials: true }
     )
@@ -122,7 +124,7 @@ export const updateSubStageProgress = createAsyncThunk(
   'substages/updateProgress',
   async ({ substageId, progress, executedStartDate, executedEndDate }) => {
     const response = await axios.put(
-      `http://localhost:3000/api/subStages/${substageId}/progress`,
+      `${BASE_URL}/api/subStages/${substageId}/progress`,
       { progress, executedStartDate, executedEndDate },
       { withCredentials: true }
     )

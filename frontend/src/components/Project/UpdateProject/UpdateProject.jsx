@@ -34,6 +34,7 @@ const UpdateProject = () => {
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
   ).split(',')[1]
+
   const params = useParams()
   const pNo = params.id
   const dispatch = useDispatch()
@@ -326,7 +327,7 @@ const UpdateProject = () => {
           <div style={{ marginTop: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#212529', margin: 0 }}>
-                📋 Stage Management
+                Stage Management
                 <span
                   style={{
                     fontSize: '12px',

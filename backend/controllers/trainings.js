@@ -3,38 +3,67 @@ import express from "express";
 const router = express.Router();
 
 
-//add training
+//add training - checks for existing training with same name, dates, and trainer first
 router.post('/add-training', (req, res) => {
   const { trainingTitle, startTrainingDate, endTrainingDate, trainerId, skills, evaluationType } = req.body;
 
-  const query = 'INSERT INTO training (trainingTitle, startTrainingDate, endTrainingDate, trainerId, evaluationType) VALUES (?, ?, ?, ?, ?)';
-  connection.query(query, [trainingTitle, startTrainingDate, endTrainingDate, trainerId, evaluationType], (err, result) => {
-    if (err) {
-      console.error('Error inserting training:', err);
-      return res.status(500).send('Failed to insert training');
+  // First, check if a training with the same title, dates, and trainer already exists
+  const checkExistingQuery = `
+    SELECT trainingId FROM training
+    WHERE trainingTitle = ?
+    AND startTrainingDate = ?
+    AND endTrainingDate = ?
+    AND trainerId = ?
+  `;
+
+  connection.query(checkExistingQuery, [trainingTitle, startTrainingDate, endTrainingDate, trainerId], (checkErr, existingResults) => {
+    if (checkErr) {
+      console.error('Error checking existing training:', checkErr);
+      return res.status(500).send('Failed to check existing training');
     }
-    const trainingId = result.insertId;
-    
-    if (skills && skills.length > 0) {
-      const skillQueries = skills.map(skill => {
-        return new Promise((resolve, reject) => {
-          const skillQuery = 'INSERT INTO trainingSkills (trainingId, skillId) VALUES (?, ?)';
-          connection.query(skillQuery, [trainingId, skill.id], (err) => {  // Changed skill.id to skill
-            if (err) {
-              console.error('Error inserting skill:', err);
-              reject(err);
-            } else {
-              resolve();
-            }
-            console.log(skill);  
-          });
-        });
+
+    // If training already exists, return the existing training ID
+    if (existingResults.length > 0) {
+      const existingTrainingId = existingResults[0].trainingId;
+      console.log('Training already exists with ID:', existingTrainingId);
+      return res.status(200).json({
+        message: 'Training already exists',
+        trainingId: existingTrainingId,
+        isExisting: true
       });
     }
-    return res.status(201).json({ message: 'Training added successfully',trainingId: trainingId});
-  })})
-  
-  
+
+    // If no existing training found, create a new one
+    const insertQuery = 'INSERT INTO training (trainingTitle, startTrainingDate, endTrainingDate, trainerId, evaluationType) VALUES (?, ?, ?, ?, ?)';
+    connection.query(insertQuery, [trainingTitle, startTrainingDate, endTrainingDate, trainerId, evaluationType], (err, result) => {
+      if (err) {
+        console.error('Error inserting training:', err);
+        return res.status(500).send('Failed to insert training');
+      }
+      const trainingId = result.insertId;
+
+      if (skills && skills.length > 0) {
+        const skillQueries = skills.map(skill => {
+          return new Promise((resolve, reject) => {
+            const skillQuery = 'INSERT INTO trainingSkills (trainingId, skillId) VALUES (?, ?)';
+            connection.query(skillQuery, [trainingId, skill.id], (err) => {
+              if (err) {
+                console.error('Error inserting skill:', err);
+                reject(err);
+              } else {
+                resolve();
+              }
+              console.log(skill);
+            });
+          });
+        });
+      }
+      return res.status(201).json({ message: 'Training added successfully', trainingId: trainingId, isExisting: false });
+    });
+  });
+})
+
+
   router.get('/all-training/:departmentId', (req, res) => {
     const departmentId = req.params.departmentId;
     const query = `
@@ -47,7 +76,7 @@ router.post('/add-training', (req, res) => {
       WHERE s.departmentId = ?
       GROUP BY t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, e.employeeName
     `;
-  
+
     connection.query(query,[departmentId], (err, result) => {
       if (err) {
         console.error('Error fetching training data:', err);
@@ -57,12 +86,12 @@ router.post('/add-training', (req, res) => {
       }
     });
   });
-  
-  
+
+
   router.put('/update-training/:trainingId', (req, res) => {
     const trainingId = req.params.trainingId;
     const { trainingTitle, trainerId, startTrainingDate, endTrainingDate, skills, evaluationType } = req.body;
-  
+
     if (!trainingTitle || !trainerId || !startTrainingDate || !endTrainingDate || !evaluationType) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
@@ -71,7 +100,7 @@ router.post('/add-training', (req, res) => {
       SET trainingTitle = ?, trainerId = ?, startTrainingDate = ?, endTrainingDate = ?, evaluationType = ?
       WHERE trainingId = ?;
     `;
-  
+
     connection.query(
       updateTrainingQuery,
       [trainingTitle, trainerId, startTrainingDate, endTrainingDate, evaluationType, trainingId, evaluationType],
@@ -80,11 +109,11 @@ router.post('/add-training', (req, res) => {
           console.error('Error updating training:', err);
           return res.status(500).json({ message: 'Error updating training details.' });
         }
-  
+
         if (result.affectedRows === 0) {
           return res.status(404).json({ message: 'Training not found.' });
         }
-  
+
         if (skills && skills.length > 0) {
           const deleteSkillsQuery = 'DELETE FROM trainingSkills WHERE trainingId = ?';
           connection.query(deleteSkillsQuery, [trainingId], (err) => {
@@ -94,15 +123,15 @@ router.post('/add-training', (req, res) => {
             }
             const insertSkillsQuery = `
               INSERT INTO trainingSkills (trainingId, skillId) VALUES ?`;
-  
+
             const skillValues = skills.map(skill => [trainingId, skill.id]); // Fix applied here
-  
+
             connection.query(insertSkillsQuery, [skillValues], (err) => {
               if (err) {
                 console.error('Error inserting training skills:', err);
                 return res.status(500).json({ message: 'Error updating training skills.' });
               }
-  
+
               res.status(200).json({ message: 'Training and skills updated successfully.' });
             });
           });
@@ -112,33 +141,33 @@ router.post('/add-training', (req, res) => {
       }
     );
   });
-    
+
   router.delete('/delete-training/:trainingId', (req, res) => {
     const trainingId = req.params.trainingId;
-  
+
     const deleteSkillsQuery = 'DELETE FROM trainingskills WHERE trainingId = ?';
-    
+
     connection.query(deleteSkillsQuery, [trainingId], (err, skillResult) => {
       if (err) {
         console.error('Error deleting associated skills:', err);
         return res.status(500).send('Failed to delete associated skills');
       }
-  
+
       const deleteSessionsQuery = 'DELETE FROM sessions WHERE trainingId = ?';
-  
+
       connection.query(deleteSessionsQuery, [trainingId], (err, sessionResult) => {
         if (err) {
           console.error('Error deleting associated sessions:', err);
           return res.status(500).send('Failed to delete associated sessions');
         }
-  
+
         const deleteTrainingQuery = 'DELETE FROM training WHERE trainingId = ?';
         connection.query(deleteTrainingQuery, [trainingId], (err, trainingResult) => {
           if (err) {
             console.error('Error deleting training:', err);
             return res.status(500).send('Failed to delete training');
           }
-  
+
           res.send({ message: 'Training and associated sessions and skills deleted successfully' });
         });
       });
@@ -148,15 +177,15 @@ router.post('/add-training', (req, res) => {
 // Endpoint to fetch employees enrolled in a specific training in managerPOV
 router.get('/ManagerPOV/employeesEnrolled/:trainingId', (req, res) => {
   const trainingId = req.params.trainingId;
-  const query = `SELECT 
-    e.employeeId, 
-    e.employeeName, 
-    d.departmentName, 
-    s.skillName, 
+  const query = `SELECT
+    e.employeeId,
+    e.employeeName,
+    d.departmentName,
+    s.skillName,
     s.skillId,
-    es.grade, 
-    tr.trainerFeedback 
-FROM 
+    es.grade,
+    tr.trainerFeedback
+FROM
     trainingSkills ts
     INNER JOIN skill s ON ts.skillId = s.skillId
     INNER JOIN trainingRegistration tr ON ts.trainingId = tr.trainingId
@@ -164,7 +193,7 @@ FROM
     LEFT JOIN employeeDesignation ed ON e.employeeId = ed.employeeId
     LEFT JOIN department d ON ed.departmentId = d.departmentId
     LEFT JOIN employeeSkill es ON e.employeeId = es.employeeId AND es.skillId = s.skillId
-WHERE 
+WHERE
     ts.trainingId = ?;
 `;
 

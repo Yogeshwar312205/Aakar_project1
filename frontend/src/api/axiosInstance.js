@@ -1,6 +1,6 @@
 import axios from 'axios';
 import store from '../store/store.js';
-// import {loginSuccess, logout} from '../features/authSlice.js'; // Action to set login state
+import {loginSuccess, logout} from '../features/authSlice.js'; // Action to set login state
 
 const axiosInstance = axios.create({
     baseURL: 'http://localhost:3000/', // Set your API base URL

@@ -51,11 +51,11 @@ export const getAllStages = asyncHandler(async (req, res) => {
 
 export const getActiveStagesByProjectNumber = asyncHandler(async (req, res) => {
   const pNo = req.params.id
-  const query = `SELECT s.*, eo.customEmployeeId AS ownerId , cb.employeeName AS createdBy,eo.employeeName AS owner,cb.customEmployeeId AS createdById 
+  const query = `SELECT s.*, eo.customEmployeeId AS ownerId , cb.employeeName AS createdBy,eo.employeeName AS owner,cb.customEmployeeId AS createdById
      FROM stage s
      INNER JOIN employee eo ON s.owner = eo.employeeId
      INNER JOIN employee cb ON s.createdBy = cb.employeeId
-     WHERE s.projectNumber = ? 
+     WHERE s.projectNumber = ?
      AND s.historyOf IS NULL;`
 
   db.query(query, [pNo], (err, data) => {
@@ -137,7 +137,7 @@ export const getHistoryStagesByStageId = asyncHandler(async (req, res) => {
                  FROM stage s
                  INNER JOIN employee eo ON s.owner = eo.employeeId
                  INNER JOIN employee cb ON s.createdBy = cb.employeeId
-                 WHERE s.historyOf = ? 
+                 WHERE s.historyOf = ?
                  ORDER BY s.timestamp;`
 
   db.query(query, [sId], (err, data) => {
@@ -310,7 +310,7 @@ export const createStage = asyncHandler(async (req, res) => {
     const employeeId = result[0].employeeId
 
     const query = `INSERT INTO stage (
-      projectNumber, stageName, startDate, endDate, owner, machine, duration, 
+      projectNumber, stageName, startDate, endDate, owner, machine, duration,
       seqPrevStage, createdBy, progress
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -407,12 +407,12 @@ export const updateStage = asyncHandler(async (req, res) => {
 
   const selectQuery = `SELECT * FROM stage WHERE stageId = ?`
   const insertQuery = `INSERT INTO stage (
-    projectNumber, stageName, startDate, endDate, owner, machine, duration, 
+    projectNumber, stageName, startDate, endDate, owner, machine, duration,
     seqPrevStage, createdBy, progress, historyOf, updateReason
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  const updateQuery = `UPDATE stage SET 
-    projectNumber = ?, stageName = ?, startDate = ?, endDate = ?, 
-    owner = ?, machine = ?, duration = ?, seqPrevStage = ?,  
+  const updateQuery = `UPDATE stage SET
+    projectNumber = ?, stageName = ?, startDate = ?, endDate = ?,
+    owner = ?, machine = ?, duration = ?, seqPrevStage = ?,
     createdBy = ?, progress = ?, timestamp = ?, historyOf = NULL
     WHERE stageId = ?`
 
@@ -643,12 +643,12 @@ export const updateStageProgress = asyncHandler(async (req, res) => {
 
           // 4. Auto-compute project executed dates
           const projExecDateQuery = `
-            SELECT 
+            SELECT
               MIN(executedStartDate) as projExecStart,
               MAX(executedEndDate) as projExecEnd,
               COUNT(*) as totalStages,
               SUM(CASE WHEN progress = 100 THEN 1 ELSE 0 END) as completedStages
-            FROM stage 
+            FROM stage
             WHERE projectNumber = ? AND historyOf IS NULL
           `
           db.query(projExecDateQuery, [projectNumber], (err, projExecStats) => {

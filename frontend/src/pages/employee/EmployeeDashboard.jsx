@@ -1,47 +1,101 @@
-import React, {useEffect, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {useNavigate} from 'react-router-dom';
-import {getAllEmployees} from '../..//features/employeeSlice.js';
-import {FiPlusCircle} from 'react-icons/fi';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { getAllEmployees } from '../../features/employeeSlice.js';
+import { FiPlusCircle } from 'react-icons/fi';
 import Infocard from "../../components/Infocard/Infocard.jsx";
 import TableComponent from "../../components/Table/TableComponent.jsx";
+import { FaFileImport } from "react-icons/fa";
+import Modal from "react-modal";
+import { BarLoader, RingLoader } from 'react-spinners';
 
 const EmployeeList = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const {employees, loading, error} = useSelector((state) => state.employee);
+    const { employees, loading, error } = useSelector((state) => state.employee);
 
-    const access = useSelector((state) => state?.auth?.user?.employeeAccess).split(',')
-    const HRManagementAccess = access[0];
+    const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
+    const access = employeeAccess ? employeeAccess.split(',') : [];
+    const HRManagementAccess = access[0] || '';
     console.log(HRManagementAccess);
+
     const [rows, setRows] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [importError, setImportError] = useState(null);
+
     const columns = [
-        {id: 'empId', label: 'Employee ID', align: 'left'},
-        {id: 'empName', label: 'Name', align: 'left'},
-        {id: 'empEmail', label: 'Email ID', align: 'left'},
-        {id: 'empJobTitle', label: 'Role', align: 'left'},
-        {id: 'empDept', label: 'Department', align: 'left'},
+        { id: 'empId', label: 'Employee ID', align: 'left' },
+        { id: 'empName', label: 'Name', align: 'left' },
+        { id: 'empEmail', label: 'Email ID', align: 'left' },
+        { id: 'empJobTitle', label: 'Role', align: 'left' },
+        { id: 'empDept', label: 'Department', align: 'left' },
     ];
 
+    const openModal = () => {
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setImportError(null);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        setSelectedFile(file);
+    };
+
+    const handleImport = async () => {
+        if (!selectedFile) {
+            alert('Please select a file first!');
+            return;
+        }
+
+        setIsUploading(true);
+        setImportError(null);
+
+        const formData = new FormData();
+        formData.append('employeeExcel', selectedFile);
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/v1/employee/importEmployees`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Data imported successfully!');
+                setIsModalOpen(false);
+            } else {
+                setImportError(data.errors);
+            }
+        } catch (error) {
+            console.error('Error importing data:', error);
+            alert('An error occurred while importing the data');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     useEffect(() => {
-        // console.log("Getting Employee Details")
+        Modal.setAppElement('#root');
         dispatch(getAllEmployees());
     }, [dispatch]);
 
-
     useEffect(() => {
-        // console.log(employees)
         if (employees) {
-
             const processedRows = employees.map((data, index) => {
-                const {employee, jobProfiles} = data;
+                const { employee, jobProfiles } = data;
 
-                // Extract and join job profile details
                 const roles = jobProfiles.map((profile) => profile.designationName || "N/A").join(", ");
                 const departments = jobProfiles.map((profile) => profile.departmentName || "N/A").join(", ");
 
                 return {
-                    id: index + 1, // Row ID
+                    id: index + 1,
                     empId: employee?.customEmployeeId,
                     empName: employee?.employeeName,
                     empEmail: employee?.employeeEmail,
@@ -50,12 +104,9 @@ const EmployeeList = () => {
                     createdAt: employee?.createdAt,
                 };
             });
-            // console.log(processedRows)
             setRows(processedRows);
         }
     }, [employees]);
-
-    // console.log(rows)
 
     if (loading) return <p>Loading...</p>;
     if (error) return <p>Error: {error}</p>;
@@ -71,26 +122,25 @@ const EmployeeList = () => {
                         className={'selected'}
                     />
                 </div>
-                {
-                    HRManagementAccess[1] === '1' && <button
-                        className="flex border-2 border-[#0061A1] rounded text-[#0061A1] font-semibold p-3 hover:cursor-pointer"
-                        onClick={() => navigate('/employee/addEmployee')}>
-                        <FiPlusCircle style={{marginRight: '10px', width: '25px', height: '25px'}}/>
-                        Add employee
+
+                <div className={`flex gap-3`}>
+                    <button onClick={openModal} className={`flex border-2 border-[#0061A1] rounded items-center text-[#0061A1] font-semibold p-3 gap-2 hover:cursor-pointer`}>
+                        <FaFileImport size={20} />
+                        Import
                     </button>
-                }
+
+                    {
+                        HRManagementAccess[1] === '1' && <button
+                            className="flex border-2 border-[#0061A1] rounded text-[#0061A1] font-semibold p-3 hover:cursor-pointer"
+                            onClick={() => navigate('/employee/addEmployee')}>
+                            <FiPlusCircle style={{ marginRight: '10px', width: '25px', height: '25px' }} />
+                            Add employee
+                        </button>
+                    }
+                </div>
             </div>
 
             <div className='employee-list-container'>
-                <div className='flex items-center justify-between'>
-                    {/*<Searchbar*/}
-                    {/*    items={rows}*/}
-                    {/*    itemKey="empId" // Assuming each employee has an empId as a unique key*/}
-                    {/*    itemLabel="empName" // Name to search by*/}
-                    {/*    navigateTo="/employee"*/}
-                    {/*/>*/}
-                </div>
-
                 <TableComponent
                     rows={rows}
                     columns={columns}
@@ -102,6 +152,61 @@ const EmployeeList = () => {
                     searchLabel="Search by Employee Name"
                 />
             </div>
+
+            <Modal
+                isOpen={isModalOpen}
+                onRequestClose={closeModal}
+                contentLabel="Import Data Modal"
+                className="relative bg-white rounded-lg p-6 w-full max-w-md mx-auto"
+                overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+            >
+                <h2 className="text-xl font-semibold mb-4">Import Data</h2>
+
+                <div>
+                    <form>
+                        <input
+                            type="file"
+                            className="bg-blue-500 text-white py-2 px-4 rounded cursor-pointer hover:bg-blue-600"
+                            onChange={handleFileChange}
+                        />
+                    </form>
+                </div>
+
+                {isUploading && (
+                    <div className="flex justify-center mt-4">
+                        <BarLoader color="#0061A1" loading={isUploading} size={50} />
+                    </div>
+                )}
+
+                {importError && (
+                    <div className="mt-4 text-red-500">
+                        <h3 className="font-semibold">Import Errors:</h3>
+                        <ul>
+                            {importError.map((error, index) => (
+                                <li key={index}>
+                                    <strong>{error.row.employeeName}:</strong> {error.error}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                <div className="flex justify-end gap-4 mt-6">
+                    <button
+                        onClick={handleImport}
+                        className="bg-[#0061A1] text-white px-4 py-2 rounded"
+                        disabled={isUploading}
+                    >
+                        Import
+                    </button>
+                    <button
+                        onClick={closeModal}
+                        className="bg-white text-[#0061A1] border-2 border-[#0061A1] px-4 py-2 rounded"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
         </div>
     );
 };

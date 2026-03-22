@@ -25,6 +25,7 @@ const AccessDisplay = ({ accessString }) => {
             'View department created tickets',
             'View department assigned tickets',
             'View all tickets',
+            'View assigned tickets',
             'Change ticket status',
             'Change ticket assignee',
             'Get and release ticket',

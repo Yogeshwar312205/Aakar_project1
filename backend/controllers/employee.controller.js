@@ -4,6 +4,26 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import bcrypt from "bcrypt";
 import {generateAccessToken, generateRefreshToken} from "../utils/tokens.js";
+import xlsx from "xlsx";
+import nodemailer from "nodemailer";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    port: 465,
+    auth: {
+        user: "rushikeshghodke7455@gmail.com",
+        pass: "wvhc nsgh iomn ****",
+    },
+});
+
 
 const generateAccessAndRefreshToken = async (employeeId) => {
     try {
@@ -27,109 +47,6 @@ const generateAccessAndRefreshToken = async (employeeId) => {
         throw new ApiError(500, "Something went wrong while creating tokens.");
     }
 };
-
-// export const loginEmployee = asyncHandler(async (req, res) => {
-//     const {employeeEmail, employeePassword} = req.body;
-//
-//     // Find employee by email
-//     connection.query(
-//         "SELECT * FROM employee WHERE employeeEmail = ?",
-//         [employeeEmail],
-//         async (err, results) => {
-//             if (err || results.length === 0) {
-//                 return res.status(401).json({message: "Invalid email or password"});
-//             }
-//
-//             const employee = results[0];
-//
-//             // Check if the password matches
-//             const isPasswordValid = await bcrypt.compare(employeePassword, employee.employeePassword);
-//             if (!isPasswordValid) {
-//                 return res.status(401).json({message: "Invalid email or password"});
-//             }
-//
-//             // Generate access and refresh tokens
-//             const {accessToken, refreshToken} = await generateAccessAndRefreshToken(employee.employeeId);
-//
-//             // Update refresh token in the database
-//             try {
-//                 await connection.promise().query(
-//                     "UPDATE employee SET employeeRefreshToken = ? WHERE employeeId = ?",
-//                     [refreshToken, employee.employeeId]
-//                 );
-//             } catch (error) {
-//                 console.error("Error updating refresh token:", error.message);
-//                 return res.status(500).json(
-//                     new ApiResponse(500, {}, "Error while updating refresh token")
-//                 );
-//             }
-//
-//             // Fetch employee details without sensitive information
-//             const [employeeData] = await connection.promise().query(
-//                 `SELECT
-//                     e.employeeId,
-//                     e.customEmployeeId,
-//                     e.employeeName,
-//                     e.companyName,
-//                     e.employeeQualification,
-//                     e.experienceInYears,
-//                     e.employeeDOB,
-//                     e.employeeJoinDate,
-//                     e.employeeGender,
-//                     e.employeePhone,
-//                     e.employeeEmail,
-//                     e.employeeAccess,
-//                     e.createdAt,
-//                     e.employeeEndDate,
-//                     d.departmentName,
-//                     ds.designationName,
-//                     m.employeeName AS managerName
-//                 FROM
-//                     employee e
-//                 LEFT JOIN
-//                     employeeDesignation ed ON e.employeeId = ed.employeeId
-//                 LEFT JOIN
-//                     department d ON ed.departmentId = d.departmentId
-//                 LEFT JOIN
-//                     designation ds ON ed.designationId = ds.designationId
-//                 LEFT JOIN
-//                     employee m ON ed.managerId = m.employeeId
-//                 WHERE
-//                     e.employeeId = ?;`,
-//                 [employee.employeeId]
-//             );
-//
-//             if (employeeData.length === 0) {
-//                 return res
-//                     .status(404)
-//                     .json({message: "Employee not found after login."});
-//             }
-//
-//             const employeeDetails = employeeData[0];
-//
-//             // Set accessToken as an HTTP-only cookie
-//             const cookieOptions = {
-//                 httpOnly: true,
-//                 secure: true,
-//                 sameSite: "None",
-//             };
-//
-//             console.log(accessToken.length, refreshToken.length)
-//             // Respond with employee details, accessToken, and refreshToken
-//             return res
-//                 .status(200)
-//                 .cookie("accessToken", accessToken, cookieOptions)
-//                 .cookie("refreshToken", refreshToken, cookieOptions)
-//                 .json(
-//                     new ApiResponse(200, {
-//                         user: employeeDetails,
-//                         accessToken,
-//                         refreshToken,
-//                     })
-//                 );
-//         }
-//     );
-// });
 
 export const loginEmployee = asyncHandler(async (req, res) => {
     const { employeeEmail, employeePassword } = req.body;
@@ -181,37 +98,37 @@ export const loginEmployee = asyncHandler(async (req, res) => {
 
             // Fetch employee details without sensitive information
             const [employeeData] = await connection.promise().query(
-                `SELECT 
+                `SELECT
                     e.employeeId,
-                    e.customEmployeeId, 
-                    e.employeeName, 
-                    e.companyName, 
-                    e.employeeQualification, 
-                    e.experienceInYears, 
-                    e.employeeDOB, 
-                    e.employeeJoinDate, 
-                    e.employeeGender, 
-                    e.employeePhone, 
-                    e.employeeEmail, 
-                    e.employeeAccess, 
+                    e.customEmployeeId,
+                    e.employeeName,
+                    e.companyName,
+                    e.employeeQualification,
+                    e.experienceInYears,
+                    e.employeeDOB,
+                    e.employeeJoinDate,
+                    e.employeeGender,
+                    e.employeePhone,
+                    e.employeeEmail,
+                    e.employeeAccess,
                     e.createdAt,
-                    e.employeeEndDate, 
+                    e.employeeEndDate,
                     d.departmentId,
                     d.departmentName,
                     ds.designationId,
                     ds.designationName,
                     m.employeeName AS managerName
-                FROM 
+                FROM
                     employee e
-                LEFT JOIN 
+                LEFT JOIN
                     employeeDesignation ed ON e.employeeId = ed.employeeId
-                LEFT JOIN 
+                LEFT JOIN
                     department d ON ed.departmentId = d.departmentId
-                LEFT JOIN 
+                LEFT JOIN
                     designation ds ON ed.designationId = ds.designationId
-                LEFT JOIN 
+                LEFT JOIN
                     employee m ON ed.managerId = m.employeeId
-                WHERE 
+                WHERE
                     e.employeeId = ?;`,
                 [employee.employeeId]
             );
@@ -226,21 +143,21 @@ export const loginEmployee = asyncHandler(async (req, res) => {
 
             // Fetch job profiles (department, designation, manager)
             const [jobProfiles] = await connection.promise().query(
-                `SELECT 
-                    ds.designationId, 
-                    ds.designationName, 
+                `SELECT
+                    ds.designationId,
+                    ds.designationName,
                     d.departmentId,
-                    d.departmentName, 
+                    d.departmentName,
                     m.employeeName AS managerName
-                FROM 
+                FROM
                     employeeDesignation ed
-                LEFT JOIN 
+                LEFT JOIN
                     department d ON ed.departmentId = d.departmentId
-                LEFT JOIN 
+                LEFT JOIN
                     designation ds ON ed.designationId = ds.designationId
-                LEFT JOIN 
+                LEFT JOIN
                     employee m ON ed.managerId = m.employeeId
-                WHERE 
+                WHERE
                     ed.employeeId = ?;`,
                 [employee.employeeId]
             );
@@ -296,103 +213,163 @@ export const logoutEmployee = asyncHandler(async (req, res) => {
 });
 
 export const addEmployee = asyncHandler(async (req, res) => {
-    const employee = req.body;
+    try {
+        const employee = req.body;
 
-    // Check if customEmployeeId is unique
-    const checkForCustomIdQuery = `SELECT * FROM employee WHERE customEmployeeId = ?`;
-    const [checkingCustomIdResult] = await connection.promise().query(checkForCustomIdQuery, [employee.employee.customEmployeeId]);
+        console.log('Received employee data:', JSON.stringify(employee, null, 2));
 
-    if (checkingCustomIdResult.length > 0) {
-        return res
-            .status(400)
-            .json(
-                new ApiError(400, 'CustomEmployeeID should be unique', ['CustomEmployeeID should be unique'])
-            );
-    }
-
-    // Hash the password asynchronously
-    const hashedPassword = await bcrypt.hash(employee.employee.employeePassword, 10);
-
-    // Insert the employee into the employee table
-    const insertEmployeeQuery = `
-        INSERT INTO employee 
-        (customEmployeeId, employeeName, companyName, employeeQualification, experienceInYears, 
-         employeeDOB, employeeJoinDate, employeeGender, employeePhone, employeeEmail, 
-         employeePassword, employeeAccess) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const employeeData = [
-        employee.employee.customEmployeeId,
-        employee.employee.employeeName,
-        employee.employee.companyName,
-        employee.employee.employeeQualification,
-        employee.employee.experienceInYears,
-        employee.employee.employeeDOB,
-        employee.employee.employeeJoinDate,
-        employee.employee.employeeGender,
-        employee.employee.employeePhone,
-        employee.employee.employeeEmail,
-        hashedPassword, // Use hashed password here
-        employee.employee.employeeAccess,
-    ];
-
-    const [result] = await connection.promise().query(insertEmployeeQuery, employeeData);
-    const employeeId = result.insertId;
-
-    // Insert job profiles into employeedesignation table
-    const jobProfiles = [];
-    for (const profile of employee.jobProfiles) {
-        let {designationId, designationName, departmentId, managerId} = profile;
-
-        console.log(designationId, designationName, departmentId, managerId)
-
-        if (!departmentId) {
-            return res.status(400).json({message: 'Department ID is required.'});
+        // Validate required fields
+        if (!employee || !employee.employee) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request body. Employee data is required.'
+            });
         }
 
-        // Insert designation if designationId is 0
-        if (designationId === 0) {
-            const insertQuery = `INSERT INTO designation (designationName) VALUES (?);`;
+        const { customEmployeeId, employeeName, employeeEmail, employeePassword } = employee.employee;
 
-            const [designationInsertResult] = await connection
-                .promise()
-                .query(insertQuery, [designationName]);
-            designationId = designationInsertResult.insertId;
+        if (!customEmployeeId || !employeeName || !employeeEmail || !employeePassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Required fields missing: customEmployeeId, employeeName, employeeEmail, and employeePassword are required.'
+            });
         }
 
-        // Insert job profile for the employee
-        const insertJobProfileQuery = `INSERT INTO employeedesignation (employeeId, designationId, departmentId, managerId) VALUES (?, ?, ?, ?)`;
-        await connection.promise().query(insertJobProfileQuery, [
-            employeeId,
-            designationId,
-            departmentId,
-            managerId,
-        ]);
+        // Check if customEmployeeId is unique
+        const checkForCustomIdQuery = `SELECT * FROM employee WHERE customEmployeeId = ?`;
+        const [checkingCustomIdResult] = await connection.promise().query(checkForCustomIdQuery, [customEmployeeId]);
 
-        jobProfiles.push({
-            designationId,
-            designationName,
-            departmentId,
-            managerId,
+        if (checkingCustomIdResult.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'CustomEmployeeID should be unique'
+            });
+        }
+
+        // Check if email is unique
+        const checkEmailQuery = `SELECT * FROM employee WHERE employeeEmail = ?`;
+        const [checkEmailResult] = await connection.promise().query(checkEmailQuery, [employeeEmail]);
+
+        if (checkEmailResult.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Employee email already exists'
+            });
+        }
+
+        // Hash the password asynchronously
+        const hashedPassword = await bcrypt.hash(employeePassword, 10);
+
+        // Helper function to parse date - converts ISO to MySQL YYYY-MM-DD format
+        const parseDate = (dateValue) => {
+            if (!dateValue || dateValue === '' || dateValue === 'null' || dateValue === 'undefined') {
+                return null;
+            }
+            try {
+                const date = new Date(dateValue);
+                if (isNaN(date.getTime())) {
+                    return null;
+                }
+                // Convert to YYYY-MM-DD format for MySQL
+                return date.toISOString().split('T')[0];
+            } catch (e) {
+                return null;
+            }
+        };
+
+        // Insert the employee into the employee table
+        const insertEmployeeQuery = `
+            INSERT INTO employee
+            (customEmployeeId, employeeName, companyName, employeeQualification, experienceInYears,
+             employeeDOB, employeeJoinDate, employeeGender, employeePhone, employeeEmail,
+             employeePassword, employeeAccess)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const employeeData = [
+            employee.employee.customEmployeeId,
+            employee.employee.employeeName,
+            employee.employee.companyName || '',
+            employee.employee.employeeQualification || null,
+            parseInt(employee.employee.experienceInYears) || 0,
+            parseDate(employee.employee.employeeDOB),
+            parseDate(employee.employee.employeeJoinDate),
+            employee.employee.employeeGender || 'Male',
+            employee.employee.employeePhone || null,
+            employee.employee.employeeEmail,
+            hashedPassword,
+            employee.employee.employeeAccess || null,
+        ];
+
+        console.log('Inserting employee with data:', employeeData);
+
+        const [result] = await connection.promise().query(insertEmployeeQuery, employeeData);
+        const employeeId = result.insertId;
+
+        console.log('Employee inserted with ID:', employeeId);
+
+        // Insert job profiles into employeedesignation table
+        const jobProfiles = [];
+        if (employee.jobProfiles && Array.isArray(employee.jobProfiles)) {
+            for (const profile of employee.jobProfiles) {
+                let {designationId, designationName, departmentId, managerId} = profile;
+
+                console.log('Job Profile:', designationId, designationName, departmentId, managerId);
+
+                if (!departmentId) {
+                    console.warn('Skipping job profile - Department ID is required.');
+                    continue;
+                }
+
+                // Insert designation if designationId is 0
+                if (designationId === 0 && designationName) {
+                    const insertQuery = `INSERT INTO designation (designationName) VALUES (?);`;
+                    const [designationInsertResult] = await connection
+                        .promise()
+                        .query(insertQuery, [designationName]);
+                    designationId = designationInsertResult.insertId;
+                }
+
+                // Insert job profile for the employee
+                const insertJobProfileQuery = `INSERT INTO employeedesignation (employeeId, designationId, departmentId, managerId) VALUES (?, ?, ?, ?)`;
+                await connection.promise().query(insertJobProfileQuery, [
+                    employeeId,
+                    designationId || null,
+                    departmentId,
+                    managerId || null,
+                ]);
+
+                jobProfiles.push({
+                    designationId,
+                    designationName,
+                    departmentId,
+                    managerId,
+                });
+            }
+        }
+
+        // Fetch the newly inserted employee data
+        const fetchEmployeeQuery = `SELECT * FROM employee WHERE employeeId = ?`;
+        const [employeeResult] = await connection.promise().query(fetchEmployeeQuery, [employeeId]);
+
+        const newEmployeeDetails = employeeResult[0];
+
+        // Respond with the full employee details, including job profiles
+        res.status(201).json(
+            new ApiResponse(201, {
+                employee: newEmployeeDetails,
+                jobProfiles,
+            }, 'Employee and job profiles added successfully.')
+        );
+    } catch (error) {
+        console.error('Error adding employee:', error);
+        console.error('Error code:', error.code);
+        console.error('Error SQL:', error.sql);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save employee: ' + error.message
         });
     }
-
-    // Fetch the newly inserted employee data
-    const fetchEmployeeQuery = `
-        SELECT * FROM employee WHERE employeeId = ?
-    `;
-    const [employeeResult] = await connection.promise().query(fetchEmployeeQuery, [employeeId]);
-
-    const newEmployeeDetails = employeeResult[0];
-
-    // Respond with the full employee details, including job profiles
-    res.status(201).json(
-        new ApiResponse(201, {
-            employee: newEmployeeDetails,
-            jobProfiles,
-        }, 'Employee and job profiles added successfully.')
-    );
 });
 
 export const deleteEmployee = asyncHandler(async (req, res) => {
@@ -417,194 +394,120 @@ export const deleteEmployee = asyncHandler(async (req, res) => {
     res.status(200).json({message: "Employee successfully deactivated"});
 });
 
-// export const updateEmployee = asyncHandler(async (req, res) => {
-//     const {employeeId, updates, jobProfiles} = req.body;
-//
-//     if (!employeeId || (!updates && !jobProfiles)) {
-//         return res.status(400).json({message: "Employee ID, updates, or jobProfiles are required"});
-//     }
-//
-//     // Check if the employee exists
-//     const checkEmployeeQuery = "SELECT * FROM employee WHERE employeeId = ?";
-//     const [employee] = await connection.promise().query(checkEmployeeQuery, [employeeId]);
-//
-//     if (employee.length === 0) {
-//         return res.status(404).json({message: "Employee not found"});
-//     }
-//
-//     // 1. Update the employee table
-//     if (updates) {
-//         const fieldsToUpdate = [];
-//         const values = [];
-//
-//         for (const key in updates) {
-//             if (updates.hasOwnProperty(key)) {
-//                 fieldsToUpdate.push(`${key} = ?`);
-//                 values.push(updates[key]);
-//             }
-//         }
-//
-//         // Add the employeeId at the end for the WHERE clause
-//         values.push(employeeId);
-//
-//         const updateQuery = `UPDATE employee SET ${fieldsToUpdate.join(", ")} WHERE employeeId = ?`;
-//         await connection.promise().query(updateQuery, values);
-//     }
-//
-//     // 2. Update job profiles (employeedesignation table)
-//     if (jobProfiles && Array.isArray(jobProfiles)) {
-//         for (const profile of jobProfiles) {
-//             const {designationId, designationName, departmentId, managerId, operation} = profile;
-//
-//             if (!departmentId) {
-//                 return res.status(400).json({message: "Department ID is required for job profile update."});
-//             }
-//
-//             if (operation === "update") {
-//                 // Update existing job profile
-//                 const updateJobProfileQuery = `
-//                     UPDATE employeedesignation
-//                     SET designationId = ?, departmentId = ?, managerId = ?
-//                     WHERE employeeId = ? AND designationId = ?`;
-//                 await connection.promise().query(updateJobProfileQuery, [designationId, departmentId, managerId, employeeId, designationId]);
-//             } else if (operation === "add") {
-//                 // Add new job profile
-//                 const insertJobProfileQuery = `
-//                     INSERT INTO employeedesignation (employeeId, designationId, departmentId, managerId)
-//                     VALUES (?, ?, ?, ?)`;
-//                 await connection.promise().query(insertJobProfileQuery, [employeeId, designationId, departmentId, managerId]);
-//             } else if (operation === "delete") {
-//                 // Delete job profile
-//                 const deleteJobProfileQuery = `
-//                     DELETE FROM employeedesignation
-//                     WHERE employeeId = ? AND designationId = ?`;
-//                 await connection.promise().query(deleteJobProfileQuery, [employeeId, designationId]);
-//             }
-//         }
-//     }
-//
-//     res.status(200).json({message: "Employee and job profiles updated successfully"});
-// });
-
 export const editEmployeeWithRelations = asyncHandler(async (req, res) => {
     const { id } = req.params; // employeeId from URL
     const { employee, jobProfiles } = req.body;
 
-
-    console.log(employee)
-
-
-    console.log(id);
+    console.log('Updating employee:', employee);
+    console.log('Employee ID:', id);
 
     // Validate required fields in employee object
     if (
         !employee.customEmployeeId ||
         !employee.employeeName ||
-        !employee.companyName ||
-        !employee.employeeGender ||
         !employee.employeeEmail
     ) {
-        return res.status(400).json({ message: 'All required fields must be filled.' });
+        return res.status(400).json({ message: 'Required fields (customEmployeeId, employeeName, employeeEmail) must be filled.' });
     }
+
+    // Helper function to parse date - converts ISO to MySQL YYYY-MM-DD format
+    const parseDate = (dateValue) => {
+        if (!dateValue || dateValue === '' || dateValue === 'null' || dateValue === 'undefined') {
+            return null;
+        }
+        try {
+            const date = new Date(dateValue);
+            if (isNaN(date.getTime())) {
+                return null;
+            }
+            // Convert to YYYY-MM-DD format for MySQL
+            return date.toISOString().split('T')[0];
+        } catch (e) {
+            return null;
+        }
+    };
 
     try {
         // Update the employee table
         const updateEmployeeQuery =
-            `UPDATE employee 
-            SET 
-              customEmployeeId = ?, 
-              employeeName = ?, 
-              companyName = ?, 
-              employeeQualification = ?, 
-              experienceInYears = ?, 
-              employeeDOB = ?, 
-              employeeJoinDate = ?, 
-              employeeGender = ?, 
-              employeePhone = ?, 
-              employeeEmail = ?, 
+            `UPDATE employee
+            SET
+              customEmployeeId = ?,
+              employeeName = ?,
+              companyName = ?,
+              employeeQualification = ?,
+              experienceInYears = ?,
+              employeeDOB = ?,
+              employeeJoinDate = ?,
+              employeeGender = ?,
+              employeePhone = ?,
+              employeeEmail = ?,
               employeeAccess = ?,
-              employeeEndDate = ? 
+              employeeEndDate = ?
             WHERE employeeId = ?`;
 
         const employeeValues = [
             employee.customEmployeeId,
             employee.employeeName,
-            employee.companyName,
-            employee.employeeQualification,
-            employee.experienceInYears,
-            employee.employeeDOB,
-            employee.employeeJoinDate,
-            employee.employeeGender,
-            employee.employeePhone,
+            employee.companyName || '',
+            employee.employeeQualification || null,
+            parseInt(employee.experienceInYears) || 0,
+            parseDate(employee.employeeDOB),
+            parseDate(employee.employeeJoinDate),
+            employee.employeeGender || 'Male',
+            employee.employeePhone || null,
             employee.employeeEmail,
-            employee.employeeAccess,
-            employee.employeeEndDate,
+            employee.employeeAccess || null,
+            parseDate(employee.employeeEndDate),
             id,
         ];
+
+        console.log('Update values:', employeeValues);
 
         const [employeeResult] = await connection.promise().query(updateEmployeeQuery, employeeValues);
 
         if (employeeResult.affectedRows === 0) {
-            throw new Error('Employee not found.');
+            return res.status(404).json({ message: 'Employee not found.' });
         }
-
-        // Handle jobProfiles only if not empty
-        // if (jobProfiles && jobProfiles.length > 0) {
-        //     // Delete existing job profiles for the employee
-        //     const deleteProfilesQuery = `DELETE FROM employeedesignation WHERE employeeId = ?`;
-        //     await connection.promise().query(deleteProfilesQuery, [id]);
-        //
-        //     // Insert new job profiles into employeedesignation table
-        //     const insertProfilesQuery =
-        //         `INSERT INTO employeedesignation (employeeId, designationId, departmentId, managerId)
-        //         VALUES (?, ?, ?, ?)`;
-        //
-        //     for (const profile of jobProfiles) {
-        //         const profileValues = [id, profile.designationId, profile.departmentId, profile.managerId];
-        //         await connection.promise().query(insertProfilesQuery, profileValues);
-        //     }
-        // }
 
         res.status(200).json({ message: 'Employee updated successfully.' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error updating employee:', error);
+        res.status(500).json({ message: 'Failed to update employee: ' + error.message });
     }
 });
 
-
-
-
 export const getAllEmployees = asyncHandler(async (req, res) => {
     const query = `
-    SELECT 
+    SELECT
         e.employeeId,
-        e.customEmployeeId, 
-        e.employeeName, 
-        e.companyName, 
-        e.employeeQualification, 
-        e.experienceInYears, 
-        e.employeeDOB, 
-        e.employeeJoinDate, 
-        e.employeeGender, 
-        e.employeePhone, 
-        e.employeeEmail, 
-        e.employeeAccess, 
+        e.customEmployeeId,
+        e.employeeName,
+        e.companyName,
+        e.employeeQualification,
+        e.experienceInYears,
+        e.employeeDOB,
+        e.employeeJoinDate,
+        e.employeeGender,
+        e.employeePhone,
+        e.employeeEmail,
+        e.employeeAccess,
         e.createdAt,
-        e.employeeEndDate, 
-        d.departmentName, 
-        ds.designationName, 
+        e.employeeEndDate,
+        d.departmentName,
+        ds.designationName,
         m.employeeName AS managerName
-    FROM 
+    FROM
         employee e
-    LEFT JOIN 
+    LEFT JOIN
         employeeDesignation ed ON e.employeeId = ed.employeeId
-    LEFT JOIN 
+    LEFT JOIN
         department d ON ed.departmentId = d.departmentId
-    LEFT JOIN 
+    LEFT JOIN
         designation ds ON ed.designationId = ds.designationId
-    LEFT JOIN 
+    LEFT JOIN
         employee m ON ed.managerId = m.employeeId
-    WHERE 
+    WHERE
         e.employeeEndDate IS NULL;
 `;
 
@@ -661,4 +564,182 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
 
         res.status(200).json(employees);
     });
+});
+
+export const importEmployees = asyncHandler(async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const workbook = xlsx.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const errors = [];
+    let successCount = 0;
+
+    for (const row of data) {
+        try {
+            let {
+                customEmployeeId,
+                employeeName,
+                employeeDOB,
+                gender,
+                phone,
+                email,
+                companyName,
+                qualification,
+                experience,
+                joiningDate,
+                employeeDesignation,
+                HRAccess,
+                ProjectAccess,
+                TrainingAccess,
+                TicketAccess
+            } = row;
+
+            // Convert Excel date format to standard YYYY-MM-DD
+            const dateFormatFunction = (serialNumber) => {
+                let baseDate = new Date(1900, 0, 1);
+                let excelDate = new Date(baseDate.getTime() + (serialNumber - 2) * 86400000);
+                return excelDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+            };
+
+            employeeDOB = dateFormatFunction(employeeDOB);
+            joiningDate = dateFormatFunction(joiningDate);
+
+            if (!customEmployeeId || !employeeName || !email || !phone) {
+                errors.push({ row, error: 'Missing required fields' });
+                continue;
+            }
+
+            // Check uniqueness
+            const [existing] = await connection.promise().query(
+                'SELECT * FROM employee WHERE customEmployeeId = ? OR employeeEmail = ? OR employeePhone = ?',
+                [customEmployeeId, email, phone]
+            );
+            if (existing.length > 0) {
+                errors.push({ row, error: 'Duplicate customEmployeeId, email, or phone' });
+                continue;
+            }
+
+            // Generate a random password
+            const password = Math.random().toString(36).slice(-8);
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Construct employeeAccess string
+            const employeeAccess = `${HRAccess},${ProjectAccess},${TrainingAccess},${TicketAccess}`;
+
+            // Insert into employee table
+            const insertEmployeeQuery = `
+                INSERT INTO employee (customEmployeeId, employeeName, companyName, employeeQualification, experienceInYears, employeeDOB, employeeJoinDate, employeeGender, employeePhone, employeeEmail, employeePassword, employeeAccess)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const [result] = await connection.promise().query(insertEmployeeQuery, [
+                customEmployeeId,
+                employeeName,
+                companyName,
+                qualification,
+                experience,
+                employeeDOB,
+                joiningDate,
+                gender,
+                phone,
+                email,
+                hashedPassword,
+                employeeAccess
+            ]);
+
+            const employeeId = result.insertId;
+
+            // Insert job profiles
+            if (employeeDesignation) {
+                const designations = employeeDesignation.split(';').map(d => d.trim());
+                for (const designationEntry of designations) {
+                    const [departmentName, designationName, managerName] = designationEntry.split(',').map(d => d.trim());
+
+                    if (!departmentName || !designationName) {
+                        errors.push({ row, error: 'Invalid designation format' });
+                        continue;
+                    }
+
+                    // Get or Insert department
+                    const departmentSlug = departmentName.toLowerCase().replace(/\s+/g, '-');
+                    let [deptResult] = await connection.promise().query(
+                        'SELECT departmentId FROM department WHERE departmentSlug = ?',
+                        [departmentSlug]
+                    );
+
+                    let departmentId;
+                    if (deptResult.length === 0) {
+                        const [insertDept] = await connection.promise().query(
+                            'INSERT INTO department (departmentName, departmentSlug, departmentStartDate) VALUES (?, ?, ?)',
+                            [departmentName, departmentSlug, new Date()]
+                        );
+                        departmentId = insertDept.insertId;
+                    } else {
+                        departmentId = deptResult[0].departmentId;
+                    }
+
+                    // Get or Insert designation
+                    let [desgResult] = await connection.promise().query(
+                        'SELECT designationId FROM designation WHERE designationName = ?',
+                        [designationName]
+                    );
+
+                    let designationId;
+                    if (desgResult.length === 0) {
+                        const designationSlug = designationName.toLowerCase().replace(/\s+/g, '-');
+                        const [insertDesg] = await connection.promise().query(
+                            'INSERT INTO designation (designationName, designationSlug) VALUES (?, ?)',
+                            [designationName, designationSlug]
+                        );
+                        designationId = insertDesg.insertId;
+                    } else {
+                        designationId = desgResult[0].designationId;
+                    }
+
+                    // Get managerId
+                    let managerId = null;
+                    if (managerName) {
+                        const [mgrResult] = await connection.promise().query(
+                            'SELECT employeeId FROM employee WHERE customEmployeeId = ?',
+                            [managerName]
+                        );
+                        if (mgrResult.length > 0) {
+                            managerId = mgrResult[0].employeeId;
+                        } else {
+                            errors.push({ row, error: `Manager not found: ${managerName}` });
+                        }
+                    }
+
+                    // Insert into employeedesignation
+                    await connection.promise().query(
+                        'INSERT INTO employeedesignation (employeeId, designationId, departmentId, managerId) VALUES (?, ?, ?, ?)',
+                        [employeeId, designationId, departmentId, managerId || null]
+                    );
+                }
+            }
+
+            // Send email with credentials
+            const templatePath = path.join(__dirname, '..', 'email', 'passwordtemplate.html');
+            let emailTemplate = fs.readFileSync(templatePath, "utf8");
+
+            emailTemplate = emailTemplate.replace("{{employeeName}}", employeeName)
+                .replace("{{email}}", email)
+                .replace("{{password}}", password);
+
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Your Employee Account Details',
+                html: emailTemplate
+            });
+
+            successCount++;
+        } catch (err) {
+            errors.push({ row, error: err.message });
+        }
+    }
+
+    res.status(200).json({ successCount, errors });
 });

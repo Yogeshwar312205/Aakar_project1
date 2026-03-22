@@ -17,11 +17,17 @@
   justify-content: space-between;
 }
 
+.sidebar:hover {
+  overflow-y: auto;
+}
+
 .menu {
   display: flex;
   flex-direction: column;
   margin-top: 10px;
   row-gap: 0.7vmax;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
 }
 
 .icon-container {
@@ -79,8 +85,9 @@
 }
 
 .submenu.expanded {
-  max-height: 300px;
+  max-height: 500px;
   opacity: 1;
+  overflow-y: auto;
 }
 
 .main-item {
@@ -112,4 +119,30 @@
 
 .submenu .icon-container:hover {
   background-color: #1b5b8a;
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar::-webkit-scrollbar,
+.menu::-webkit-scrollbar,
+.submenu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.menu::-webkit-scrollbar-track,
+.submenu::-webkit-scrollbar-track {
+  background: #004d80;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.menu::-webkit-scrollbar-thumb,
+.submenu::-webkit-scrollbar-thumb {
+  background: #0088cc;
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.menu::-webkit-scrollbar-thumb:hover,
+.submenu::-webkit-scrollbar-thumb:hover {
+  background: #00aaff;
 }

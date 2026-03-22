@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import '../AddProject/AddProject.css'
-import { FiArrowLeftCircle } from 'react-icons/fi'
+import { FiArrowLeftCircle, FiEdit } from 'react-icons/fi'
 import { FaChartGantt } from 'react-icons/fa6'
 
 import { useDispatch, useSelector } from 'react-redux'
@@ -24,6 +24,10 @@ import SubstageTreeNode, {
 import { toast } from 'react-toastify'
 
 const MyStage = () => {
+  const employeeAccess = useSelector(
+    (state) => state.auth.user?.employeeAccess
+  ).split(',')[1]
+
   const params = useParams()
   const { pNo, sNo } = params
   const dispatch = useDispatch()
@@ -113,6 +117,21 @@ const MyStage = () => {
               <FaChartGantt size={20} />
               <span>Gantt Chart</span>
             </button>
+            {(employeeAccess[7] == '1' ||
+              employeeAccess[9] == '1' ||
+              employeeAccess[11] == '1') && (
+              <button
+                className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
+                onClick={() =>
+                  navigate(`/myProject/${pNo}/updateStage/${sNo}`, {
+                    replace: true,
+                  })
+                }
+              >
+                <FiEdit size={20} />
+                <span>Edit Stage</span>
+              </button>
+            )}
           </div>
         </section>
         <div className="formDiv">
@@ -177,7 +196,7 @@ const MyStage = () => {
             }}
           >
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#212529', margin: 0 }}>
-              📋 Substages
+              Substages
               {activeSubStages.length > 0 && (
                 <span
                   style={{

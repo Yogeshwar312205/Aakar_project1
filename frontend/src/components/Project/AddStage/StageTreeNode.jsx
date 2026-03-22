@@ -6,6 +6,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
+import { differenceInDays } from 'date-fns'
 import { useSelector } from 'react-redux'
 import { v4 as uuid4 } from 'uuid'
 import getTodayDate from '../../common/functions/getTodayDate'
@@ -31,6 +32,28 @@ const StageTreeNode = ({
 
       if (field === 'startDate' || field === 'endDate') {
         updatedNode[field] = value ? dayjs(value).format('YYYY-MM-DD') : ''
+
+        // Auto-calculate duration when both dates are available
+        if (updatedNode.startDate && updatedNode.endDate) {
+          const start = new Date(updatedNode.startDate)
+          const end = new Date(updatedNode.endDate)
+          if (end >= start) {
+            updatedNode.duration = differenceInDays(end, start)
+          }
+        }
+      } else if (field === 'duration') {
+        const durationInDays = parseInt(value, 10)
+        updatedNode.duration = value
+
+        // Auto-calculate end date when duration and start date are available
+        if (!isNaN(durationInDays) && durationInDays >= 0 && updatedNode.startDate) {
+          const startDate = new Date(updatedNode.startDate)
+          if (!isNaN(startDate.getTime())) {
+            const newEndDate = new Date(startDate)
+            newEndDate.setDate(startDate.getDate() + durationInDays)
+            updatedNode.endDate = newEndDate.toISOString().split('T')[0]
+          }
+        }
       } else if (field === 'progress') {
         const numericValue = Math.min(100, Math.max(0, Number(value)))
         updatedNode[field] = isNaN(numericValue) ? 0 : numericValue
@@ -230,6 +253,7 @@ const StageTreeNode = ({
                 label="Start Date"
                 value={node.startDate ? dayjs(node.startDate) : null}
                 onChange={(date) => handleChange('startDate', date)}
+                format="DD-MM-YYYY"
                 slotProps={{
                   textField: {
                     size: 'small',
@@ -250,6 +274,7 @@ const StageTreeNode = ({
                 label="End Date"
                 value={node.endDate ? dayjs(node.endDate) : null}
                 onChange={(date) => handleChange('endDate', date)}
+                format="DD-MM-YYYY"
                 slotProps={{
                   textField: {
                     size: 'small',
@@ -267,7 +292,7 @@ const StageTreeNode = ({
             {/* Duration */}
             <TextField
               type="number"
-              label="Duration (Hrs)"
+              label="Duration (Days)"
               size="small"
               value={node.duration || ''}
               onChange={(e) => handleChange('duration', e.target.value)}

@@ -264,7 +264,7 @@ const AddSubparts = () => {
                   <label htmlFor="" className="subHead">
                     Duration
                   </label>
-                  <p className="data">{duration} Hrs</p>
+                  <p className="data">{duration} Days</p>
                 </div>
                 <div className="infoField">
                   <label htmlFor="" className="subHead">

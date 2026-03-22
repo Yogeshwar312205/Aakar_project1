@@ -83,7 +83,7 @@ const TemplateItemNode = ({
           sx={{ width: '150px' }}
         />
         <TextField
-          label="Duration (Hrs)"
+          label="Duration (Days)"
           variant="outlined"
           type="number"
           value={item.duration}

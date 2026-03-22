@@ -555,6 +555,7 @@ const MyProject = () => {
                 label="Executed Start Date*"
                 value={stageExecStartDate}
                 onChange={(val) => setStageExecStartDate(val)}
+                format="DD-MM-YYYY"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
               />
@@ -562,6 +563,7 @@ const MyProject = () => {
                 label="Executed End Date*"
                 value={stageExecEndDate}
                 onChange={(val) => setStageExecEndDate(val)}
+                format="DD-MM-YYYY"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
               />

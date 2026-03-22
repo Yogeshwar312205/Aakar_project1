@@ -72,10 +72,22 @@ const SubstageForm = ({
       ? dayjs(date).utcOffset('+05:30').format('YYYY-MM-DD')
       : null
 
-    setInputValues((prevValues) => ({
-      ...prevValues,
-      [fieldName]: formattedDate,
-    }))
+    const updatedValues = { ...inputValues, [fieldName]: formattedDate }
+
+    // Auto-calculate duration when both dates are available
+    if (updatedValues.startDate && updatedValues.endDate) {
+      const startDate = new Date(updatedValues.startDate)
+      const endDate = new Date(updatedValues.endDate)
+      if (endDate >= startDate) {
+        updatedValues.duration = differenceInDays(endDate, startDate)
+      } else {
+        updatedValues.endDate = ''
+        updatedValues.duration = 0
+      }
+    }
+
+    setInputValues(updatedValues)
+    setIsChanged(true)
   }
 
   return (
@@ -164,6 +176,7 @@ const SubstageForm = ({
             label="Planned Start Date*"
             value={inputValues.startDate ? dayjs(inputValues.startDate) : null}
             onChange={(date) => handleDateChange(date, 'startDate')}
+            format="DD-MM-YYYY"
             sx={{ width: '180px' }}
             renderInput={(params) => (
               <TextField
@@ -183,6 +196,7 @@ const SubstageForm = ({
             label="Planned End Date*"
             value={inputValues.endDate ? dayjs(inputValues.endDate) : null}
             onChange={(date) => handleDateChange(date, 'endDate')}
+            format="DD-MM-YYYY"
             sx={{ width: '180px' }}
             renderInput={(params) => (
               <TextField
@@ -215,8 +229,9 @@ const SubstageForm = ({
           onChange={handleChange}
         />
         <TextField
-          label="Duration(Hrs)"
+          label="Duration (Days)"
           variant="outlined"
+          type="number"
           sx={{
             width: '150px',
             '& .MuiOutlinedInput-root': {

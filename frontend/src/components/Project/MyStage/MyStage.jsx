@@ -153,7 +153,7 @@ const MyStage = () => {
                 {stageName}
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6c757d' }}>
-                Owner: {owner} • Machine: {machine} • Duration: {duration} Hrs
+                Owner: {owner} • Machine: {machine} • Duration: {duration} Days
               </p>
               <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#868e96' }}>
                 <strong>Planned:</strong> {formatDate(startDate)} → {formatDate(endDate)} • Created by: {createdBy}

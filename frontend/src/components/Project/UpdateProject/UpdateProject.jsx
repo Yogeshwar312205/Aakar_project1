@@ -411,7 +411,7 @@ const UpdateProject = () => {
                 />
                 <input
                   type="number"
-                  placeholder="Duration (hrs)"
+                  placeholder="Duration (days)"
                   value={newStage.duration}
                   onChange={(e) => setNewStage({ ...newStage, duration: Number(e.target.value) })}
                   style={{

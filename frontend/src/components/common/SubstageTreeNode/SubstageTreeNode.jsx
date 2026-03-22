@@ -196,7 +196,7 @@ const SubstageTreeNode = ({
               {node.stageName || node.substageName}
             </span>
             <span className="tree-node-meta">
-              Owner: {node.owner || '—'} | Machine: {node.machine || '—'} | Duration: {node.duration || '—'}hrs
+              Owner: {node.owner || '—'} | Machine: {node.machine || '—'} | Duration: {node.duration || '—'} days
             </span>
             <span className="tree-node-dates">
               <strong>Planned:</strong> {node.startDate ? formatDate(node.startDate) : '—'} → {node.endDate ? formatDate(node.endDate) : '—'}
@@ -373,6 +373,7 @@ const SubstageTreeNode = ({
                 label="Executed Start Date*"
                 value={executedStartDate}
                 onChange={(val) => setExecutedStartDate(val)}
+                format="DD-MM-YYYY"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
               />
@@ -380,6 +381,7 @@ const SubstageTreeNode = ({
                 label="Executed End Date*"
                 value={executedEndDate}
                 onChange={(val) => setExecutedEndDate(val)}
+                format="DD-MM-YYYY"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
               />

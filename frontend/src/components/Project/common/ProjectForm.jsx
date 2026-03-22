@@ -216,6 +216,7 @@ const ProjectForm = ({ inputValues, setInputValues, action }) => {
                 startDate: formattedDate,
               }))
             }}
+            format="DD-MM-YYYY"
             sx={{ width: '180px' }}
             renderInput={(params) => <TextField {...params} required />}
           />
@@ -231,6 +232,7 @@ const ProjectForm = ({ inputValues, setInputValues, action }) => {
                 endDate: formattedDate,
               }))
             }}
+            format="DD-MM-YYYY"
             sx={{ width: '180px' }}
             renderInput={(params) => <TextField {...params} required />}
           />

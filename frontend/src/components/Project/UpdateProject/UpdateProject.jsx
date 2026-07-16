@@ -29,6 +29,11 @@ import { toast } from 'react-toastify'
 import SubstageTreeNode, {
   buildSubstageTree,
 } from '../../common/SubstageTreeNode/SubstageTreeNode.jsx'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
+import { differenceInDays } from 'date-fns'
 
 const UpdateProject = () => {
   const employeeAccess = useSelector(
@@ -69,9 +74,18 @@ const UpdateProject = () => {
   const [newStage, setNewStage] = useState({
     stageName: '',
     machine: '',
-    duration: 0,
+    duration: '',
     owner: '',
+    startDate: '',
+    endDate: '',
+    progress: 0,
   })
+
+  // Pending stages/substages (not yet saved to DB)
+  const [pendingStages, setPendingStages] = useState([])
+  const [pendingSubstages, setPendingSubstages] = useState([])
+  const [deletedStageIds, setDeletedStageIds] = useState([])
+  const [deletedSubstageIds, setDeletedSubstageIds] = useState([])
 
   // Substage management state
   const [showAddSubstage, setShowAddSubstage] = useState(false)
@@ -79,8 +93,11 @@ const UpdateProject = () => {
   const [newSubstage, setNewSubstage] = useState({
     substageName: '',
     machine: '',
-    duration: 0,
+    duration: '',
     owner: '',
+    startDate: '',
+    endDate: '',
+    progress: 0,
   })
 
   const navigate = useNavigate()
@@ -106,15 +123,17 @@ const UpdateProject = () => {
     }
   }, [dispatch, selectedStageId])
 
-  // Calculate project progress from stages
+  // Calculate project progress from stages (excluding deleted ones)
   const projectProgress = useMemo(() => {
-    if (activeStages.length === 0) return project?.progress || 0
-    const totalProgress = activeStages.reduce(
+    const validStages = activeStages.filter(s => !deletedStageIds.includes(s.stageId))
+    const allStages = [...validStages, ...pendingStages]
+    if (allStages.length === 0) return project?.progress || 0
+    const totalProgress = allStages.reduce(
       (acc, s) => acc + Number(s.progress || 0),
       0
     )
-    return Math.round(totalProgress / activeStages.length)
-  }, [activeStages, project])
+    return Math.round(totalProgress / allStages.length)
+  }, [activeStages, pendingStages, deletedStageIds, project])
 
   useEffect(() => {
     if (project && Object.keys(project).length > 0) {
@@ -129,134 +148,293 @@ const UpdateProject = () => {
     (emp) => `${emp.employee.employeeName}(${emp.employee.customEmployeeId})`
   ) || []
 
+  // Merge active stages with pending stages (filter out deleted ones)
+  const mergedStages = useMemo(() => {
+    const existingStages = activeStages.filter(s => !deletedStageIds.includes(s.stageId))
+    return [...existingStages, ...pendingStages]
+  }, [activeStages, pendingStages, deletedStageIds])
+
+  // Merge active substages with pending substages for selected stage (filter out deleted ones)
+  const mergedSubstages = useMemo(() => {
+    if (!selectedStageId) return []
+    const existingSubs = activeSubStages
+      .filter(s => s.stageId === selectedStageId && !deletedSubstageIds.includes(s.substageId))
+    const pendingSubs = pendingSubstages.filter(s => s.stageId === selectedStageId)
+    return [...existingSubs, ...pendingSubs]
+  }, [activeSubStages, pendingSubstages, selectedStageId, deletedSubstageIds])
+
   // Build substage tree for selected stage
-  const substageTree = buildSubstageTree(activeSubStages || [])
+  const substageTree = buildSubstageTree(mergedSubstages || [])
 
   // Get selected stage details
-  const selectedStage = activeStages.find((s) => s.stageId === selectedStageId)
+  const selectedStage = mergedStages.find((s) => s.stageId === selectedStageId || s.tempId === selectedStageId)
 
-  const handleSave = (e) => {
+  // Helper function to handle stage date/duration changes
+  const handleNewStageChange = (field, value) => {
+    const updated = { ...newStage, [field]: value }
+
+    if (field === 'startDate' || field === 'endDate') {
+      // Auto-calculate duration when both dates are available
+      if (updated.startDate && updated.endDate) {
+        const start = new Date(updated.startDate)
+        const end = new Date(updated.endDate)
+        if (end >= start) {
+          updated.duration = differenceInDays(end, start)
+        }
+      }
+    } else if (field === 'duration') {
+      // Auto-calculate end date when duration and start date are available
+      const durationInDays = parseInt(value, 10)
+      if (!isNaN(durationInDays) && durationInDays >= 0 && updated.startDate) {
+        const startDate = new Date(updated.startDate)
+        if (!isNaN(startDate.getTime())) {
+          const newEndDate = new Date(startDate)
+          newEndDate.setDate(startDate.getDate() + durationInDays)
+          updated.endDate = newEndDate.toISOString().split('T')[0]
+        }
+      }
+    }
+
+    setNewStage(updated)
+  }
+
+  // Helper function to handle substage date/duration changes
+  const handleNewSubstageChange = (field, value) => {
+    const updated = { ...newSubstage, [field]: value }
+
+    if (field === 'startDate' || field === 'endDate') {
+      // Auto-calculate duration when both dates are available
+      if (updated.startDate && updated.endDate) {
+        const start = new Date(updated.startDate)
+        const end = new Date(updated.endDate)
+        if (end >= start) {
+          updated.duration = differenceInDays(end, start)
+        }
+      }
+    } else if (field === 'duration') {
+      // Auto-calculate end date when duration and start date are available
+      const durationInDays = parseInt(value, 10)
+      if (!isNaN(durationInDays) && durationInDays >= 0 && updated.startDate) {
+        const startDate = new Date(updated.startDate)
+        if (!isNaN(startDate.getTime())) {
+          const newEndDate = new Date(startDate)
+          newEndDate.setDate(startDate.getDate() + durationInDays)
+          updated.endDate = newEndDate.toISOString().split('T')[0]
+        }
+      }
+    }
+
+    setNewSubstage(updated)
+  }
+
+  const handleSave = async (e) => {
     e.preventDefault()
     if (!inputValues.updateReason) {
       toast.error('Please provide a reason for updating')
       return
     }
 
-    dispatch(
-      updateProject({
-        id: pNo,
-        data: {
-          ...inputValues,
-          progress: projectProgress,
-        },
-      })
-    )
-      .unwrap()
-      .then(() => {
-        toast.success('Project updated successfully!')
-        navigate(-1)
-      })
-      .catch((err) => {
-        console.error('Error updating project:', err)
-        toast.error('Failed to update project')
-      })
+    try {
+      // 1. Delete stages marked for deletion
+      for (const stageId of deletedStageIds) {
+        await dispatch(deleteStage(stageId)).unwrap()
+      }
+
+      // 2. Delete substages marked for deletion
+      for (const substageId of deletedSubstageIds) {
+        await dispatch(deleteSubStage(substageId)).unwrap()
+      }
+
+      // 3. Save pending stages to database
+      for (const stage of pendingStages) {
+        const stageData = {
+          projectNumber: pNo,
+          stageName: stage.stageName,
+          startDate: stage.startDate || new Date().toISOString().split('T')[0],
+          endDate: stage.endDate || new Date().toISOString().split('T')[0],
+          owner: stage.owner || null,
+          machine: stage.machine || '',
+          duration: stage.duration || 0,
+          seqPrevStage: activeStages.length > 0 ? activeStages[activeStages.length - 1].stageId : null,
+          createdBy: user.employeeId,
+          progress: stage.progress || 0,
+        }
+        await dispatch(addStage(stageData)).unwrap()
+      }
+
+      // 4. Save pending substages to database
+      for (const substage of pendingSubstages) {
+        const ownerString = substage.owner ||
+          `${user.employeeName || 'User'}(${user.customEmployeeId || user.employeeId})`
+
+        const substageData = {
+          stageId: substage.stageId,
+          parentSubstageId: substage.parentSubstageId || null,
+          substagename: substage.substageName,
+          startDate: substage.startDate || new Date().toISOString().split('T')[0],
+          endDate: substage.endDate || new Date().toISOString().split('T')[0],
+          owner: ownerString,
+          machine: substage.machine || '',
+          duration: substage.duration || 0,
+          createdBy: user.employeeId,
+          progress: substage.progress || 0,
+          projectNumber: pNo,
+          seqPrevStage: null,
+        }
+        await dispatch(addSubStage(substageData)).unwrap()
+      }
+
+      // 5. Update project
+      await dispatch(
+        updateProject({
+          id: pNo,
+          data: {
+            ...inputValues,
+            progress: projectProgress,
+          },
+        })
+      ).unwrap()
+
+      toast.success('Project updated successfully!')
+      navigate(-1)
+    } catch (err) {
+      console.error('Error updating project:', err)
+      toast.error('Failed to update project')
+    }
   }
 
-  // Stage management handlers
-  const handleAddStage = async (e) => {
+  // Stage management handlers - Add to pending state (not DB)
+  const handleAddStage = (e) => {
     e.preventDefault()
     if (!newStage.stageName.trim()) {
       toast.error('Stage name is required')
       return
     }
+    if (!newStage.startDate || !newStage.endDate) {
+      toast.error('Start date and end date are required')
+      return
+    }
 
-    const stageData = {
-      projectNumber: pNo,
+    // Add to pending stages with a temporary ID
+    const tempId = `temp-stage-${Date.now()}`
+    const pendingStage = {
+      tempId,
+      stageId: tempId, // Use tempId as stageId for display
       stageName: newStage.stageName,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
+      startDate: newStage.startDate,
+      endDate: newStage.endDate,
       owner: newStage.owner || null,
       machine: newStage.machine || '',
       duration: newStage.duration || 0,
-      seqPrevStage: activeStages.length > 0 ? activeStages[activeStages.length - 1].stageId : null,
-      createdBy: user.employeeId,
-      progress: 0,
+      progress: newStage.progress || 0,
+      isPending: true, // Flag to identify pending stages
     }
 
-    try {
-      await dispatch(addStage(stageData)).unwrap()
-      toast.success('Stage added!')
-      setShowAddStage(false)
-      setNewStage({ stageName: '', machine: '', duration: 0, owner: '' })
-      dispatch(fetchActiveStagesByProjectNumber(pNo))
-    } catch (err) {
-      console.error('Add stage error:', err)
-      toast.error('Failed to add stage')
-    }
+    setPendingStages([...pendingStages, pendingStage])
+    toast.info('Stage added (pending save)')
+    setShowAddStage(false)
+    setNewStage({
+      stageName: '',
+      machine: '',
+      duration: '',
+      owner: '',
+      startDate: '',
+      endDate: '',
+      progress: 0,
+    })
   }
 
-  const handleDeleteStage = async (stageId, stageName) => {
+  const handleDeleteStage = (stageId, stageName) => {
     if (window.confirm(`Delete stage "${stageName}" and all its substages?`)) {
-      try {
-        await dispatch(deleteStage(stageId)).unwrap()
-        toast.success('Stage deleted!')
-        if (selectedStageId === stageId) {
-          setSelectedStageId(null)
-        }
-        dispatch(fetchActiveStagesByProjectNumber(pNo))
-      } catch (err) {
-        toast.error('Failed to delete stage')
+      // Check if it's a pending stage (not yet in DB)
+      const isPending = pendingStages.some(s => s.tempId === stageId)
+
+      if (isPending) {
+        // Remove from pending stages
+        setPendingStages(pendingStages.filter(s => s.tempId !== stageId))
+        // Remove any pending substages for this stage
+        setPendingSubstages(pendingSubstages.filter(s => s.stageId !== stageId))
+        toast.info('Stage removed')
+      } else {
+        // Mark for deletion (will be deleted on Save Details)
+        setDeletedStageIds([...deletedStageIds, stageId])
+        // Also mark all substages of this stage for deletion
+        const substagesToDelete = activeSubStages
+          .filter(s => s.stageId === stageId)
+          .map(s => s.substageId)
+        setDeletedSubstageIds([...deletedSubstageIds, ...substagesToDelete])
+        toast.info('Stage marked for deletion (pending save)')
+      }
+
+      if (selectedStageId === stageId) {
+        setSelectedStageId(null)
       }
     }
   }
 
-  // Substage management handlers
-  const handleAddSubstage = async (e) => {
+  // Substage management handlers - Add to pending state (not DB)
+  const handleAddSubstage = (e) => {
     e.preventDefault()
     if (!newSubstage.substageName.trim()) {
       toast.error('Substage name is required')
+      return
+    }
+    if (!newSubstage.startDate || !newSubstage.endDate) {
+      toast.error('Start date and end date are required')
       return
     }
 
     const ownerString = newSubstage.owner ||
       `${user.employeeName || 'User'}(${user.customEmployeeId || user.employeeId})`
 
-    const substageData = {
+    // Add to pending substages with a temporary ID
+    const tempId = `temp-substage-${Date.now()}`
+    const pendingSubstage = {
+      tempId,
+      substageId: tempId, // Use tempId as substageId for display
       stageId: selectedStageId,
       parentSubstageId: addSubstageParentId,
-      substagename: newSubstage.substageName,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
+      substageName: newSubstage.substageName,
+      stageName: newSubstage.substageName, // For display in tree
+      startDate: newSubstage.startDate,
+      endDate: newSubstage.endDate,
       owner: ownerString,
       machine: newSubstage.machine || '',
       duration: newSubstage.duration || 0,
-      createdBy: user.employeeId,
-      progress: 0,
-      projectNumber: pNo,
-      seqPrevStage: null,
+      progress: newSubstage.progress || 0,
+      isPending: true, // Flag to identify pending substages
     }
 
-    try {
-      await dispatch(addSubStage(substageData)).unwrap()
-      toast.success('Substage added!')
-      setShowAddSubstage(false)
-      setNewSubstage({ substageName: '', machine: '', duration: 0, owner: '' })
-      setAddSubstageParentId(null)
-      dispatch(getActiveSubStagesByStageId(selectedStageId))
-    } catch (err) {
-      console.error('Add substage error:', err)
-      toast.error('Failed to add substage')
-    }
+    setPendingSubstages([...pendingSubstages, pendingSubstage])
+    toast.info('Substage added (pending save)')
+    setShowAddSubstage(false)
+    setNewSubstage({
+      substageName: '',
+      machine: '',
+      duration: '',
+      owner: '',
+      startDate: '',
+      endDate: '',
+      progress: 0,
+    })
+    setAddSubstageParentId(null)
   }
 
-  const handleDeleteSubstage = async (substageId) => {
+  const handleDeleteSubstage = (substageId) => {
     if (window.confirm('Delete this substage and all its children?')) {
-      try {
-        await dispatch(deleteSubStage(substageId)).unwrap()
-        toast.success('Substage deleted!')
-        dispatch(getActiveSubStagesByStageId(selectedStageId))
-      } catch (err) {
-        toast.error('Failed to delete substage')
+      // Check if it's a pending substage (not yet in DB)
+      const isPending = pendingSubstages.some(s => s.tempId === substageId)
+
+      if (isPending) {
+        // Remove from pending substages (and any children)
+        setPendingSubstages(pendingSubstages.filter(
+          s => s.tempId !== substageId && s.parentSubstageId !== substageId
+        ))
+        toast.info('Substage removed')
+      } else {
+        // Mark for deletion (will be deleted on Save Details)
+        setDeletedSubstageIds([...deletedSubstageIds, substageId])
+        toast.info('Substage marked for deletion (pending save)')
       }
     }
   }
@@ -264,7 +442,15 @@ const UpdateProject = () => {
   const handleAddChildSubstage = (parentId) => {
     setAddSubstageParentId(parentId)
     setShowAddSubstage(true)
-    setNewSubstage({ substageName: '', machine: '', duration: 0, owner: '' })
+    setNewSubstage({
+      substageName: '',
+      machine: '',
+      duration: '',
+      owner: '',
+      startDate: '',
+      endDate: '',
+      progress: 0,
+    })
   }
 
   return (
@@ -339,7 +525,7 @@ const UpdateProject = () => {
                     marginLeft: '8px',
                   }}
                 >
-                  {activeStages.length} stages
+                  {mergedStages.length} stages
                 </span>
               </h3>
               <button
@@ -368,129 +554,184 @@ const UpdateProject = () => {
             {showAddStage && (
               <div
                 style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '10px',
-                  alignItems: 'center',
-                  padding: '14px 16px',
+                  padding: '16px',
                   background: '#fffbeb',
                   border: '1px solid #fcd34d',
                   borderRadius: '10px',
                   marginBottom: '16px',
                 }}
               >
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#92400e', minWidth: '100%' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#92400e', display: 'block', marginBottom: '12px' }}>
                   Adding new stage
                 </span>
-                <input
-                  type="text"
-                  placeholder="Stage Name *"
-                  value={newStage.stageName}
-                  onChange={(e) => setNewStage({ ...newStage, stageName: e.target.value })}
-                  style={{
-                    padding: '8px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    flex: '1',
-                    minWidth: '180px',
-                  }}
-                />
-                <input
-                  type="text"
-                  placeholder="Machine"
-                  value={newStage.machine}
-                  onChange={(e) => setNewStage({ ...newStage, machine: e.target.value })}
-                  style={{
-                    padding: '8px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    width: '120px',
-                  }}
-                />
-                <input
-                  type="number"
-                  placeholder="Duration (days)"
-                  value={newStage.duration}
-                  onChange={(e) => setNewStage({ ...newStage, duration: Number(e.target.value) })}
-                  style={{
-                    padding: '8px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    width: '120px',
-                  }}
-                />
-                <select
-                  value={newStage.owner}
-                  onChange={(e) => setNewStage({ ...newStage, owner: e.target.value })}
-                  style={{
-                    padding: '8px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    minWidth: '160px',
-                  }}
-                >
-                  <option value="">-- Owner --</option>
-                  {employeeList.map((emp) => (
-                    <option key={emp} value={emp}>
-                      {emp}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddStage}
-                  style={{
-                    padding: '8px 20px',
-                    background: '#16a34a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddStage(false)}
-                  style={{
-                    padding: '8px 16px',
-                    background: '#e5e7eb',
-                    color: '#374151',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Stage Name *"
+                    value={newStage.stageName}
+                    onChange={(e) => handleNewStageChange('stageName', e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      flex: '1',
+                      minWidth: '180px',
+                    }}
+                  />
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      label="Start Date *"
+                      value={newStage.startDate ? dayjs(newStage.startDate) : null}
+                      onChange={(date) => handleNewStageChange('startDate', date ? dayjs(date).format('YYYY-MM-DD') : '')}
+                      format="DD-MM-YYYY"
+                      slotProps={{
+                        textField: {
+                          size: 'small',
+                          sx: { width: '150px' },
+                        },
+                      }}
+                    />
+                  </LocalizationProvider>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      label="End Date *"
+                      value={newStage.endDate ? dayjs(newStage.endDate) : null}
+                      onChange={(date) => handleNewStageChange('endDate', date ? dayjs(date).format('YYYY-MM-DD') : '')}
+                      format="DD-MM-YYYY"
+                      slotProps={{
+                        textField: {
+                          size: 'small',
+                          sx: { width: '150px' },
+                        },
+                      }}
+                    />
+                  </LocalizationProvider>
+                  <input
+                    type="number"
+                    placeholder="Duration (Days)"
+                    value={newStage.duration}
+                    onChange={(e) => handleNewStageChange('duration', e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      width: '120px',
+                    }}
+                  />
+                  <select
+                    value={newStage.owner}
+                    onChange={(e) => handleNewStageChange('owner', e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      minWidth: '160px',
+                    }}
+                  >
+                    <option value="">-- Owner --</option>
+                    {employeeList.map((emp) => (
+                      <option key={emp} value={emp}>
+                        {emp}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Machine"
+                    value={newStage.machine}
+                    onChange={(e) => handleNewStageChange('machine', e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      width: '120px',
+                    }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Progress (%)"
+                    min="0"
+                    max="100"
+                    value={newStage.progress}
+                    onChange={(e) => handleNewStageChange('progress', Math.min(100, Math.max(0, Number(e.target.value))))}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      width: '100px',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={handleAddStage}
+                    style={{
+                      padding: '8px 20px',
+                      background: '#16a34a',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Add Stage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddStage(false)
+                      setNewStage({
+                        stageName: '',
+                        machine: '',
+                        duration: '',
+                        owner: '',
+                        startDate: '',
+                        endDate: '',
+                        progress: 0,
+                      })
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      background: '#e5e7eb',
+                      color: '#374151',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Stage List */}
-            {activeStages.length > 0 ? (
-              activeStages.map((stage, index) => {
+            {mergedStages.length > 0 ? (
+              mergedStages.map((stage, index) => {
                 const stageProgress = stage.progress || 0
-                const isSelected = selectedStageId === stage.stageId
+                const isSelected = selectedStageId === stage.stageId || selectedStageId === stage.tempId
+                const isPending = stage.isPending
                 return (
                   <div
-                    key={stage.stageId}
-                    onClick={() => setSelectedStageId(isSelected ? null : stage.stageId)}
+                    key={stage.stageId || stage.tempId}
+                    onClick={() => setSelectedStageId(isSelected ? null : (stage.stageId || stage.tempId))}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '16px',
                       padding: '12px 16px',
                       marginBottom: '8px',
-                      background: isSelected ? '#dbeafe' : stageProgress >= 100 ? '#f0fdf4' : '#f8f9fa',
-                      border: `2px solid ${isSelected ? '#0061A1' : stageProgress >= 100 ? '#86efac' : '#e5e7eb'}`,
+                      background: isPending ? '#fefce8' : isSelected ? '#dbeafe' : stageProgress >= 100 ? '#f0fdf4' : '#f8f9fa',
+                      border: `2px solid ${isPending ? '#facc15' : isSelected ? '#0061A1' : stageProgress >= 100 ? '#86efac' : '#e5e7eb'}`,
                       borderRadius: '10px',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
@@ -501,7 +742,7 @@ const UpdateProject = () => {
                         width: '32px',
                         height: '32px',
                         borderRadius: '50%',
-                        background: stageProgress >= 100 ? '#16a34a' : '#0061A1',
+                        background: isPending ? '#eab308' : stageProgress >= 100 ? '#16a34a' : '#0061A1',
                         color: 'white',
                         display: 'flex',
                         alignItems: 'center',
@@ -511,11 +752,23 @@ const UpdateProject = () => {
                         flexShrink: 0,
                       }}
                     >
-                      {stageProgress >= 100 ? '✓' : index + 1}
+                      {isPending ? '•' : stageProgress >= 100 ? '✓' : index + 1}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: '14px', color: '#212529' }}>
                         {stage.stageName}
+                        {isPending && (
+                          <span style={{
+                            fontSize: '10px',
+                            background: '#fef3c7',
+                            color: '#92400e',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            marginLeft: '8px',
+                          }}>
+                            Pending Save
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: '12px', color: '#6c757d' }}>
                         Owner: {stage.owner || '—'} • {formatDate(stage.startDate)} → {formatDate(stage.endDate)}
@@ -535,7 +788,7 @@ const UpdateProject = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDeleteStage(stage.stageId, stage.stageName)
+                        handleDeleteStage(stage.stageId || stage.tempId, stage.stageName)
                       }}
                       style={{
                         background: '#fee2e2',
@@ -575,7 +828,7 @@ const UpdateProject = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0061A1' }}>
                     Substages for: {selectedStage.stageName}
-                    {activeSubStages.length > 0 && (
+                    {mergedSubstages.length > 0 && (
                       <span
                         style={{
                           fontSize: '11px',
@@ -587,7 +840,7 @@ const UpdateProject = () => {
                           marginLeft: '8px',
                         }}
                       >
-                        {activeSubStages.length} total
+                        {mergedSubstages.length} total
                       </span>
                     )}
                   </h4>
@@ -596,7 +849,15 @@ const UpdateProject = () => {
                     onClick={() => {
                       setAddSubstageParentId(null)
                       setShowAddSubstage(true)
-                      setNewSubstage({ substageName: '', machine: '', duration: 0, owner: '' })
+                      setNewSubstage({
+                        substageName: '',
+                        machine: '',
+                        duration: '',
+                        owner: '',
+                        startDate: '',
+                        endDate: '',
+                        progress: 0,
+                      })
                     }}
                     style={{
                       display: 'flex',
@@ -621,10 +882,6 @@ const UpdateProject = () => {
                 {showAddSubstage && (
                   <div
                     style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '8px',
-                      alignItems: 'center',
                       padding: '12px',
                       background: '#fffbeb',
                       border: '1px solid #fcd34d',
@@ -632,103 +889,159 @@ const UpdateProject = () => {
                       marginBottom: '12px',
                     }}
                   >
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#92400e', minWidth: '100%' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#92400e', display: 'block', marginBottom: '10px' }}>
                       {addSubstageParentId
                         ? `Adding child substage under ID #${addSubstageParentId}`
                         : `Adding substage to ${selectedStage.stageName}`}
                     </span>
-                    <input
-                      type="text"
-                      placeholder="Substage Name *"
-                      value={newSubstage.substageName}
-                      onChange={(e) => setNewSubstage({ ...newSubstage, substageName: e.target.value })}
-                      style={{
-                        padding: '6px 10px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        flex: '1',
-                        minWidth: '150px',
-                      }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Machine"
-                      value={newSubstage.machine}
-                      onChange={(e) => setNewSubstage({ ...newSubstage, machine: e.target.value })}
-                      style={{
-                        padding: '6px 10px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        width: '100px',
-                      }}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Duration"
-                      value={newSubstage.duration}
-                      onChange={(e) => setNewSubstage({ ...newSubstage, duration: Number(e.target.value) })}
-                      style={{
-                        padding: '6px 10px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        width: '80px',
-                      }}
-                    />
-                    <select
-                      value={newSubstage.owner}
-                      onChange={(e) => setNewSubstage({ ...newSubstage, owner: e.target.value })}
-                      style={{
-                        padding: '6px 10px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        minWidth: '140px',
-                      }}
-                    >
-                      <option value="">-- Owner --</option>
-                      {employeeList.map((emp) => (
-                        <option key={emp} value={emp}>
-                          {emp}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={handleAddSubstage}
-                      style={{
-                        padding: '6px 16px',
-                        background: '#16a34a',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddSubstage(false)
-                        setAddSubstageParentId(null)
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#e5e7eb',
-                        color: '#374151',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Cancel
-                    </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        placeholder="Substage Name *"
+                        value={newSubstage.substageName}
+                        onChange={(e) => handleNewSubstageChange('substageName', e.target.value)}
+                        style={{
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          flex: '1',
+                          minWidth: '150px',
+                        }}
+                      />
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          label="Start Date *"
+                          value={newSubstage.startDate ? dayjs(newSubstage.startDate) : null}
+                          onChange={(date) => handleNewSubstageChange('startDate', date ? dayjs(date).format('YYYY-MM-DD') : '')}
+                          format="DD-MM-YYYY"
+                          slotProps={{
+                            textField: {
+                              size: 'small',
+                              sx: { width: '140px' },
+                            },
+                          }}
+                        />
+                      </LocalizationProvider>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          label="End Date *"
+                          value={newSubstage.endDate ? dayjs(newSubstage.endDate) : null}
+                          onChange={(date) => handleNewSubstageChange('endDate', date ? dayjs(date).format('YYYY-MM-DD') : '')}
+                          format="DD-MM-YYYY"
+                          slotProps={{
+                            textField: {
+                              size: 'small',
+                              sx: { width: '140px' },
+                            },
+                          }}
+                        />
+                      </LocalizationProvider>
+                      <input
+                        type="number"
+                        placeholder="Duration (Days)"
+                        value={newSubstage.duration}
+                        onChange={(e) => handleNewSubstageChange('duration', e.target.value)}
+                        style={{
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          width: '100px',
+                        }}
+                      />
+                      <select
+                        value={newSubstage.owner}
+                        onChange={(e) => handleNewSubstageChange('owner', e.target.value)}
+                        style={{
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          minWidth: '140px',
+                        }}
+                      >
+                        <option value="">-- Owner --</option>
+                        {employeeList.map((emp) => (
+                          <option key={emp} value={emp}>
+                            {emp}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Machine"
+                        value={newSubstage.machine}
+                        onChange={(e) => handleNewSubstageChange('machine', e.target.value)}
+                        style={{
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          width: '100px',
+                        }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Progress (%)"
+                        min="0"
+                        max="100"
+                        value={newSubstage.progress}
+                        onChange={(e) => handleNewSubstageChange('progress', Math.min(100, Math.max(0, Number(e.target.value))))}
+                        style={{
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          width: '90px',
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={handleAddSubstage}
+                        style={{
+                          padding: '6px 16px',
+                          background: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Add Substage
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddSubstage(false)
+                          setAddSubstageParentId(null)
+                          setNewSubstage({
+                            substageName: '',
+                            machine: '',
+                            duration: '',
+                            owner: '',
+                            startDate: '',
+                            endDate: '',
+                            progress: 0,
+                          })
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          background: '#e5e7eb',
+                          color: '#374151',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
 

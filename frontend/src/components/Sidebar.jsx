@@ -240,14 +240,14 @@ const Sidebar = () => {
   ]
 
   return (
-    <div className="sidebar" onMouseLeave={closeSubmenus}>
-      <div>
+    <div className="sidebar" onMouseLeave={closeSubmenus} style={{ backgroundColor: '#0061a1' }}>
+      <div style={{ backgroundColor: '#0061a1' }}>
         <FiMenu className="menu-icon" size={22} color="white" />
-        <div className="menu">
+        <div className="menu" style={{ backgroundColor: '#0061a1' }}>
           {navItems.map(
             (item) =>
               item.access === '1' && (
-                <div key={item.name}>
+                <div key={item.name} style={{ backgroundColor: '#0061a1' }}>
                   <div
                     className="icon-container main-item"
                     onClick={() => item.children && toggleSection(item.name)}
@@ -271,6 +271,7 @@ const Sidebar = () => {
                       className={`submenu ${
                         openSection === item.name ? 'expanded' : ''
                       }`}
+                      style={{ backgroundColor: '#0061a1' }}
                     >
                       {item.children.map(
                         (child) =>
@@ -279,6 +280,7 @@ const Sidebar = () => {
                               key={child.name}
                               to={child.slug}
                               className="icon-container"
+                              style={{ backgroundColor: 'transparent', border: 'none' }}
                             >
                               {iconMap[child.icon]}
                               <span className="menu-text">{child.name}</span>
@@ -292,7 +294,7 @@ const Sidebar = () => {
           )}
         </div>
       </div>
-      <div>
+      <div style={{ backgroundColor: '#0061a1' }}>
         <LogoutButton />
       </div>
     </div>

@@ -49,29 +49,6 @@ const columns = [
   },
 ]
 
-const activityColumns = [
-  {
-    label: 'Activity Name',
-    id: 'activityName',
-  },
-  {
-    label: 'Department',
-    id: 'department',
-  },
-  {
-    label: 'Duration',
-    id: 'duration',
-  },
-  {
-    label: 'Machine',
-    id: 'machine',
-  },
-  {
-    label: 'Preferred Person',
-    id: 'preferredPerson',
-  },
-]
-
 const AllProjects = () => {
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
@@ -96,8 +73,6 @@ const AllProjects = () => {
         return activeProjects.filter((op) => op.projectStatus === 'Pending')
       case 'completed':
         return activeProjects.filter((op) => op.projectStatus === 'Completed')
-      case 'activities':
-        return activeProjects.filter((op) => op.projectStatus === 'Activities')
       case 'all':
       default:
         return activeProjects
@@ -122,9 +97,6 @@ const AllProjects = () => {
         .length,
       completed: activeProjects.filter((op) => op.projectStatus === 'Completed')
         .length,
-      activities: activeProjects.filter(
-        (op) => op.projectStatus === 'Activities'
-      ).length,
     }
   }, [activeProjects])
 
@@ -174,16 +146,6 @@ const AllProjects = () => {
               }`}
             />
           </div>
-          <div onClick={() => handleTabClick('activities')}>
-            <Infocard
-              icon={'<FiBriefcase />'}
-              number={counts.activities}
-              text={'Activities'}
-              className={`infoCard ${
-                selectedTab === 'activities' ? 'activities' : ''
-              }`}
-            />
-          </div>
         </div>
 
         {employeeAccess[1] ? (
@@ -210,7 +172,7 @@ const AllProjects = () => {
         <TableComponent
           whose={'project'}
           rows={projectsList}
-          columns={selectedTab == 'activities' ? activityColumns : columns}
+          columns={columns}
           linkBasePath={'/myProject'}
           optionLinkBasePath={'/updateProject'}
           activeFilter={selectedTab}

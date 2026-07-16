@@ -22,7 +22,7 @@ const LogoutButton = () => {
 
 
     return (
-            <div onClick={handleLogout} className={`icon-container mb-2`}>
+            <div onClick={handleLogout} className={`icon-container`} style={{ border: 'none', boxShadow: 'none' }}>
                 <CiLogout size={22} color="white"/>
                 <span className="menu-text">Logout</span>
             </div>

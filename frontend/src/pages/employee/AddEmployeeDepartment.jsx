@@ -7,7 +7,7 @@ import { fetchAllDepartments, fetchAllWorkingDepartments } from "../../features/
 import { fetchDesignations } from "../../features/designationSlice.js";
 import { getAllEmployees } from "../../features/employeeSlice.js";
 
-const AddEmployeeDepartment = ({ employeeDesignations: initialEmployeeDesignations, setEmployeeDesignations }) => {
+const AddEmployeeDepartment = ({ employeeDesignations: initialEmployeeDesignations = [], setEmployeeDesignations }) => {
     const [employeeDesignations, setLocalEmployeeDesignations] = useState(initialEmployeeDesignations || []);
 
     console.log(employeeDesignations);
@@ -20,8 +20,8 @@ const AddEmployeeDepartment = ({ employeeDesignations: initialEmployeeDesignatio
     const { designations, loading: designationsLoading, error: designationsError } = useSelector((state) => state.designation);
 
     useEffect(() => {
-        setLocalEmployeeDesignations(initialEmployeeDesignations);
-    }, []);
+        setLocalEmployeeDesignations(initialEmployeeDesignations || []);
+    }, [initialEmployeeDesignations]);
 
     useEffect(() => {
         console.log(employees);

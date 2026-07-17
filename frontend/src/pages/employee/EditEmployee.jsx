@@ -155,7 +155,7 @@ const EditEmployee = () => {
                 />
 
                 <AddEmployeeDepartment
-                    initialEmployeeDesignations={employeeDesignations}
+                    employeeDesignations={employeeDesignations}
                     setEmployeeDesignations={setEmployeeDesignations}
                 />
 

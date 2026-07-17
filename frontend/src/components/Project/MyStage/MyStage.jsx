@@ -23,11 +23,13 @@ import SubstageTreeNode, {
 } from '../../common/SubstageTreeNode/SubstageTreeNode.jsx'
 import { toast } from 'react-toastify'
 import EditSubstageModal from '../EditSubstage/EditSubstageModal.jsx'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 
 const MyStage = () => {
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
-  ).split(',')[1]
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   const params = useParams()
   const { pNo, sNo } = params
@@ -126,9 +128,7 @@ const MyStage = () => {
               <FaChartGantt size={20} />
               <span>Gantt Chart</span>
             </button>
-            {(employeeAccess[7] == '1' ||
-              employeeAccess[9] == '1' ||
-              employeeAccess[11] == '1') && (
+            {(projectAccess.stage.update || projectAccess.substage.update) && (
               <button
                 className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
                 onClick={() =>
@@ -232,15 +232,19 @@ const MyStage = () => {
                   key={node.substageId}
                   node={node}
                   depth={0}
-                  onToggleComplete={handleToggleComplete}
-                  onProgressEdit={handleProgressEdit}
-                  onEdit={handleEditSubstage}
+                  onToggleComplete={
+                    projectAccess.substage.update ? handleToggleComplete : null
+                  }
+                  onProgressEdit={
+                    projectAccess.substage.update ? handleProgressEdit : null
+                  }
+                  onEdit={projectAccess.substage.update ? handleEditSubstage : null}
                   stageId={sNo}
                   projectNumber={pNo}
                   employeeAccess={
-                    employeeAccess[7] == '1' ||
-                    employeeAccess[9] == '1' ||
-                    employeeAccess[11] == '1'
+                    projectAccess.substage.add ||
+                    projectAccess.substage.update ||
+                    projectAccess.substage.delete
                   }
                 />
               ))}

@@ -46,6 +46,7 @@ import * as XLSX from 'xlsx'
 import { FiDownload } from 'react-icons/fi'
 import { IoIosSearch } from 'react-icons/io'
 import axios from 'axios'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 
 const TableComponent = ({
   whose,
@@ -59,11 +60,23 @@ const TableComponent = ({
   console.log({ user: user })
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
-  ).split(',')[1]
-  console.log({ employeeAccess: employeeAccess })
-  const accessSegment1 = employeeAccess.substring(1, 5)
-  const accessSegment2 = employeeAccess.substring(5, 9)
-  const accessSegment3 = employeeAccess.substring(9, 13)
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
+
+  const canEdit =
+    (whose === 'project' && projectAccess.project.update) ||
+    (whose === 'stage' && projectAccess.stage.update) ||
+    (whose === 'substage' && projectAccess.substage.update)
+
+  const canViewHistory =
+    (whose === 'project' && projectAccess.project.read) ||
+    (whose === 'stage' && projectAccess.stage.read) ||
+    (whose === 'substage' && projectAccess.substage.read)
+
+  const canDelete =
+    (whose === 'project' && projectAccess.project.delete) ||
+    (whose === 'stage' && projectAccess.stage.delete) ||
+    (whose === 'substage' && projectAccess.substage.delete)
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -522,13 +535,7 @@ const TableComponent = ({
                         }}
                       >
                         {console.log({ row: row })}
-                        {((employeeAccess[3] == '1' ||
-                          employeeAccess[5] == '1') &&
-                          whose == 'project') ||
-                        ((employeeAccess[7] == '1' ||
-                          employeeAccess[9] == '1' ||
-                          employeeAccess[11] == '1') &&
-                          whose == 'stage')
+                        {canEdit
                           ? whose !== 'substage' && (
                               <IconButton
                                 onClick={(e) => {
@@ -546,9 +553,7 @@ const TableComponent = ({
                               </IconButton>
                             )
                           : ''}
-                        {(accessSegment1 === '1111' && whose == 'project') ||
-                        (accessSegment2 === '1111' && whose == 'stage') ||
-                        (accessSegment3 === '1111' && whose == 'substage') ? (
+                        {canViewHistory ? (
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation()
@@ -560,9 +565,7 @@ const TableComponent = ({
                         ) : (
                           ''
                         )}
-                        {(employeeAccess[4] == '1' && whose == 'project') ||
-                        (employeeAccess[8] == '1' && whose == 'stage') ||
-                        (employeeAccess[12] == '1' && whose == 'substage') ? (
+                        {canDelete ? (
                           <IconButton
                             onClick={(e) => {
                               e.stopPropagation()

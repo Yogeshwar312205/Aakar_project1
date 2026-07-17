@@ -21,6 +21,7 @@ import './MyProject.css'
 import { BASE_URL } from '../../../constants.js'
 import { ProjectHistory } from '../ProjectHistory/index.js'
 import { toast } from 'react-toastify'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 import {
   Dialog,
   DialogTitle,
@@ -38,7 +39,8 @@ import EditStageModal from '../EditStage/EditStageModal.jsx'
 const MyProject = () => {
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
-  ).split(',')[1]
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   const params = useParams()
   const pNo = params.id
@@ -183,7 +185,7 @@ const MyProject = () => {
               <FaChartGantt size={20} />
               <span>Gantt Chart</span>
             </button>
-            {(employeeAccess[3] == '1' || employeeAccess[5] == '1') && (
+            {projectAccess.project.update && (
               <button
                 className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
                 onClick={() => navigate(`/updateProject/${projectNumber}`)}
@@ -372,7 +374,7 @@ const MyProject = () => {
                     <div
                       key={stage.stageId}
                       onClick={() => {
-                        if (!isEditing) {
+                        if (!isEditing && projectAccess.stage.read) {
                           navigate(`/myProject/${pNo}/myStage/${stage.stageId}`)
                         }
                       }}
@@ -493,25 +495,37 @@ const MyProject = () => {
                               >
                                 {stageProgress}%
                               </span>
-                              <button
-                                onClick={(e) => handleStageProgressEditStart(e, stage.stageId, stageProgress)}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: '#6c757d',
-                                  padding: '2px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  borderRadius: '4px',
-                                  transition: 'color 0.2s',
-                                }}
-                                title="Edit progress"
-                                onMouseEnter={(e) => { e.currentTarget.style.color = '#0061A1' }}
-                                onMouseLeave={(e) => { e.currentTarget.style.color = '#6c757d' }}
-                              >
-                                <FiEdit2 size={14} />
-                              </button>
+                              {projectAccess.stage.update && (
+                                <button
+                                  onClick={(e) =>
+                                    handleStageProgressEditStart(
+                                      e,
+                                      stage.stageId,
+                                      stageProgress
+                                    )
+                                  }
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#6c757d',
+                                    padding: '2px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px',
+                                    transition: 'color 0.2s',
+                                  }}
+                                  title="Edit progress"
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = '#0061A1'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = '#6c757d'
+                                  }}
+                                >
+                                  <FiEdit2 size={14} />
+                                </button>
+                              )}
                             </div>
                             <LinearProgress
                               determinate
@@ -522,7 +536,7 @@ const MyProject = () => {
                         )}
                       </div>
                       {/* Edit Stage Button */}
-                      {(employeeAccess[7] == '1' || employeeAccess[9] == '1' || employeeAccess[11] == '1') && !isEditing && (
+                      {projectAccess.stage.update && !isEditing && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation()

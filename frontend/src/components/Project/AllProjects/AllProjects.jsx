@@ -8,6 +8,7 @@ import {
   resetProjectState,
 } from '../../../features/projectSlice.js'
 import TableComponent from '../../common/Table/TableComponent.jsx'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 import './AllProjects.css'
 
 const columns = [
@@ -52,8 +53,8 @@ const columns = [
 const AllProjects = () => {
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
-  ).split(',')[1]
-  console.log({ employeeAccess: employeeAccess })
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -148,7 +149,7 @@ const AllProjects = () => {
           </div>
         </div>
 
-        {employeeAccess[1] ? (
+        {projectAccess.project.add ? (
           <button
             className="flex border-2 border-[#0061A1] rounded text-[#0061A1] font-semibold p-3 hover:cursor-pointer"
             onClick={() => navigate('/addProject')}
@@ -168,7 +169,7 @@ const AllProjects = () => {
       {error && <p className="error-message">{error}</p>}
 
       {/* Only render TableComponent if not loading and no error */}
-      {status !== 'loading' && !error && (
+      {status !== 'loading' && !error && projectAccess.project.read && (
         <TableComponent
           whose={'project'}
           rows={projectsList}
@@ -177,6 +178,9 @@ const AllProjects = () => {
           optionLinkBasePath={'/updateProject'}
           activeFilter={selectedTab}
         />
+      )}
+      {status !== 'loading' && !error && !projectAccess.project.read && (
+        <p>You do not have read access for project management.</p>
       )}
     </div>
   )

@@ -34,11 +34,13 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
 import { differenceInDays } from 'date-fns'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 
 const UpdateProject = () => {
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
-  ).split(',')[1]
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   const params = useParams()
   const pNo = params.id
@@ -236,64 +238,76 @@ const UpdateProject = () => {
 
     try {
       // 1. Delete stages marked for deletion
-      for (const stageId of deletedStageIds) {
-        await dispatch(deleteStage(stageId)).unwrap()
+      if (projectAccess.stage.delete) {
+        for (const stageId of deletedStageIds) {
+          await dispatch(deleteStage(stageId)).unwrap()
+        }
       }
 
       // 2. Delete substages marked for deletion
-      for (const substageId of deletedSubstageIds) {
-        await dispatch(deleteSubStage(substageId)).unwrap()
+      if (projectAccess.substage.delete) {
+        for (const substageId of deletedSubstageIds) {
+          await dispatch(deleteSubStage(substageId)).unwrap()
+        }
       }
 
       // 3. Save pending stages to database
-      for (const stage of pendingStages) {
-        const stageData = {
-          projectNumber: pNo,
-          stageName: stage.stageName,
-          startDate: stage.startDate || new Date().toISOString().split('T')[0],
-          endDate: stage.endDate || new Date().toISOString().split('T')[0],
-          owner: stage.owner || null,
-          machine: stage.machine || '',
-          duration: stage.duration || 0,
-          seqPrevStage: activeStages.length > 0 ? activeStages[activeStages.length - 1].stageId : null,
-          createdBy: user.employeeId,
-          progress: stage.progress || 0,
+      if (projectAccess.stage.add) {
+        for (const stage of pendingStages) {
+          const stageData = {
+            projectNumber: pNo,
+            stageName: stage.stageName,
+            startDate: stage.startDate || new Date().toISOString().split('T')[0],
+            endDate: stage.endDate || new Date().toISOString().split('T')[0],
+            owner: stage.owner || null,
+            machine: stage.machine || '',
+            duration: stage.duration || 0,
+            seqPrevStage:
+              activeStages.length > 0 ? activeStages[activeStages.length - 1].stageId : null,
+            createdBy: user.employeeId,
+            progress: stage.progress || 0,
+          }
+          await dispatch(addStage(stageData)).unwrap()
         }
-        await dispatch(addStage(stageData)).unwrap()
       }
 
       // 4. Save pending substages to database
-      for (const substage of pendingSubstages) {
-        const ownerString = substage.owner ||
-          `${user.employeeName || 'User'}(${user.customEmployeeId || user.employeeId})`
+      if (projectAccess.substage.add) {
+        for (const substage of pendingSubstages) {
+          const ownerString =
+            substage.owner ||
+            `${user.employeeName || 'User'}(${user.customEmployeeId || user.employeeId})`
 
-        const substageData = {
-          stageId: substage.stageId,
-          parentSubstageId: substage.parentSubstageId || null,
-          substagename: substage.substageName,
-          startDate: substage.startDate || new Date().toISOString().split('T')[0],
-          endDate: substage.endDate || new Date().toISOString().split('T')[0],
-          owner: ownerString,
-          machine: substage.machine || '',
-          duration: substage.duration || 0,
-          createdBy: user.employeeId,
-          progress: substage.progress || 0,
-          projectNumber: pNo,
-          seqPrevStage: null,
+          const substageData = {
+            stageId: substage.stageId,
+            parentSubstageId: substage.parentSubstageId || null,
+            substagename: substage.substageName,
+            startDate: substage.startDate || new Date().toISOString().split('T')[0],
+            endDate: substage.endDate || new Date().toISOString().split('T')[0],
+            owner: ownerString,
+            machine: substage.machine || '',
+            duration: substage.duration || 0,
+            createdBy: user.employeeId,
+            progress: substage.progress || 0,
+            projectNumber: pNo,
+            seqPrevStage: null,
+          }
+          await dispatch(addSubStage(substageData)).unwrap()
         }
-        await dispatch(addSubStage(substageData)).unwrap()
       }
 
       // 5. Update project
-      await dispatch(
-        updateProject({
-          id: pNo,
-          data: {
-            ...inputValues,
-            progress: projectProgress,
-          },
-        })
-      ).unwrap()
+      if (projectAccess.project.update) {
+        await dispatch(
+          updateProject({
+            id: pNo,
+            data: {
+              ...inputValues,
+              progress: projectProgress,
+            },
+          })
+        ).unwrap()
+      }
 
       toast.success('Project updated successfully!')
       navigate(-1)
@@ -306,6 +320,10 @@ const UpdateProject = () => {
   // Stage management handlers - Add to pending state (not DB)
   const handleAddStage = (e) => {
     e.preventDefault()
+    if (!projectAccess.stage.add) {
+      toast.error('You do not have permission to add stages')
+      return
+    }
     if (!newStage.stageName.trim()) {
       toast.error('Stage name is required')
       return
@@ -345,6 +363,10 @@ const UpdateProject = () => {
   }
 
   const handleDeleteStage = (stageId, stageName) => {
+    if (!projectAccess.stage.delete) {
+      toast.error('You do not have permission to delete stages')
+      return
+    }
     if (window.confirm(`Delete stage "${stageName}" and all its substages?`)) {
       // Check if it's a pending stage (not yet in DB)
       const isPending = pendingStages.some(s => s.tempId === stageId)
@@ -375,6 +397,10 @@ const UpdateProject = () => {
   // Substage management handlers - Add to pending state (not DB)
   const handleAddSubstage = (e) => {
     e.preventDefault()
+    if (!projectAccess.substage.add) {
+      toast.error('You do not have permission to add substages')
+      return
+    }
     if (!newSubstage.substageName.trim()) {
       toast.error('Substage name is required')
       return
@@ -421,6 +447,10 @@ const UpdateProject = () => {
   }
 
   const handleDeleteSubstage = (substageId) => {
+    if (!projectAccess.substage.delete) {
+      toast.error('You do not have permission to delete substages')
+      return
+    }
     if (window.confirm('Delete this substage and all its children?')) {
       // Check if it's a pending substage (not yet in DB)
       const isPending = pendingSubstages.some(s => s.tempId === substageId)
@@ -479,7 +509,7 @@ const UpdateProject = () => {
 
         <div className="formDiv">
           {/* Project Form - editable fields */}
-          {employeeAccess[3] == '1' && (
+          {projectAccess.project.update && (
             <ProjectForm
               action={'update'}
               inputValues={inputValues}
@@ -528,26 +558,28 @@ const UpdateProject = () => {
                   {mergedStages.length} stages
                 </span>
               </h3>
-              <button
-                type="button"
-                onClick={() => setShowAddStage(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 16px',
-                  background: '#0061A1',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                <FiPlusCircle size={16} />
-                Add Stage
-              </button>
+              {projectAccess.stage.add && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddStage(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    background: '#0061A1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <FiPlusCircle size={16} />
+                  Add Stage
+                </button>
+              )}
             </div>
 
             {/* Add Stage Form */}
@@ -784,27 +816,29 @@ const UpdateProject = () => {
                         sx={{ width: '80px', height: '6px', borderRadius: '3px' }}
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteStage(stage.stageId || stage.tempId, stage.stageName)
-                      }}
-                      style={{
-                        background: '#fee2e2',
-                        border: '1px solid #fca5a5',
-                        borderRadius: '8px',
-                        padding: '8px',
-                        cursor: 'pointer',
-                        color: '#dc2626',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      title="Delete Stage"
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
+                    {projectAccess.stage.delete && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteStage(stage.stageId || stage.tempId, stage.stageName)
+                        }}
+                        style={{
+                          background: '#fee2e2',
+                          border: '1px solid #fca5a5',
+                          borderRadius: '8px',
+                          padding: '8px',
+                          cursor: 'pointer',
+                          color: '#dc2626',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Delete Stage"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 )
               })
@@ -844,42 +878,44 @@ const UpdateProject = () => {
                       </span>
                     )}
                   </h4>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddSubstageParentId(null)
-                      setShowAddSubstage(true)
-                      setNewSubstage({
-                        substageName: '',
-                        machine: '',
-                        duration: '',
-                        owner: '',
-                        startDate: '',
-                        endDate: '',
-                        progress: 0,
-                      })
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '6px 12px',
-                      background: '#0061A1',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <FiPlusCircle size={14} />
-                    Add Substage
-                  </button>
+                  {projectAccess.substage.add && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddSubstageParentId(null)
+                        setShowAddSubstage(true)
+                        setNewSubstage({
+                          substageName: '',
+                          machine: '',
+                          duration: '',
+                          owner: '',
+                          startDate: '',
+                          endDate: '',
+                          progress: 0,
+                        })
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        background: '#0061A1',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <FiPlusCircle size={14} />
+                      Add Substage
+                    </button>
+                  )}
                 </div>
 
                 {/* Add Substage Form */}
-                {showAddSubstage && (
+                {showAddSubstage && projectAccess.substage.add && (
                   <div
                     style={{
                       padding: '12px',
@@ -1058,7 +1094,11 @@ const UpdateProject = () => {
                         onToggleComplete={null}
                         stageId={selectedStageId}
                         projectNumber={pNo}
-                        employeeAccess={true}
+                        employeeAccess={
+                          projectAccess.substage.add ||
+                          projectAccess.substage.update ||
+                          projectAccess.substage.delete
+                        }
                       />
                     ))}
                   </div>

@@ -72,6 +72,7 @@ const SubstageTreeNode = ({
   const isCompleted = !!node.isCompleted
   const allChildrenDone = hasChildren ? areAllChildrenCompleted(node) : isCompleted
   const canComplete = !hasChildren || areAllChildrenCompleted(node)
+  const canToggleCompletion = !!onToggleComplete
 
   const handleCheckboxChange = () => {
     if (hasChildren && !areAllChildrenCompleted(node)) {
@@ -161,7 +162,9 @@ const SubstageTreeNode = ({
       <div className={`tree-node-header ${isCompleted ? 'completed' : ''}`}>
         {/* Completion checkbox */}
         <div className="tree-node-checkbox" title={
-          hasChildren && !canComplete
+          !canToggleCompletion
+            ? 'You do not have update access for this substage'
+            : hasChildren && !canComplete
             ? 'Complete all child substages first'
             : isCompleted ? 'Mark as incomplete' : 'Mark as complete'
         }>
@@ -169,11 +172,14 @@ const SubstageTreeNode = ({
             type="checkbox"
             checked={isCompleted}
             onChange={handleCheckboxChange}
-            disabled={hasChildren && !canComplete}
+            disabled={!canToggleCompletion || (hasChildren && !canComplete)}
             style={{
               width: '18px',
               height: '18px',
-              cursor: hasChildren && !canComplete ? 'not-allowed' : 'pointer',
+              cursor:
+                !canToggleCompletion || (hasChildren && !canComplete)
+                  ? 'not-allowed'
+                  : 'pointer',
               accentColor: '#0061A1',
             }}
           />
@@ -426,4 +432,3 @@ const SubstageTreeNode = ({
 }
 
 export default SubstageTreeNode
-

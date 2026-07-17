@@ -55,6 +55,7 @@ const SubstageTreeNode = ({
   onDelete,
   onToggleComplete,
   onProgressEdit,
+  onEdit,
   stageId,
   projectNumber,
   employeeAccess,
@@ -312,28 +313,45 @@ const SubstageTreeNode = ({
 
           <div className="tree-node-actions">
             {employeeAccess && (
-              <button
-                className="tree-action-btn add"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onAddChild && onAddChild(node.substageId, stageId, projectNumber)
-                }}
-                title="Add child substage"
-              >
-                <FiPlusCircle size={16} />
-              </button>
-            )}
-            {employeeAccess && (
-              <button
-                className="tree-action-btn delete"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete && onDelete(node.substageId)
-                }}
-                title="Delete substage"
-              >
-                <RiDeleteBinLine size={16} />
-              </button>
+              <>
+                {onAddChild && (
+                  <button
+                    className="tree-action-btn add"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onAddChild(node.substageId, stageId, projectNumber)
+                    }}
+                    title="Add child substage"
+                  >
+                    <FiPlusCircle size={16} />
+                  </button>
+                )}
+                {onEdit && (
+                  <button
+                    className="tree-action-btn edit"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEdit(node)
+                    }}
+                    title="Edit substage"
+                  >
+                    <FiEdit2 size={16} />
+                    <span style={{ marginLeft: '4px', fontSize: '12px' }}>Edit</span>
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    className="tree-action-btn delete"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDelete(node.substageId)
+                    }}
+                    title="Delete substage"
+                  >
+                    <RiDeleteBinLine size={16} />
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -350,6 +368,7 @@ const SubstageTreeNode = ({
               onDelete={onDelete}
               onToggleComplete={onToggleComplete}
               onProgressEdit={onProgressEdit}
+              onEdit={onEdit}
               stageId={stageId}
               projectNumber={projectNumber}
               employeeAccess={employeeAccess}

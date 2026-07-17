@@ -22,6 +22,7 @@ import SubstageTreeNode, {
   buildSubstageTree,
 } from '../../common/SubstageTreeNode/SubstageTreeNode.jsx'
 import { toast } from 'react-toastify'
+import EditSubstageModal from '../EditSubstage/EditSubstageModal.jsx'
 
 const MyStage = () => {
   const employeeAccess = useSelector(
@@ -36,6 +37,9 @@ const MyStage = () => {
   const { activeSubStages = [] } = useSelector((state) => state.substages)
 
   const navigate = useNavigate()
+
+  const [editSubstageModalOpen, setEditSubstageModalOpen] = useState(false)
+  const [selectedSubstage, setSelectedSubstage] = useState(null)
 
   useEffect(() => {
     dispatch(getActiveSubStagesByStageId(sNo))
@@ -91,6 +95,11 @@ const MyStage = () => {
     } catch (err) {
       toast.error('Failed to update progress')
     }
+  }
+
+  const handleEditSubstage = (substage) => {
+    setSelectedSubstage(substage)
+    setEditSubstageModalOpen(true)
   }
 
   return (
@@ -223,13 +232,16 @@ const MyStage = () => {
                   key={node.substageId}
                   node={node}
                   depth={0}
-                  onAddChild={null}
-                  onDelete={null}
                   onToggleComplete={handleToggleComplete}
                   onProgressEdit={handleProgressEdit}
+                  onEdit={handleEditSubstage}
                   stageId={sNo}
                   projectNumber={pNo}
-                  employeeAccess={false}
+                  employeeAccess={
+                    employeeAccess[7] == '1' ||
+                    employeeAccess[9] == '1' ||
+                    employeeAccess[11] == '1'
+                  }
                 />
               ))}
             </div>
@@ -249,6 +261,20 @@ const MyStage = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Substage Modal */}
+      {selectedSubstage && (
+        <EditSubstageModal
+          open={editSubstageModalOpen}
+          onClose={() => {
+            setEditSubstageModalOpen(false)
+            setSelectedSubstage(null)
+          }}
+          substage={selectedSubstage}
+          stageId={sNo}
+          projectNumber={pNo}
+        />
+      )}
     </section>
   )
 }

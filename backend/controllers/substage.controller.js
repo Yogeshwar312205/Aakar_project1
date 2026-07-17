@@ -300,7 +300,7 @@ export const updateSubStage = asyncHandler(async (req, res) => {
 
       // Create history for the substage
       const insertValues = [
-        substage.substageId,
+        substage.stageId,  // Fixed: use stageId not substageId
         substage.parentSubstageId || null,
         substage.substageName,
         substage.startDate,
@@ -318,7 +318,7 @@ export const updateSubStage = asyncHandler(async (req, res) => {
 
       // Prepare updated fields
       const updatedFields = {
-        substageId: req.body.substageId || substage.substageId,
+        stageId: req.body.stageId || substage.stageId,  // Fixed: use stageId
         parentSubstageId: req.body.parentSubstageId !== undefined ? req.body.parentSubstageId : substage.parentSubstageId,
         substageName: req.body.substageName || substage.substageName,
         startDate: req.body.startDate || substage.startDate,
@@ -359,7 +359,7 @@ export const updateSubStage = asyncHandler(async (req, res) => {
           .replace("T", " ")
           .replace("Z", "");
         const updateValues = [
-          updatedFields.substageId,
+          updatedFields.stageId || substage.stageId,  // Fixed: use stageId
           updatedFields.parentSubstageId || null,
           updatedFields.substageName,
           updatedFields.startDate,

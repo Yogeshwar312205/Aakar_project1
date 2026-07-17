@@ -33,6 +33,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
+import EditStageModal from '../EditStage/EditStageModal.jsx'
 
 const MyProject = () => {
   const employeeAccess = useSelector(
@@ -54,6 +55,8 @@ const MyProject = () => {
   const [stageDateDialogStageId, setStageDateDialogStageId] = useState(null)
   const [stageExecStartDate, setStageExecStartDate] = useState(null)
   const [stageExecEndDate, setStageExecEndDate] = useState(null)
+  const [editStageModalOpen, setEditStageModalOpen] = useState(false)
+  const [selectedStage, setSelectedStage] = useState(null)
 
   useEffect(() => {
     dispatch(fetchProjectById(pNo))
@@ -518,6 +521,43 @@ const MyProject = () => {
                           </>
                         )}
                       </div>
+                      {/* Edit Stage Button */}
+                      {(employeeAccess[7] == '1' || employeeAccess[9] == '1' || employeeAccess[11] == '1') && !isEditing && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedStage(stage)
+                            setEditStageModalOpen(true)
+                          }}
+                          style={{
+                            background: '#0061A1',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            transition: 'all 0.2s',
+                            flexShrink: 0,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#004d80'
+                            e.currentTarget.style.transform = 'scale(1.05)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#0061A1'
+                            e.currentTarget.style.transform = 'scale(1)'
+                          }}
+                          title="Edit Stage"
+                        >
+                          <FiEdit size={16} />
+                          Edit
+                        </button>
+                      )}
                     </div>
                   )
                 })
@@ -584,6 +624,19 @@ const MyProject = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Edit Stage Modal */}
+      {selectedStage && (
+        <EditStageModal
+          open={editStageModalOpen}
+          onClose={() => {
+            setEditStageModalOpen(false)
+            setSelectedStage(null)
+          }}
+          stage={selectedStage}
+          projectNumber={pNo}
+        />
+      )}
     </section>
   )
 }

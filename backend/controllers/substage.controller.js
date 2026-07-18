@@ -427,40 +427,146 @@ export const createSubStage = asyncHandler(async (req, res) => {
     }
 
     const employeeId = result[0].employeeId
+    const parentSubstageId = req.body.parentSubstageId || null
 
-    const stageQuery = `INSERT INTO substage (
-      stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration,
-      seqPrevStage, createdBy, progress, ProjectNumber
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
-    const values = [
-      // req.body.substageId,
-      req.body.stageId,
-      req.body.parentSubstageId || null,
-      req.body.substagename,
-      req.body.startDate,
-      req.body.endDate,
-      employeeId, // Use employeeId for owner
-      req.body.machine,
-      req.body.duration,
-      req.body.seqPrevStage,
-      req.user[0].employeeId,
-      req.body.progress,
-      req.body.projectNumber,
-    ]
-
-    console.log('Creating substage with values:', values)
-
-    db.query(stageQuery, values, (err, data) => {
-      if (err) {
-        console.log(err)
-        return res
-          .status(500)
-          .json(new ApiResponse(500, null, 'Error creating substage'))
+    // Recursively update all ancestor parents' completion status
+    const updateAncestorsCompletion = (currentParentId, callback) => {
+      if (!currentParentId) {
+        callback()
+        return
       }
-      res
-        .status(201)
-        .json(new ApiResponse(201, data, 'Substage created successfully'))
+
+      // Update current parent to incomplete if it was completed
+      const updateParentQuery = `
+        UPDATE substage 
+        SET isCompleted = 0, 
+            progress = 0,
+            executedStartDate = NULL,
+            executedEndDate = NULL
+        WHERE substageId = ? AND isCompleted = 1
+      `
+      
+      db.query(updateParentQuery, [currentParentId], (err, updateResult) => {
+        if (err) {
+          console.log('Error updating ancestor completion status:', err)
+          callback()
+          return
+        }
+        
+        if (updateResult.affectedRows > 0) {
+          console.log(`Ancestor substage ${currentParentId} marked as incomplete due to new descendant`)
+        }
+
+        // Find the parent of current parent (grandparent) and recursively update
+        const findGrandparentQuery = `SELECT parentSubstageId FROM substage WHERE substageId = ?`
+        db.query(findGrandparentQuery, [currentParentId], (err, grandparentResult) => {
+          if (err || grandparentResult.length === 0) {
+            callback()
+            return
+          }
+
+          const grandparentId = grandparentResult[0].parentSubstageId
+          if (grandparentId) {
+            // Recursively update grandparent
+            updateAncestorsCompletion(grandparentId, callback)
+          } else {
+            callback()
+          }
+        })
+      })
+    }
+
+    updateAncestorsCompletion(parentSubstageId, () => {
+      const stageQuery = `INSERT INTO substage (
+        stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration,
+        seqPrevStage, createdBy, progress, ProjectNumber
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+      const values = [
+        // req.body.substageId,
+        req.body.stageId,
+        parentSubstageId,
+        req.body.substagename,
+        req.body.startDate,
+        req.body.endDate,
+        employeeId, // Use employeeId for owner
+        req.body.machine,
+        req.body.duration,
+        req.body.seqPrevStage,
+        req.user[0].employeeId,
+        req.body.progress,
+        req.body.projectNumber,
+      ]
+
+      console.log('Creating substage with values:', values)
+
+      db.query(stageQuery, values, (err, data) => {
+        if (err) {
+          console.log(err)
+          return res
+            .status(500)
+            .json(new ApiResponse(500, null, 'Error creating substage'))
+        }
+
+        // After creating substage, recalculate stage progress
+        const stageId = req.body.stageId
+        const projectNumber = req.body.projectNumber
+
+        // Recalculate stage progress based on substage completion
+        db.query(
+          'SELECT COUNT(*) as total, SUM(isCompleted) as completed FROM substage WHERE stageId = ? AND historyOf IS NULL',
+          [stageId],
+          (err, stats) => {
+            if (!err && stats.length > 0) {
+              const total = stats[0].total || 1
+              const completed = stats[0].completed || 0
+              const stageProgress = Math.round((completed / total) * 100)
+
+              // Update stage progress
+              db.query(
+                'UPDATE stage SET progress = ? WHERE stageId = ?',
+                [stageProgress, stageId],
+                (err) => {
+                  if (err) {
+                    console.log('Error updating stage progress:', err)
+                  } else {
+                    console.log(`Stage ${stageId} progress updated to ${stageProgress}%`)
+                  }
+
+                  // Recalculate project progress
+                  if (projectNumber) {
+                    db.query(
+                      'SELECT AVG(progress) as avgProgress FROM stage WHERE projectNumber = ? AND historyOf IS NULL',
+                      [projectNumber],
+                      (err, projStats) => {
+                        if (!err && projStats.length > 0) {
+                          const projectProgress = Math.round(projStats[0].avgProgress || 0)
+                          db.query(
+                            'UPDATE project SET progress = ? WHERE projectNumber = ?',
+                            [projectProgress, projectNumber],
+                            (err) => {
+                              if (err) {
+                                console.log('Error updating project progress:', err)
+                              } else {
+                                console.log(`Project ${projectNumber} progress updated to ${projectProgress}%`)
+                              }
+                            }
+                          )
+                        }
+                      }
+                    )
+                  }
+                }
+              )
+            }
+
+            // Return success response
+            res
+              .status(201)
+              .json(new ApiResponse(201, data, 'Substage created successfully'))
+          }
+        )
+      })
     })
   })
 })

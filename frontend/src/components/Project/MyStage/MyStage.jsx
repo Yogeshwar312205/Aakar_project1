@@ -128,19 +128,6 @@ const MyStage = () => {
               <FaChartGantt size={20} />
               <span>Gantt Chart</span>
             </button>
-            {(projectAccess.stage.update || projectAccess.substage.update) && (
-              <button
-                className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
-                onClick={() =>
-                  navigate(`/myProject/${pNo}/updateStage/${sNo}`, {
-                    replace: true,
-                  })
-                }
-              >
-                <FiEdit size={20} />
-                <span>Edit Stage</span>
-              </button>
-            )}
           </div>
         </section>
         <div className="formDiv">

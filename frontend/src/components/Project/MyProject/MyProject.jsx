@@ -9,7 +9,7 @@ import {
   fetchProjectHistory,
   resetProjectState,
 } from '../../../features/projectSlice.js'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 
 import '../AddProject/AddProject.css'
 import {
@@ -45,6 +45,7 @@ const MyProject = () => {
   const params = useParams()
   const pNo = params.id
   const dispatch = useDispatch()
+  const location = useLocation()
 
   const { project = {}, projectHistory = {}, loading } = useSelector((state) => state.projects)
   const { activeStages = [] } = useSelector((state) => state.stages)
@@ -67,6 +68,39 @@ const MyProject = () => {
     return () => {
       dispatch(resetProjectState())
       dispatch(resetStageState())
+    }
+  }, [dispatch, pNo])
+
+  // Refresh data periodically and when tab becomes visible
+  // This ensures stage progress is always up-to-date after editing substages
+  useEffect(() => {
+    let intervalId
+
+    const refreshData = () => {
+      dispatch(fetchActiveStagesByProjectNumber(pNo))
+      dispatch(fetchProjectById(pNo))
+    }
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, refresh immediately
+        refreshData()
+      }
+    }
+
+    // Refresh every 5 seconds when page is visible
+    intervalId = setInterval(() => {
+      if (!document.hidden) {
+        refreshData()
+      }
+    }, 5000)
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [dispatch, pNo])
 

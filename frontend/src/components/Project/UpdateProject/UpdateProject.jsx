@@ -272,7 +272,7 @@ const UpdateProject = () => {
       }
 
       // 4. Save pending substages to database
-      if (projectAccess.substage.add) {
+      if (projectAccess.substage.add && pendingSubstages.length > 0) {
         for (const substage of pendingSubstages) {
           const ownerString =
             substage.owner ||
@@ -294,9 +294,21 @@ const UpdateProject = () => {
           }
           await dispatch(addSubStage(substageData)).unwrap()
         }
+        
+        // Clear pending substages after successful save
+        setPendingSubstages([])
+        
+        // Refresh substages to get updated parent completion status from backend
+        // The backend automatically marks parents as incomplete when children are added
+        if (selectedStageId) {
+          await dispatch(getActiveSubStagesByStageId(selectedStageId)).unwrap()
+        }
       }
 
-      // 5. Update project
+      // 5. Refresh stages and project to get updated progress from backend
+      await dispatch(fetchActiveStagesByProjectNumber(pNo))
+
+      // 6. Update project
       if (projectAccess.project.update) {
         await dispatch(
           updateProject({
@@ -429,10 +441,36 @@ const UpdateProject = () => {
       duration: newSubstage.duration || 0,
       progress: newSubstage.progress || 0,
       isPending: true, // Flag to identify pending substages
+      isCompleted: 0, // New substages are not completed
     }
 
-    setPendingSubstages([...pendingSubstages, pendingSubstage])
-    toast.info('Substage added (pending save)')
+    // If adding a child to a completed parent, mark parent as incomplete
+    if (addSubstageParentId) {
+      // Update the parent in activeSubStages if it exists
+      const parentInActive = activeSubStages.find(s => s.substageId === addSubstageParentId)
+      if (parentInActive && parentInActive.isCompleted) {
+        // Update the active substage locally to show immediate feedback
+        const updatedActiveSubstages = activeSubStages.map(s => 
+          s.substageId === addSubstageParentId 
+            ? { ...s, isCompleted: 0, progress: 0, executedStartDate: null, executedEndDate: null }
+            : s
+        )
+        // Note: This won't persist unless you have a way to update the Redux state
+        // The backend will handle the actual update when saving
+      }
+      
+      // Update parent in pendingSubstages if it exists
+      const updatedPending = pendingSubstages.map(s =>
+        s.substageId === addSubstageParentId || s.tempId === addSubstageParentId
+          ? { ...s, isCompleted: 0, progress: 0, executedStartDate: null, executedEndDate: null }
+          : s
+      )
+      setPendingSubstages([...updatedPending, pendingSubstage])
+    } else {
+      setPendingSubstages([...pendingSubstages, pendingSubstage])
+    }
+
+    toast.info('Substage added (pending save). Parent marked as incomplete.')
     setShowAddSubstage(false)
     setNewSubstage({
       substageName: '',

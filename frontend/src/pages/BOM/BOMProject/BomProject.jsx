@@ -5,11 +5,15 @@ import TableComponent from '../Table/TableComponent.jsx'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchActiveProjects } from '../../../features/projectSlice.js'
 import "./BomProject.css"
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 
 const BomProject = () => {
   const dispatch = useDispatch()
   const { activeProjects } = useSelector((state) => state.projects)
   const [searchTerm, setSearchTerm] = useState('')
+  
+  const employeeAccess = useSelector((state) => state.auth.user?.employeeAccess) || ''
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   const columns = [
     { label: 'Project Number', id: 'projectNumber', align: 'left' },
@@ -62,11 +66,27 @@ const BomProject = () => {
           />
         </Box>
       </div>
-      <div className="bom-project-stats">
-        <span className="bom-project-stat-chip">Visible Projects: {filteredProjects.length}</span>
-        <span className="bom-project-stat-chip bom-project-stat-chip-secondary">Total Active: {activeProjects.length}</span>
-      </div>
-      <TableComponent rows={filteredProjects} columns={columns} linkBasePath="/bom-project/bom" />
+      {projectAccess.bom.read ? (
+        <>
+          <div className="bom-project-stats">
+            <span className="bom-project-stat-chip">Visible Projects: {filteredProjects.length}</span>
+            <span className="bom-project-stat-chip bom-project-stat-chip-secondary">Total Active: {activeProjects.length}</span>
+          </div>
+          <TableComponent rows={filteredProjects} columns={columns} linkBasePath="/bom-project/bom" />
+        </>
+      ) : (
+        <div style={{
+          textAlign: 'center',
+          padding: '40px',
+          color: '#adb5bd',
+          fontSize: '14px',
+          background: '#f8f9fa',
+          borderRadius: '8px',
+          marginTop: '20px'
+        }}>
+          You do not have read access for BOM Management.
+        </div>
+      )}
     </div>
   )
 }

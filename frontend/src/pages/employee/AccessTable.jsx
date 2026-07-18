@@ -23,7 +23,7 @@ const AccessTable = ({ access, setAccess }) => {
 
     const subOptions = {
         HRManagement: ['Employee Management', 'Department Management', 'Designation Management'],
-        ProjectManagement: ['Project Management', 'Stage Management', 'Substage Management'],
+        ProjectManagement: ['Project Management', 'Stage Management', 'Substage Management', 'BOM Management', 'Stage Template Management'],
         TrainingManagement: ['Employee Status', 'Skills', 'Skill Matrix', 'Assign Training', 'Training Plan', 'Training Status'],
         TicketTracking: [
             'View self created tickets',
@@ -135,9 +135,11 @@ const AccessTable = ({ access, setAccess }) => {
                 } else if (module === 'TrainingManagement') {
                     // 1 module flag + (6 sub-options × 4 bits) = 25 bits
                     return 25;
+                } else if (module === 'ProjectManagement') {
+                    // 1 module flag + (5 sub-options × 4 bits) = 21 bits
+                    return 21;
                 } else {
-                    // HRManagement and ProjectManagement
-                    // 1 module flag + (3 sub-options × 4 bits) = 13 bits
+                    // HRManagement: 1 module flag + (3 sub-options × 4 bits) = 13 bits
                     return 13;
                 }
             };

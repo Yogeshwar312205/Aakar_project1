@@ -13,6 +13,7 @@ import { Tabs, Tab } from '@mui/material'
 import { FiPlusCircle } from 'react-icons/fi'
 import * as XLSX from 'xlsx'
 import axios from 'axios'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 
 const BOMPage = ({ view = "designer" }) => {
   const dispatch = useDispatch()
@@ -29,6 +30,9 @@ const BOMPage = ({ view = "designer" }) => {
   const activeProjects = useSelector((state) => state.projects.activeProjects)
   const stages = useSelector((state) => state.stages.activeStages)
   const filteredProject = activeProjects.find((p) => p.projectNumber == projectId)
+  
+  const employeeAccess = useSelector((state) => state.auth.user?.employeeAccess) || ''
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   useEffect(() => {
     dispatch(fetchBom(projectId))
@@ -151,18 +155,24 @@ const BOMPage = ({ view = "designer" }) => {
           </div>
         </div>
         <div className="bom-page-header-right">
-          <button className="bom-import-btn" onClick={() => setImportOpen(true)}>
-            <FiDownload size={18} /> Import
-          </button>
-          <button className="bom-import-btn" onClick={() => setExcelImportOpen(true)}>
-            <FiDownload size={18} /> Import Excel
-          </button>
-          <button className="bom-import-btn" onClick={handleDownloadTemplate}>
-            <FiDownload size={18} /> Download Template
-          </button>
-          <button className="bom-export-btn" onClick={handleExportExcel}>
-            <FiDownload size={18} /> Export Excel
-          </button>
+          {projectAccess.bom.add && (
+            <>
+              <button className="bom-import-btn" onClick={() => setImportOpen(true)}>
+                <FiDownload size={18} /> Import
+              </button>
+              <button className="bom-import-btn" onClick={() => setExcelImportOpen(true)}>
+                <FiDownload size={18} /> Import Excel
+              </button>
+              <button className="bom-import-btn" onClick={handleDownloadTemplate}>
+                <FiDownload size={18} /> Download Template
+              </button>
+            </>
+          )}
+          {projectAccess.bom.read && (
+            <button className="bom-export-btn" onClick={handleExportExcel}>
+              <FiDownload size={18} /> Export Excel
+            </button>
+          )}
         </div>
       </div>
 
@@ -238,13 +248,13 @@ const BOMPage = ({ view = "designer" }) => {
 
         {currentStage && (
           <div className="bom-stage-content">
-            {!showAddForm && view === "designer" && (
+            {!showAddForm && view === "designer" && projectAccess.bom.add && (
               <button className="bom-add-item-btn" onClick={() => { setShowAddForm(true); setTriggerEdit({ active: false, id: null, bom: {} }) }}>
                 <FiPlusCircle size={20} /> Add Item
               </button>
             )}
 
-            {showAddForm && (
+            {showAddForm && (projectAccess.bom.add || projectAccess.bom.update) && (
               <AddBOM
                 view={view}
                 triggerEdit={triggerEdit}
@@ -258,8 +268,8 @@ const BOMPage = ({ view = "designer" }) => {
               <TableComponent
                 rows={filteredBom}
                 columns={columns}
-                setTriggerEdit={setTriggerEdit}
-                handleDeleteButton={handleDelete}
+                setTriggerEdit={projectAccess.bom.update ? setTriggerEdit : null}
+                handleDeleteButton={projectAccess.bom.delete ? handleDelete : null}
                 view={view}
               />
             ) : (

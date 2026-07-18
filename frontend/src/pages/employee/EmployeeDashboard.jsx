@@ -8,6 +8,7 @@ import TableComponent from "../../components/Table/TableComponent.jsx";
 import { FaFileImport } from "react-icons/fa";
 import Modal from "react-modal";
 import { BarLoader, RingLoader } from 'react-spinners';
+import { getHRManagementAccess } from '../../utils/hrAccess.js';
 
 const EmployeeList = () => {
     const dispatch = useDispatch();
@@ -15,9 +16,7 @@ const EmployeeList = () => {
     const { employees, loading, error } = useSelector((state) => state.employee);
 
     const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
-    const access = employeeAccess ? employeeAccess.split(',') : [];
-    const HRManagementAccess = access[0] || '';
-    console.log(HRManagementAccess);
+    const hrAccess = getHRManagementAccess(employeeAccess);
 
     const [rows, setRows] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -129,14 +128,14 @@ const EmployeeList = () => {
                         Import
                     </button>
 
-                    {
-                        HRManagementAccess[1] === '1' && <button
+                    {hrAccess.employee.add && (
+                        <button
                             className="flex border-2 border-[#0061A1] rounded text-[#0061A1] font-semibold p-3 hover:cursor-pointer"
                             onClick={() => navigate('/employee/addEmployee')}>
                             <FiPlusCircle style={{ marginRight: '10px', width: '25px', height: '25px' }} />
                             Add employee
                         </button>
-                    }
+                    )}
                 </div>
             </div>
 

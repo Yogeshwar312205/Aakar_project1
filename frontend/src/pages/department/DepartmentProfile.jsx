@@ -13,6 +13,7 @@ import {
   deleteMultipleEmployees,
   moveEmployee,
 } from '../..//features/employeeSlice.js'
+import { getHRManagementAccess } from '../../utils/hrAccess.js'
 
 function DepartmentProfile() {
   const { id } = useParams()
@@ -28,6 +29,9 @@ function DepartmentProfile() {
   const [selectedDepartment, setSelectedDepartment] = useState(null)
   const [showDeleteDepartmentModal, setShowDeleteDepartmentModal] =
     useState(false)
+
+  const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
+  const hrAccess = getHRManagementAccess(employeeAccess);
 
   if (!workingDepartments || workingDepartments.length === 0) {
     return <div>Loading...</div>
@@ -231,20 +235,24 @@ function DepartmentProfile() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
-              onClick={() => navigate(`/department/${id}/edit`)}
-            >
-              <FiEdit size={20} className="save-icon" />
-              <span>Edit details</span>
-            </button>
-            <button
-              className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
-              onClick={openModal}
-            >
-              <MdAutoDelete size={20} className="delete-icon" />
-              <span>Delete Department</span>
-            </button>
+            {hrAccess.department.update && (
+              <button
+                className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
+                onClick={() => navigate(`/department/${id}/edit`)}
+              >
+                <FiEdit size={20} className="save-icon" />
+                <span>Edit details</span>
+              </button>
+            )}
+            {hrAccess.department.delete && (
+              <button
+                className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
+                onClick={openModal}
+              >
+                <MdAutoDelete size={20} className="delete-icon" />
+                <span>Delete Department</span>
+              </button>
+            )}
             {/* Modal Popup */}
             <Modal
               isOpen={isModalOpen}

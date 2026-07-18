@@ -3,11 +3,14 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {FiArrowLeftCircle, FiEdit} from "react-icons/fi";
 import {useDispatch, useSelector} from "react-redux";
 import '../employee/EmployeeDashboard.css';
+import { getHRManagementAccess } from '../../utils/hrAccess.js';
 
 
 function DesignationProfile() {
     const {id} = useParams();
     const { designations } = useSelector((state) => state.designation);
+    const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
+    const hrAccess = getHRManagementAccess(employeeAccess);
 
     console.log(designations);
 
@@ -31,13 +34,15 @@ function DesignationProfile() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button
-                            className="flex justify-center items-center gap bg-[#0061A1] text-white py-1.5 px-2 rounded"
-                            onClick={() => navigate(`/designation/${id}/edit`)}
-                        >
-                            <FiEdit size={20} className="save-icon"/>
-                            <span>Edit details</span>
-                        </button>
+                        {hrAccess.designation.update && (
+                            <button
+                                className="flex justify-center items-center gap bg-[#0061A1] text-white py-1.5 px-2 rounded"
+                                onClick={() => navigate(`/designation/${id}/edit`)}
+                            >
+                                <FiEdit size={20} className="save-icon"/>
+                                <span>Edit details</span>
+                            </button>
+                        )}
                         {/*<button*/}
                         {/*    className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"*/}
                         {/*>*/}

@@ -10,6 +10,7 @@ import './EmployeeDashboard.css';
 import {Bounce, toast, ToastContainer} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import AccessDisplay from "./AccessDisplay.jsx";
+import { getHRManagementAccess } from '../../utils/hrAccess.js';
 
 function EmployeeProfile() {
     const { id } = useParams();
@@ -17,8 +18,7 @@ function EmployeeProfile() {
     const allEmployeesData = useSelector((state) => state?.employee); // Fetch employees from Redux store
     const employeesData = allEmployeesData.employees;
     const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
-    const access = employeeAccess ? employeeAccess.split(',') : [];
-    const HRManagementAccess = access[0] || '';
+    const hrAccess = getHRManagementAccess(employeeAccess);
 
     console.log(allEmployeesData)
 
@@ -105,24 +105,22 @@ function EmployeeProfile() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        {
-                            HRManagementAccess[3] &&
+                        {hrAccess.employee.update && (
                             <button
                                 onClick={handleEdit}
                                 className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded">
                                 <FiEdit size={20} className="save-icon"/>
                                 <span>Edit details</span>
                             </button>
-                        }
-                        {
-                            HRManagementAccess[4] &&
+                        )}
+                        {hrAccess.employee.delete && (
                             <button
                                 className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
                                 onClick={handleDelete}>
                                 <MdAutoDelete size={20} className="delete-icon"/>
                                 <span>Delete Employee</span>
                             </button>
-                        }
+                        )}
                     </div>
                 </section>
 

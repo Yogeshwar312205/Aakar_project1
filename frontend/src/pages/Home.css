@@ -1,0 +1,248 @@
+/* Home Page Styles - Simplified */
+.home-container {
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
+  background: transparent;
+  min-height: auto;
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #0061A1 0%, #004d80 100%);
+  border-radius: 16px;
+  padding: 48px 40px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 97, 161, 0.15);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hero-section::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -5%;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+
+.greeting-section {
+  flex: 1;
+  min-width: 300px;
+}
+
+.greeting-text {
+  font-size: 42px;
+  font-weight: 800;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.role-text {
+  font-size: 17px;
+  opacity: 0.95;
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+.date-time-section {
+  text-align: right;
+  min-width: 220px;
+}
+
+.current-date {
+  font-size: 15px;
+  opacity: 0.95;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.current-time {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Section Header */
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 6px 0;
+}
+
+.section-header p {
+  font-size: 15px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Admin Section */
+.admin-section {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.department-selector {
+  max-width: 600px;
+  margin-top: 16px;
+}
+
+/* Welcome Section */
+.welcome-section {
+  background: white;
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.welcome-section h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.welcome-section p {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 32px 28px;
+  }
+
+  .greeting-text {
+    font-size: 32px;
+  }
+
+  .current-time {
+    font-size: 28px;
+  }
+
+  .hero-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .date-time-section {
+    text-align: left;
+  }
+
+  .admin-section {
+    padding: 24px;
+  }
+
+  .welcome-section {
+    padding: 32px 24px;
+  }
+
+  .welcome-section h2 {
+    font-size: 24px;
+  }
+
+  .welcome-section p {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .greeting-text {
+    font-size: 26px;
+  }
+
+  .current-time {
+    font-size: 24px;
+  }
+
+  .hero-section {
+    padding: 24px 20px;
+  }
+
+  .welcome-section {
+    padding: 28px 20px;
+  }
+
+  .section-header h2 {
+    font-size: 20px;
+  }
+}
+
+/* Smooth Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-section,
+.admin-section,
+.welcome-section {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.admin-section {
+  animation-delay: 0.1s;
+  animation-fill-mode: backwards;
+}
+
+.welcome-section {
+  animation-delay: 0.2s;
+  animation-fill-mode: backwards;
+}
+
+/* Ensure no conflicts with layout */
+.home-container * {
+  box-sizing: border-box;
+}

@@ -3,9 +3,12 @@ import GeneralSearchBar from '../components/GenralSearchBar.jsx';
 import { useSelector, useDispatch } from 'react-redux';
 import { skillTrainingByDepartment } from './Manager/UpdateSkillAPI.jsx';
 import { setSelectedDepartmentId, setSelectedDepartmentName } from '../features/departmentSlice.js';
+import './Home.css';
 
 const Home = () => {
     const employeeMail = useSelector((state) => state.auth.user?.employeeEmail);
+    const userName = useSelector((state) => state.auth.user?.employeeName || 'User');
+    const userRole = useSelector((state) => state.auth.user?.designationName || 'Employee');
     const [allDept, setAllDept] = useState([]);
     const [objectDepartmentId, setObjectDepartmentID] = useState({});
     const predepartmentId = useSelector((state) => state.auth.user?.departmentId);
@@ -14,17 +17,25 @@ const Home = () => {
     const departmentName = useSelector((state) => state.auth.user?.departmentName);
     const selectedDepartmentName = useSelector((state) => state.department.selectedDepartmentName);
     const dispatch = useDispatch();
-    const state = useSelector((state) => state);
+    
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Update time every minute
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000);
+        return () => clearInterval(timer);
+    }, []);
+
     // Fetch departments when the component mounts
     useEffect(() => {
-        let isMounted = true; // Flag to track if the component is mounted
-
-        console.log('Redux State:', state);
+        let isMounted = true;
+        
         const fetchDepartments = async () => {
             try {
                 const response = await skillTrainingByDepartment();
                 if (isMounted) {
-                    console.log("Response Data:", response);
                     setAllDept(response);
                 }
             } catch (error) {
@@ -37,7 +48,7 @@ const Home = () => {
         fetchDepartments();
 
         return () => {
-            isMounted = false; // Cleanup function to mark the component as unmounted
+            isMounted = false;
         };
     }, []);
 
@@ -48,41 +59,79 @@ const Home = () => {
             if (selectedDept) {
                 setObjectDepartmentID(selectedDept);
             }
-
-
         }
     }, [selectedDepartmentId, allDept]);
 
     // Handle department selection
     const handleDeptSelect = (selectedDept) => {
-        console.log("Selected Department:", selectedDept);
         setObjectDepartmentID(selectedDept);
         setDepartmentId(selectedDept.departmentId);
         dispatch(setSelectedDepartmentId(selectedDept.departmentId));
         dispatch(setSelectedDepartmentName(selectedDept.departmentName));
     };
 
+    // Get greeting based on time
+    const getGreeting = () => {
+        const hour = currentTime.getHours();
+        if (hour < 12) return 'Good Morning';
+        if (hour < 17) return 'Good Afternoon';
+        return 'Good Evening';
+    };
+
     return (
-        <>
-            <div>Welcome to the ERP Dashboard!</div>
-
-            <h2 className='update-skill-dept-name'>
-                Department: {departmentName || selectedDepartmentName || '-'}
-            </h2>
-
-            <div className='mt-5'>
-                {employeeMail === 'admin@gmail.com' && (
-                    <GeneralSearchBar
-                        label='Search Department'
-                        options={allDept}
-                        displayKey="departmentName"
-                        selectedValues={objectDepartmentId}
-                        setSelectedValues={handleDeptSelect}
-                        placeholder='Department'
-                    />
-                )}
+        <div className="home-container">
+            {/* Hero Section */}
+            <div className="hero-section">
+                <div className="hero-content">
+                    <div className="greeting-section">
+                        <h1 className="greeting-text">{getGreeting()}, {userName}!</h1>
+                        <p className="role-text">{userRole} · {departmentName || selectedDepartmentName || 'Aakar ERP'}</p>
+                    </div>
+                    <div className="date-time-section">
+                        <div className="current-date">
+                            {currentTime.toLocaleDateString('en-US', { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            })}
+                        </div>
+                        <div className="current-time">
+                            {currentTime.toLocaleTimeString('en-US', { 
+                                hour: '2-digit', 
+                                minute: '2-digit'
+                            })}
+                        </div>
+                    </div>
+                </div>
             </div>
-        </>
+
+            {/* Department Selector for Admin */}
+            {employeeMail === 'admin@gmail.com' && (
+                <div className="admin-section">
+                    <div className="section-header">
+                        <h2>Department Selection</h2>
+                        <p>Select a department to view specific information</p>
+                    </div>
+                    <div className="department-selector">
+                        <GeneralSearchBar
+                            label='Search Department'
+                            options={allDept}
+                            displayKey="departmentName"
+                            selectedValues={objectDepartmentId}
+                            setSelectedValues={handleDeptSelect}
+                            placeholder='Select Department'
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Welcome Message */}
+            <div className="welcome-section">
+                <h2>Welcome to Aakar ERP</h2>
+                <p>Use the navigation menu to access different modules and manage your work efficiently.</p>
+            </div>
+        </div>
     );
 };
 

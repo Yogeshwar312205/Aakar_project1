@@ -858,3 +858,87 @@ export const getStuckStagesForProjects = asyncHandler(async (req, res) => {
     return res.status(500).json(new ApiError(500, 'Error fetching stuck stages'))
   }
 })
+
+
+// Get projects by employee ID (where employee is involved in stages/substages)
+export const getProjectsByEmployeeId = asyncHandler(async (req, res) => {
+  const customEmployeeId = req.params.employeeId
+  console.log('=== getProjectsByEmployeeId called ===')
+  console.log('customEmployeeId:', customEmployeeId)
+
+  // First, get the actual employeeId from customEmployeeId
+  const getEmployeeIdQuery = 'SELECT employeeId FROM employee WHERE customEmployeeId = ?'
+  
+  db.query(getEmployeeIdQuery, [customEmployeeId], (err, employeeResult) => {
+    if (err) {
+      console.error('Error finding employee:', err)
+      return res.status(500).json(new ApiError(500, 'Error finding employee'))
+    }
+
+    console.log('Employee query result:', employeeResult)
+
+    if (employeeResult.length === 0) {
+      console.log('Employee not found for customEmployeeId:', customEmployeeId)
+      return res.status(404).json(new ApiError(404, 'Employee not found'))
+    }
+
+    const employeeId = employeeResult[0].employeeId
+    console.log('Found employeeId:', employeeId)
+
+    // Query to find all projects where the employee is involved
+    // (either as stage owner or substage owner)
+    const query = `
+      SELECT DISTINCT p.*
+      FROM project p
+      WHERE p.historyOf IS NULL
+      AND (
+        EXISTS (
+          SELECT 1 FROM stage s 
+          WHERE s.projectNumber = p.projectNumber 
+          AND s.owner = ? 
+          AND s.historyOf IS NULL
+        )
+        OR EXISTS (
+          SELECT 1 FROM substage ss 
+          WHERE ss.projectNumber = p.projectNumber 
+          AND ss.owner = ? 
+          AND ss.historyOf IS NULL
+        )
+      )
+      ORDER BY p.startDate DESC
+    `
+
+    console.log('Executing projects query with employeeId:', employeeId)
+
+    db.query(query, [employeeId, employeeId], (err, data) => {
+      if (err) {
+        console.error('Error retrieving employee projects:', err)
+        return res.status(500).json(new ApiError(500, 'Error retrieving projects'))
+      }
+
+      console.log('Found projects count:', data.length)
+
+      // Format dates
+      const projects = data.map((project) => ({
+        ...project,
+        startDate: project.startDate
+          ? new Date(project.startDate).toLocaleDateString('en-CA')
+          : null,
+        endDate: project.endDate
+          ? new Date(project.endDate).toLocaleDateString('en-CA')
+          : null,
+        executedStartDate: project.executedStartDate
+          ? new Date(project.executedStartDate).toLocaleDateString('en-CA')
+          : null,
+        executedEndDate: project.executedEndDate
+          ? new Date(project.executedEndDate).toLocaleDateString('en-CA')
+          : null,
+      }))
+
+      console.log('Returning projects:', projects.length)
+      return res.status(200).json(
+        new ApiResponse(200, projects, 'Employee projects retrieved successfully.')
+      )
+    })
+  })
+})

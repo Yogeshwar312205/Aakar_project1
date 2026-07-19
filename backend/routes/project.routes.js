@@ -11,6 +11,7 @@ import {
   getCompanyList,
   getProjectHistory,
   getStuckStagesForProjects,
+  getProjectsByEmployeeId,
 } from '../controllers/project.controller.js'
 import { upload } from '../utils/multer.js'
 import { authMiddleware } from '../middleware/authMiddleware.js'
@@ -27,6 +28,7 @@ router.post(
   requireProjectAccess('project', 'read'),
   getStuckStagesForProjects
 )
+router.get('/projects/employee/:employeeId', authMiddleware, requireProjectAccess('project', 'read'), getProjectsByEmployeeId) // Get projects by employee
 router.get('/projects/:id', authMiddleware, requireProjectAccess('project', 'read'), getProjectById) //tested
 router.post(
   '/projects',

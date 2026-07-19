@@ -530,3 +530,108 @@ The system is ready for testing and deployment.
 ---
 
 **End of Final Summary**
+
+
+---
+
+## Task 8: Display Employee Projects in HR Management 🔄
+
+**Objective:** Show all projects where an employee is assigned as owner of stages or substages
+
+**Status:** 🔄 In Debugging
+
+**Problem:** 
+- EmployeeProfile.jsx Projects section was using empty array `rows={[]}`
+- Projects not loading ("Loading..." indefinitely)
+
+**Implementation:**
+
+1. **Backend Endpoint** (`project.controller.js`):
+   - Created `getProjectsByEmployeeId()` function
+   - Converts `customEmployeeId` → internal `employeeId`
+   - Queries projects where employee is owner of stages OR substages
+   - Filters out historical records with proper JOIN conditions
+   - Returns formatted project data
+
+2. **Backend Route** (`project.routes.js`):
+   - Added: `GET /api/projects/employee/:employeeId`
+   - Uses authentication middleware
+
+3. **Frontend Component** (`EmployeeProfile.jsx`):
+   - Added `useEffect` hook to fetch projects
+   - Added loading state management
+   - Updated table columns: Company Name, Project Number, Die Name, Start Date, End Date, Progress, Status
+   - Added empty state handling
+   - Shows project count in header
+
+**Debug Enhancements:**
+
+1. **Frontend Logging:**
+   - Employee ID being used
+   - Full API URL
+   - Response status codes
+   - Data received
+   - Any errors
+
+2. **Backend Logging:**
+   - Incoming `customEmployeeId`
+   - Employee lookup results
+   - Found `employeeId`
+   - SQL query execution
+   - Number of projects found
+
+3. **SQL Query Fix:**
+   ```sql
+   SELECT DISTINCT p.*
+   FROM project p
+   LEFT JOIN stage s ON p.projectNumber = s.projectNumber AND s.historyOf IS NULL
+   LEFT JOIN substage ss ON p.projectNumber = ss.projectNumber AND ss.historyOf IS NULL
+   WHERE (s.owner = ? OR ss.owner = ?) AND p.historyOf IS NULL
+   ORDER BY p.startDate DESC
+   ```
+   - Key: Added `AND s.historyOf IS NULL` and `AND ss.historyOf IS NULL` to JOIN conditions
+
+**Current Status:**
+- ✅ Backend server running (PID 18308 on port 3000)
+- ✅ Enhanced logging added
+- ✅ SQL query fixed
+- ⏳ Awaiting user testing with console logs
+
+**Debugging Instructions:**
+
+1. **Check Browser Console** (F12 → Console tab):
+   - Navigate: HR Management → Click employee
+   - Look for:
+     - "Fetching projects for employee: [ID]"
+     - "Fetching from URL: [URL]"
+     - "Response status: [status]"
+     - "Received projects data: [data]"
+
+2. **Check Backend Console**:
+   - "=== getProjectsByEmployeeId called ==="
+   - "customEmployeeId: [ID]"
+   - "Found employeeId: [ID]"
+   - "Found projects count: [number]"
+
+3. **Common Issues:**
+   - **"Employee not found"**: `customEmployeeId` doesn't exist in database
+   - **"Error retrieving projects"**: Check backend console for SQL errors
+   - **Empty list (no errors)**: Employee not assigned to stages/substages (expected)
+   - **Network error**: Backend not running or wrong `BASE_URL`
+
+**Files Modified:**
+- `backend/controllers/project.controller.js` - Added `getProjectsByEmployeeId` with enhanced logging
+- `backend/routes/project.routes.js` - Added route
+- `frontend/src/pages/employee/EmployeeProfile.jsx` - Added fetch logic with enhanced logging
+
+**Documentation:**
+- `EMPLOYEE_PROJECTS_DEBUG.md` - Detailed debugging guide
+
+**Next Steps:**
+1. User tests with browser console open
+2. Report console logs (both frontend and backend)
+3. Based on logs, identify specific issue
+4. Apply targeted fix
+5. Remove verbose logging once working
+
+---

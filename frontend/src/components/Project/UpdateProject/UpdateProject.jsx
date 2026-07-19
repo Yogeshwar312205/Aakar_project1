@@ -1132,11 +1132,8 @@ const UpdateProject = () => {
                         onToggleComplete={null}
                         stageId={selectedStageId}
                         projectNumber={pNo}
-                        employeeAccess={
-                          projectAccess.substage.add ||
-                          projectAccess.substage.update ||
-                          projectAccess.substage.delete
-                        }
+                        canAdd={projectAccess.substage.add}
+                        canDelete={projectAccess.substage.delete}
                       />
                     ))}
                   </div>

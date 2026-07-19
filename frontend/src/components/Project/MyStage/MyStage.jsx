@@ -228,11 +228,8 @@ const MyStage = () => {
                   onEdit={projectAccess.substage.update ? handleEditSubstage : null}
                   stageId={sNo}
                   projectNumber={pNo}
-                  employeeAccess={
-                    projectAccess.substage.add ||
-                    projectAccess.substage.update ||
-                    projectAccess.substage.delete
-                  }
+                  canAdd={projectAccess.substage.add}
+                  canDelete={projectAccess.substage.delete}
                 />
               ))}
             </div>

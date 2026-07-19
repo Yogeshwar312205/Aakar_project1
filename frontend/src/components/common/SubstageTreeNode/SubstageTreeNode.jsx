@@ -58,7 +58,8 @@ const SubstageTreeNode = ({
   onEdit,
   stageId,
   projectNumber,
-  employeeAccess,
+  canAdd = false,
+  canDelete = false,
 }) => {
   const [expanded, setExpanded] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -318,46 +319,42 @@ const SubstageTreeNode = ({
           </div>
 
           <div className="tree-node-actions">
-            {employeeAccess && (
-              <>
-                {onAddChild && (
-                  <button
-                    className="tree-action-btn add"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onAddChild(node.substageId, stageId, projectNumber)
-                    }}
-                    title="Add child substage"
-                  >
-                    <FiPlusCircle size={16} />
-                  </button>
-                )}
-                {onEdit && (
-                  <button
-                    className="tree-action-btn edit"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEdit(node)
-                    }}
-                    title="Edit substage"
-                  >
-                    <FiEdit2 size={16} />
-                    <span style={{ marginLeft: '4px', fontSize: '12px' }}>Edit</span>
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    className="tree-action-btn delete"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onDelete(node.substageId)
-                    }}
-                    title="Delete substage"
-                  >
-                    <RiDeleteBinLine size={16} />
-                  </button>
-                )}
-              </>
+            {canAdd && onAddChild && (
+              <button
+                className="tree-action-btn add"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onAddChild(node.substageId, stageId, projectNumber)
+                }}
+                title="Add child substage"
+              >
+                <FiPlusCircle size={16} />
+              </button>
+            )}
+            {onEdit && (
+              <button
+                className="tree-action-btn edit"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEdit(node)
+                }}
+                title="Edit substage"
+              >
+                <FiEdit2 size={16} />
+                <span style={{ marginLeft: '4px', fontSize: '12px' }}>Edit</span>
+              </button>
+            )}
+            {canDelete && onDelete && (
+              <button
+                className="tree-action-btn delete"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(node.substageId)
+                }}
+                title="Delete substage"
+              >
+                <RiDeleteBinLine size={16} />
+              </button>
             )}
           </div>
         </div>
@@ -377,7 +374,8 @@ const SubstageTreeNode = ({
               onEdit={onEdit}
               stageId={stageId}
               projectNumber={projectNumber}
-              employeeAccess={employeeAccess}
+              canAdd={canAdd}
+              canDelete={canDelete}
             />
           ))}
         </div>

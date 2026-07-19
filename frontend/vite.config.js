@@ -5,13 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   resolve: {
-
     alias: {
-
       '@': '/src' // Adjust if your "src" directory is different
-
     }
-
+  },
+  server: {
+    host: 'localhost'
   }
-
 })

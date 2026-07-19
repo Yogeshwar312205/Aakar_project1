@@ -23,13 +23,14 @@ const AccessTable = ({ access, setAccess }) => {
 
     const subOptions = {
         HRManagement: ['Employee Management', 'Department Management', 'Designation Management'],
-        ProjectManagement: ['Project Management', 'Stage Management', 'Substage Management'],
+        ProjectManagement: ['Project Management', 'Stage Management', 'Substage Management', 'BOM Management', 'Stage Template Management'],
         TrainingManagement: ['Employee Status', 'Skills', 'Skill Matrix', 'Assign Training', 'Training Plan', 'Training Status'],
         TicketTracking: [
             'View self created tickets',
             'View department created tickets',
             'View department assigned tickets',
             'View all tickets',
+            'View assigned tickets',
             'Change ticket status',
             'Change ticket assignee',
             'Get and release ticket',
@@ -126,23 +127,44 @@ const AccessTable = ({ access, setAccess }) => {
 
     useEffect(() => {
         const generateAccessString = () => {
+            // Calculate required length for each module
+            const getModuleLength = (module) => {
+                if (module === 'TicketTracking') {
+                    // 1 module flag + 9 ticket options = 10 bits
+                    return 10;
+                } else if (module === 'TrainingManagement') {
+                    // 1 module flag + (6 sub-options × 4 bits) = 25 bits
+                    return 25;
+                } else if (module === 'ProjectManagement') {
+                    // 1 module flag + (5 sub-options × 4 bits) = 21 bits
+                    return 21;
+                } else {
+                    // HRManagement: 1 module flag + (3 sub-options × 4 bits) = 13 bits
+                    return 13;
+                }
+            };
+
             const groups = Object.keys(moduleState).map((module) => {
-                const { active, subOptions } = moduleState[module];
-                if (!active) return '0'.repeat(52);
+                const { active, subOptions: moduleSubOptions } = moduleState[module];
+                const requiredLength = getModuleLength(module);
+                
+                if (!active) {
+                    return '0'.repeat(requiredLength);
+                }
 
                 const bits = ['1'];
                 if (module === 'TicketTracking') {
-                    subOptions.forEach((subOption) => {
+                    moduleSubOptions.forEach((subOption) => {
                         bits.push(subOption.All ? '1' : '0');
                     });
                 } else {
-                    subOptions.forEach((subOption) => {
+                    moduleSubOptions.forEach((subOption) => {
                         ['Add', 'Read', 'Update', 'Delete'].forEach((action) => {
                             bits.push(subOption[action] ? '1' : '0');
                         });
                     });
                 }
-                return bits.join('').padEnd(52, '0');
+                return bits.join('').padEnd(requiredLength, '0');
             });
 
             return groups.join(',');

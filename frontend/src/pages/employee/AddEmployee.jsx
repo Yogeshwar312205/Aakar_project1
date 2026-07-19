@@ -55,6 +55,13 @@ const AddEmployee = () => {
     const handleSave = (e) => {
         e.preventDefault();
 
+        // Validate required fields
+        if (!employeeInputValues.customEmployeeId || !employeeInputValues.employeeName ||
+            !employeeInputValues.employeeEmail || !employeeInputValues.employeePassword) {
+            toast.error('Please fill in all required fields: Employee ID, Name, Email, and Password');
+            return;
+        }
+
         // Structure the payload
         const payload = {
             employee: {
@@ -70,15 +77,17 @@ const AddEmployee = () => {
             })),
         };
 
-        console.log(payload);
+        console.log('Saving employee:', payload);
+
         // Dispatching the payload to the Redux action
         dispatch(addEmployee(payload))
+            .unwrap()
             .then(() => {
                 notify();
                 navigate('/employees');
             })
-            .catch(() => {
-                toast.error('Failed to add employee.');
+            .catch((errorMessage) => {
+                toast.error(errorMessage || 'Failed to add employee.');
             });
     };
 

@@ -67,3 +67,4 @@ function StatusUpdate({ ticketId, currentStatus }) {
 }
 
 export default StatusUpdate;
+

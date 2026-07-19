@@ -2,12 +2,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
 
+const BASE_URL = 'http://localhost:3000/api/v1/employee'
+
 // Async Thunks for API calls
 export const getAllEmployees = createAsyncThunk(
   'employees/getAllEmployees',
   async () => {
     const response = await axios.get(
-      'http://localhost:3000/api/v1/employee/getAllEmployees',
+      `${BASE_URL}/getAllEmployees`,
       {
         withCredentials: true,
       }
@@ -19,51 +21,57 @@ export const getAllEmployees = createAsyncThunk(
 
 export const addEmployee = createAsyncThunk(
   'employees/addEmployee',
-  async (employeeData) => {
-    console.log(employeeData)
-    const response = await axios.post(
-      'http://localhost:3000/api/v1/employee/addEmployee',
-      employeeData
-    )
-    console.log(response.data)
-    return response.data.data // Extracting the `data` object from the response
+  async (employeeData, { rejectWithValue }) => {
+    try {
+      console.log('Adding employee:', employeeData)
+      const response = await axios.post(
+        `${BASE_URL}/addEmployee`,
+        employeeData
+      )
+      console.log('Response:', response.data)
+      return response.data.data // Extracting the `data` object from the response
+    } catch (error) {
+      console.error('Error adding employee:', error)
+      const message = error.response?.data?.message || error.message || 'Failed to save employee'
+      return rejectWithValue(message)
+    }
   }
 )
 
 export const updateEmployee = createAsyncThunk(
   'employees/updateEmployee',
-  async ({ employeeId, payload }) => {
+  async ({ employeeId, payload }, { rejectWithValue }) => {
     try {
+      console.log('Updating employee:', employeeId, payload)
       const response = await axios.put(
-        `http://localhost:3000/api/v1/employee/${employeeId}/with-relations`,
-        payload // Pass the entire payload object as required by the API
+        `${BASE_URL}/${employeeId}/with-relations`,
+        payload
       )
+      console.log('Update response:', response.data)
       return response.data
     } catch (error) {
       console.error('Error updating employee:', error)
-      throw new Error(
-        error.response?.data?.message ||
-          'An error occurred while updating the employee.'
-      )
+      const message = error.response?.data?.message || error.message || 'Failed to update employee'
+      return rejectWithValue(message)
     }
   }
 )
 
 export const deleteEmployee = createAsyncThunk(
   'employees/deleteEmployee',
-  async (employeeId) => {
+  async (employeeId, { rejectWithValue }) => {
     try {
+      console.log('Deleting employee:', employeeId)
       const response = await axios.post(
-        'http://localhost:3000/api/v1/employee/deleteEmployee',
+        `${BASE_URL}/deleteEmployee`,
         { employeeId }
       )
+      console.log('Delete response:', response.data)
       return employeeId // Return employeeId for removing it from the state
     } catch (error) {
       console.error('Error deleting employee:', error)
-      throw new Error(
-        error.response?.data?.message ||
-          'An error occurred while deleting the employee.'
-      )
+      const message = error.response?.data?.message || error.message || 'Failed to delete employee'
+      return rejectWithValue(message)
     }
   }
 )
@@ -81,7 +89,7 @@ export const moveEmployee = createAsyncThunk(
 
       // Call the moveEmployee API
       const response = await axios.post(
-        'http://localhost:3000/api/v1/employee/moveEmployee',
+        `${BASE_URL}/moveEmployee`,
         {
           employeeIds,
           toDepartmentId,
@@ -106,7 +114,7 @@ export const deleteMultipleEmployees = createAsyncThunk(
   async (employeeIds, { dispatch, rejectWithValue }) => {
     try {
       const response = await axios.post(
-        'http://localhost:3000/api/v1/employee/deleteMultipleEmployees',
+        `${BASE_URL}/deleteMultipleEmployees`,
         employeeIds
       )
 
@@ -189,8 +197,9 @@ const employeeSlice = createSlice({
         state.loading = false
 
         // Remove the deleted employee by filtering the state
+        // Note: employee structure is { employee: {...}, jobProfiles: [...] }
         state.employees = state.employees.filter(
-          (employee) => employee.employeeId !== action.payload
+          (emp) => emp.employee.employeeId !== action.payload
         )
       })
       .addCase(deleteEmployee.rejected, (state, action) => {

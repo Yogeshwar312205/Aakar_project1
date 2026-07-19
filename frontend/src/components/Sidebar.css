@@ -4,6 +4,12 @@
   box-sizing: border-box;
 }
 
+/* Ensure no hr or separator elements appear in sidebar */
+.sidebar hr,
+.sidebar [role="separator"] {
+  display: none;
+}
+
 .sidebar {
   background-color: #0061a1;
   width: 3.3rem;
@@ -15,13 +21,28 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  border: none;
+}
+
+.sidebar:hover {
+  overflow-y: auto;
 }
 
 .menu {
   display: flex;
   flex-direction: column;
   margin-top: 10px;
-  row-gap: 0.7vmax;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+  background-color: #0061a1;
+  border: none;
+  gap: 0;
+}
+
+.menu > div {
+  margin-bottom: 0.7vmax;
+  border: none;
+  outline: none;
 }
 
 .icon-container {
@@ -30,10 +51,21 @@
   padding: 9px 15px;
   cursor: pointer;
   position: relative;
+  border: none;
+  outline: none;
+  text-decoration: none;
 }
 
 .icon-container:hover {
   background-color: #2679af;
+  border: none;
+  outline: none;
+}
+
+.icon-container:focus,
+.icon-container:active {
+  outline: none;
+  border: none;
 }
 
 .icon {
@@ -75,12 +107,19 @@
   display: flex;
   flex-direction: column;
   margin-left: 20px;
-  row-gap: 0.5vmax;
+  gap: 0;
+  border: none;
+  background-color: #0061a1;
+  box-shadow: none;
 }
 
 .submenu.expanded {
-  max-height: 300px;
+  max-height: 500px;
   opacity: 1;
+  overflow-y: auto;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
 }
 
 .main-item {
@@ -89,6 +128,7 @@
   justify-content: space-between;
   align-items: center;
   padding-right: 15px;
+  border: none;
 }
 
 .main-item-content {
@@ -108,8 +148,125 @@
 
 .submenu .icon-container {
   padding-left: 10px;
+  border: none;
+  text-decoration: none;
 }
 
 .submenu .icon-container:hover {
   background-color: #1b5b8a;
+  border: none;
+}
+
+.submenu a {
+  text-decoration: none;
+  border: none;
+  outline: none;
+}
+
+.submenu a:focus,
+.submenu a:active {
+  outline: none;
+  border: none;
+}
+
+/* Remove any borders from last items */
+.submenu .icon-container:last-child,
+.submenu a:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.submenu::after,
+.submenu::before,
+.menu::after,
+.menu::before {
+  display: none;
+  content: none;
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar::-webkit-scrollbar,
+.menu::-webkit-scrollbar,
+.submenu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.menu::-webkit-scrollbar-track,
+.submenu::-webkit-scrollbar-track {
+  background: #0061a1;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.menu::-webkit-scrollbar-thumb,
+.submenu::-webkit-scrollbar-thumb {
+  background: #0088cc;
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.menu::-webkit-scrollbar-thumb:hover,
+.submenu::-webkit-scrollbar-thumb:hover {
+  background: #00aaff;
+}
+
+/* Ensure no borders or underlines on sidebar links */
+.sidebar a,
+.sidebar a:link,
+.sidebar a:visited,
+.sidebar a:hover,
+.sidebar a:active,
+.sidebar a:focus {
+  text-decoration: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.menu > div {
+  border: none;
+  outline: none;
+}
+
+/* Remove any borders from sidebar's direct child divs */
+.sidebar > div {
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background-color: #0061a1;
+}
+
+.sidebar > div:first-child {
+  border-bottom: none;
+  background-color: #0061a1;
+}
+
+.sidebar > div:last-child {
+  border-top: none;
+  background-color: #0061a1;
+}
+
+/* Ensure no lines appear on the last menu section (Training) */
+.menu > div:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  box-shadow: none;
+}
+
+.menu > div:last-child .submenu {
+  border-bottom: none;
+  box-shadow: none;
+}
+
+.menu > div:last-child .submenu.expanded {
+  border-bottom: none;
+  box-shadow: none;
+}
+
+/* Remove any potential divider lines */
+.sidebar *,
+.sidebar *::before,
+.sidebar *::after {
+  border-color: transparent;
+  box-shadow: none;
 }

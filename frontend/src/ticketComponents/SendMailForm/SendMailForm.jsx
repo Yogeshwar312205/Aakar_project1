@@ -60,7 +60,7 @@ const SendMailToForm = ({ entry, onSave, onClose }) => {
         fullWidth
         margin="normal"
       />
-      
+
       <FormGroup>
         {roles.map((role, index) => (
           <FormControlLabel
@@ -76,18 +76,18 @@ const SendMailToForm = ({ entry, onSave, onClose }) => {
         ))}
       </FormGroup>
 
-      <Button 
-        variant="contained" 
-        color="primary" 
+      <Button
+        variant="contained"
+        color="primary"
         onClick={handleSubmit}
         style={{ marginTop: '16px' }}
       >
         Save
       </Button>
-      <Button 
-        variant="outlined" 
-        color="secondary" 
-        onClick={onClose} 
+      <Button
+        variant="outlined"
+        color="secondary"
+        onClick={onClose}
         style={{ marginTop: '16px', marginLeft: '8px' }}
       >
         Cancel

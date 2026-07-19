@@ -11,15 +11,15 @@
 
 .show-training-dept-dash-header {
   background-color: white;
-  height: 2.5rem; 
+  height: 2.5rem;
   margin-top: 1.5%;
   margin-left: 0%;
   margin-bottom: 1.5%;
-  border-radius: 0.5rem; 
-  padding: 0.5rem 0; 
+  border-radius: 0.5rem;
+  padding: 0.5rem 0;
   font-size: 1.2rem;
   font-weight: bolder;
-  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1); 
+  box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1);
   width: 94%;
   display: flex;
   flex-direction: row;
@@ -45,9 +45,9 @@
 }
 
 .show-training-tableComponent table {
-  width: 100%; 
+  width: 100%;
   border-collapse: collapse;
-  table-layout: auto; 
+  table-layout: auto;
   margin-top: 5px;
 }
 
@@ -106,4 +106,35 @@
   padding-top: 10px;
   padding-bottom: 10px;
   border-bottom: 2px solid #e0e0e0;
+}
+
+.show-training-report-btn {
+  background-color: #0061A1;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.show-training-report-btn:hover {
+  background-color: #004a7f;
+  box-shadow: 0 4px 8px rgba(0, 97, 161, 0.3);
+  transform: translateY(-2px);
+}
+
+.show-training-report-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.show-training-report-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }

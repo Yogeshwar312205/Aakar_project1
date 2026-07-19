@@ -25,6 +25,37 @@
   margin-bottom: 1.5%;
     display: flex;
     justify-content: flex-start;
+    align-items: center;
+    gap: 15px;
+}
+
+.trainer-report-button {
+  background-color: #0061A1;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 97, 161, 0.3);
+}
+
+.trainer-report-button:hover {
+  background-color: #004d80;
+  transform: translateY(-1px);
+}
+
+.trainer-report-button:active {
+  transform: translateY(0);
+}
+
+.trainer-report-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .trainerSwitch-table-container {
@@ -43,23 +74,23 @@
     background: none;
     border: none;
     cursor: pointer;
-    color: #0061A1; 
-    font-size: 20px; 
+    color: #0061A1;
+    font-size: 20px;
     transition: color 0.3s ease;
   }
 
   .status-bubble.ongoing {
-    background-color: #fffac0; 
-    color: #000; 
+    background-color: #fffac0;
+    color: #000;
   }
-  
+
   .status-bubble.completed {
-    background-color: #c9fcca; 
-    color: black; 
+    background-color: #c9fcca;
+    color: black;
   }
-  
+
   .status-bubble.upcoming {
-    background-color: #cde9ff; 
+    background-color: #cde9ff;
     color: #000;
   }
 
@@ -76,4 +107,4 @@
     flex-direction: row;
     gap: 15px;
   }
-  
+

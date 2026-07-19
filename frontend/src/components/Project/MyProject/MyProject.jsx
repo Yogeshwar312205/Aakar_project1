@@ -9,7 +9,7 @@ import {
   fetchProjectHistory,
   resetProjectState,
 } from '../../../features/projectSlice.js'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 
 import '../AddProject/AddProject.css'
 import {
@@ -21,6 +21,7 @@ import './MyProject.css'
 import { BASE_URL } from '../../../constants.js'
 import { ProjectHistory } from '../ProjectHistory/index.js'
 import { toast } from 'react-toastify'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 import {
   Dialog,
   DialogTitle,
@@ -33,15 +34,18 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
+import EditStageModal from '../EditStage/EditStageModal.jsx'
 
 const MyProject = () => {
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
-  ).split(',')[1]
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   const params = useParams()
   const pNo = params.id
   const dispatch = useDispatch()
+  const location = useLocation()
 
   const { project = {}, projectHistory = {}, loading } = useSelector((state) => state.projects)
   const { activeStages = [] } = useSelector((state) => state.stages)
@@ -54,6 +58,8 @@ const MyProject = () => {
   const [stageDateDialogStageId, setStageDateDialogStageId] = useState(null)
   const [stageExecStartDate, setStageExecStartDate] = useState(null)
   const [stageExecEndDate, setStageExecEndDate] = useState(null)
+  const [editStageModalOpen, setEditStageModalOpen] = useState(false)
+  const [selectedStage, setSelectedStage] = useState(null)
 
   useEffect(() => {
     dispatch(fetchProjectById(pNo))
@@ -62,6 +68,39 @@ const MyProject = () => {
     return () => {
       dispatch(resetProjectState())
       dispatch(resetStageState())
+    }
+  }, [dispatch, pNo])
+
+  // Refresh data periodically and when tab becomes visible
+  // This ensures stage progress is always up-to-date after editing substages
+  useEffect(() => {
+    let intervalId
+
+    const refreshData = () => {
+      dispatch(fetchActiveStagesByProjectNumber(pNo))
+      dispatch(fetchProjectById(pNo))
+    }
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, refresh immediately
+        refreshData()
+      }
+    }
+
+    // Refresh every 5 seconds when page is visible
+    intervalId = setInterval(() => {
+      if (!document.hidden) {
+        refreshData()
+      }
+    }, 5000)
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [dispatch, pNo])
 
@@ -180,7 +219,7 @@ const MyProject = () => {
               <FaChartGantt size={20} />
               <span>Gantt Chart</span>
             </button>
-            {(employeeAccess[3] == '1' || employeeAccess[5] == '1') && (
+            {projectAccess.project.update && (
               <button
                 className="flex justify-center items-center gap-3 bg-[#0061A1] text-white py-1.5 px-2 rounded"
                 onClick={() => navigate(`/updateProject/${projectNumber}`)}
@@ -291,7 +330,7 @@ const MyProject = () => {
                   fontWeight: 600,
                 }}
               >
-                📄 PO Document
+                PO Document
               </a>
             )}
             {projectDesignDocLink && (
@@ -309,7 +348,7 @@ const MyProject = () => {
                   fontWeight: 600,
                 }}
               >
-                📐 Design Document
+                Design Document
               </a>
             )}
           </div>
@@ -337,7 +376,7 @@ const MyProject = () => {
                 marginBottom: '-2px',
               }}
             >
-              📋 Stages ({activeStages.length})
+              Stages ({activeStages.length})
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -369,7 +408,7 @@ const MyProject = () => {
                     <div
                       key={stage.stageId}
                       onClick={() => {
-                        if (!isEditing) {
+                        if (!isEditing && projectAccess.stage.read) {
                           navigate(`/myProject/${pNo}/myStage/${stage.stageId}`)
                         }
                       }}
@@ -490,25 +529,37 @@ const MyProject = () => {
                               >
                                 {stageProgress}%
                               </span>
-                              <button
-                                onClick={(e) => handleStageProgressEditStart(e, stage.stageId, stageProgress)}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: '#6c757d',
-                                  padding: '2px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  borderRadius: '4px',
-                                  transition: 'color 0.2s',
-                                }}
-                                title="Edit progress"
-                                onMouseEnter={(e) => { e.currentTarget.style.color = '#0061A1' }}
-                                onMouseLeave={(e) => { e.currentTarget.style.color = '#6c757d' }}
-                              >
-                                <FiEdit2 size={14} />
-                              </button>
+                              {projectAccess.stage.update && (
+                                <button
+                                  onClick={(e) =>
+                                    handleStageProgressEditStart(
+                                      e,
+                                      stage.stageId,
+                                      stageProgress
+                                    )
+                                  }
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#6c757d',
+                                    padding: '2px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px',
+                                    transition: 'color 0.2s',
+                                  }}
+                                  title="Edit progress"
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = '#0061A1'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = '#6c757d'
+                                  }}
+                                >
+                                  <FiEdit2 size={14} />
+                                </button>
+                              )}
                             </div>
                             <LinearProgress
                               determinate
@@ -518,6 +569,43 @@ const MyProject = () => {
                           </>
                         )}
                       </div>
+                      {/* Edit Stage Button */}
+                      {projectAccess.stage.update && !isEditing && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedStage(stage)
+                            setEditStageModalOpen(true)
+                          }}
+                          style={{
+                            background: '#0061A1',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            transition: 'all 0.2s',
+                            flexShrink: 0,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#004d80'
+                            e.currentTarget.style.transform = 'scale(1.05)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#0061A1'
+                            e.currentTarget.style.transform = 'scale(1)'
+                          }}
+                          title="Edit Stage"
+                        >
+                          <FiEdit size={16} />
+                          Edit
+                        </button>
+                      )}
                     </div>
                   )
                 })
@@ -555,6 +643,7 @@ const MyProject = () => {
                 label="Executed Start Date*"
                 value={stageExecStartDate}
                 onChange={(val) => setStageExecStartDate(val)}
+                format="DD-MM-YYYY"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
               />
@@ -562,6 +651,7 @@ const MyProject = () => {
                 label="Executed End Date*"
                 value={stageExecEndDate}
                 onChange={(val) => setStageExecEndDate(val)}
+                format="DD-MM-YYYY"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
               />
@@ -582,9 +672,21 @@ const MyProject = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Edit Stage Modal */}
+      {selectedStage && (
+        <EditStageModal
+          open={editStageModalOpen}
+          onClose={() => {
+            setEditStageModalOpen(false)
+            setSelectedStage(null)
+          }}
+          stage={selectedStage}
+          projectNumber={pNo}
+        />
+      )}
     </section>
   )
 }
 
 export default MyProject
-

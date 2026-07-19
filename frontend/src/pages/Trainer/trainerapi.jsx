@@ -41,8 +41,8 @@ export const fetchAllSessions = async (trainingId) => {
 
 // Save or update a session
 export const saveSession = async (sessionData, sessionId = null) => {
-  const apiEndpoint = sessionId 
-    ? `http://localhost:3000/api/sessions/${sessionId}` 
+  const apiEndpoint = sessionId
+    ? `http://localhost:3000/api/sessions/${sessionId}`
     : 'http://localhost:3000/api/sessions';
 
   const method = sessionId ? 'PUT' : 'POST';
@@ -88,7 +88,7 @@ export const saveFeedback = async (feedbackArray) => {
     const response = await axios.post(`http://localhost:3000/saveFeedback`, feedbackArray);
     console.log("response", response.data);
     return response;
-    
+
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Error saving feedback');
   }
@@ -111,7 +111,7 @@ export const saveAttendance = async (updatedAttendance) => {
     const response = await axios.post('http://localhost:3000/saveAttendance', updatedAttendance);
     console.log(response);
     return response.data;
-    
+
   } catch (error) {
     throw error;
   }

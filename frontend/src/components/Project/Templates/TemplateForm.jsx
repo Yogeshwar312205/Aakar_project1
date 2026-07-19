@@ -14,6 +14,7 @@ import {
 } from '../../../features/stageTemplateSlice.js'
 import { toast } from 'react-toastify'
 import './AllTemplates.css'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 
 // Recursive component for rendering a single template item node
 const TemplateItemNode = ({
@@ -83,7 +84,7 @@ const TemplateItemNode = ({
           sx={{ width: '150px' }}
         />
         <TextField
-          label="Duration (Hrs)"
+          label="Duration (Days)"
           variant="outlined"
           type="number"
           value={item.duration}
@@ -166,10 +167,49 @@ const TemplateForm = () => {
   const params = useParams()
   const isEdit = !!params.id
   const { template, loading } = useSelector((state) => state.stageTemplates)
+  
+  const employeeAccess = useSelector((state) => state.auth.user?.employeeAccess) || ''
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   const [templateName, setTemplateName] = useState('')
   const [description, setDescription] = useState('')
   const [items, setItems] = useState([])
+  
+  // Check if user has required permission
+  const hasRequiredPermission = isEdit ? projectAccess.template.update : projectAccess.template.add
+  
+  // If no permission, show access denied message
+  if (!hasRequiredPermission) {
+    return (
+      <div style={{
+        textAlign: 'center',
+        padding: '60px 20px',
+        maxWidth: '600px',
+        margin: '0 auto'
+      }}>
+        <h2 style={{ color: '#0061A1', marginBottom: '16px' }}>
+          Access Denied
+        </h2>
+        <p style={{ color: '#6c757d', marginBottom: '24px' }}>
+          You do not have permission to {isEdit ? 'update' : 'create'} stage templates.
+        </p>
+        <button
+          onClick={() => navigate('/templates')}
+          style={{
+            background: '#0061A1',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          Back to Templates
+        </button>
+      </div>
+    )
+  }
 
   useEffect(() => {
     if (isEdit && params.id) {

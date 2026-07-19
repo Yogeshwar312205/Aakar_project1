@@ -91,8 +91,26 @@ const departmentSlice = createSlice({
             working: [],
             closed: [],
         },
+        selectedDepartmentId: localStorage.getItem('selectedDepartmentId') || null, // Initialize from localStorage
+        selectedDepartmentName: localStorage.getItem('selectedDepartmentName') || '', // Initialize from localStorage
         loading: false,
         error: null,
+    },
+    reducers: {
+        setSelectedDepartmentId: (state, action) => {
+            state.selectedDepartmentId = action.payload;
+            localStorage.setItem('selectedDepartmentId', action.payload); // Persist to localStorage
+        },
+        setSelectedDepartmentName: (state, action) => {
+            state.selectedDepartmentName = action.payload;
+            localStorage.setItem('selectedDepartmentName', action.payload); // Persist to localStorage
+        },
+        clearDepartment: (state) => {
+            state.selectedDepartmentId = null;
+            state.selectedDepartmentName = '';
+            localStorage.removeItem('selectedDepartmentId'); // Remove from localStorage
+            localStorage.removeItem('selectedDepartmentName'); // Remove from localStorage
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -129,5 +147,7 @@ const departmentSlice = createSlice({
             });
     },
 });
+
+export const { setSelectedDepartmentId, setSelectedDepartmentName, clearDepartment } = departmentSlice.actions;
 
 export default departmentSlice.reducer;

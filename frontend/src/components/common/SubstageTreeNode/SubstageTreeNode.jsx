@@ -55,6 +55,7 @@ const SubstageTreeNode = ({
   onDelete,
   onToggleComplete,
   onProgressEdit,
+  onEdit,
   stageId,
   projectNumber,
   employeeAccess,
@@ -71,6 +72,7 @@ const SubstageTreeNode = ({
   const isCompleted = !!node.isCompleted
   const allChildrenDone = hasChildren ? areAllChildrenCompleted(node) : isCompleted
   const canComplete = !hasChildren || areAllChildrenCompleted(node)
+  const canToggleCompletion = !!onToggleComplete
 
   const handleCheckboxChange = () => {
     if (hasChildren && !areAllChildrenCompleted(node)) {
@@ -160,7 +162,9 @@ const SubstageTreeNode = ({
       <div className={`tree-node-header ${isCompleted ? 'completed' : ''}`}>
         {/* Completion checkbox */}
         <div className="tree-node-checkbox" title={
-          hasChildren && !canComplete
+          !canToggleCompletion
+            ? 'You do not have update access for this substage'
+            : hasChildren && !canComplete
             ? 'Complete all child substages first'
             : isCompleted ? 'Mark as incomplete' : 'Mark as complete'
         }>
@@ -168,11 +172,14 @@ const SubstageTreeNode = ({
             type="checkbox"
             checked={isCompleted}
             onChange={handleCheckboxChange}
-            disabled={hasChildren && !canComplete}
+            disabled={!canToggleCompletion || (hasChildren && !canComplete)}
             style={{
               width: '18px',
               height: '18px',
-              cursor: hasChildren && !canComplete ? 'not-allowed' : 'pointer',
+              cursor:
+                !canToggleCompletion || (hasChildren && !canComplete)
+                  ? 'not-allowed'
+                  : 'pointer',
               accentColor: '#0061A1',
             }}
           />
@@ -196,7 +203,7 @@ const SubstageTreeNode = ({
               {node.stageName || node.substageName}
             </span>
             <span className="tree-node-meta">
-              Owner: {node.owner || '—'} | Machine: {node.machine || '—'} | Duration: {node.duration || '—'}hrs
+              Owner: {node.owner || '—'} | Machine: {node.machine || '—'} | Duration: {node.duration || '—'} days
             </span>
             <span className="tree-node-dates">
               <strong>Planned:</strong> {node.startDate ? formatDate(node.startDate) : '—'} → {node.endDate ? formatDate(node.endDate) : '—'}
@@ -312,28 +319,45 @@ const SubstageTreeNode = ({
 
           <div className="tree-node-actions">
             {employeeAccess && (
-              <button
-                className="tree-action-btn add"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onAddChild && onAddChild(node.substageId, stageId, projectNumber)
-                }}
-                title="Add child substage"
-              >
-                <FiPlusCircle size={16} />
-              </button>
-            )}
-            {employeeAccess && (
-              <button
-                className="tree-action-btn delete"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete && onDelete(node.substageId)
-                }}
-                title="Delete substage"
-              >
-                <RiDeleteBinLine size={16} />
-              </button>
+              <>
+                {onAddChild && (
+                  <button
+                    className="tree-action-btn add"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onAddChild(node.substageId, stageId, projectNumber)
+                    }}
+                    title="Add child substage"
+                  >
+                    <FiPlusCircle size={16} />
+                  </button>
+                )}
+                {onEdit && (
+                  <button
+                    className="tree-action-btn edit"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEdit(node)
+                    }}
+                    title="Edit substage"
+                  >
+                    <FiEdit2 size={16} />
+                    <span style={{ marginLeft: '4px', fontSize: '12px' }}>Edit</span>
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    className="tree-action-btn delete"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDelete(node.substageId)
+                    }}
+                    title="Delete substage"
+                  >
+                    <RiDeleteBinLine size={16} />
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -350,6 +374,7 @@ const SubstageTreeNode = ({
               onDelete={onDelete}
               onToggleComplete={onToggleComplete}
               onProgressEdit={onProgressEdit}
+              onEdit={onEdit}
               stageId={stageId}
               projectNumber={projectNumber}
               employeeAccess={employeeAccess}
@@ -373,6 +398,7 @@ const SubstageTreeNode = ({
                 label="Executed Start Date*"
                 value={executedStartDate}
                 onChange={(val) => setExecutedStartDate(val)}
+                format="DD-MM-YYYY"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
               />
@@ -380,6 +406,7 @@ const SubstageTreeNode = ({
                 label="Executed End Date*"
                 value={executedEndDate}
                 onChange={(val) => setExecutedEndDate(val)}
+                format="DD-MM-YYYY"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
               />
@@ -405,4 +432,3 @@ const SubstageTreeNode = ({
 }
 
 export default SubstageTreeNode
-

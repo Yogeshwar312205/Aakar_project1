@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import '../AddProject/AddProject.css'
-import { FiArrowLeftCircle } from 'react-icons/fi'
+import { FiArrowLeftCircle, FiEdit } from 'react-icons/fi'
 import { FaChartGantt } from 'react-icons/fa6'
 
 import { useDispatch, useSelector } from 'react-redux'
@@ -22,8 +22,15 @@ import SubstageTreeNode, {
   buildSubstageTree,
 } from '../../common/SubstageTreeNode/SubstageTreeNode.jsx'
 import { toast } from 'react-toastify'
+import EditSubstageModal from '../EditSubstage/EditSubstageModal.jsx'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 
 const MyStage = () => {
+  const employeeAccess = useSelector(
+    (state) => state.auth.user?.employeeAccess
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
+
   const params = useParams()
   const { pNo, sNo } = params
   const dispatch = useDispatch()
@@ -32,6 +39,9 @@ const MyStage = () => {
   const { activeSubStages = [] } = useSelector((state) => state.substages)
 
   const navigate = useNavigate()
+
+  const [editSubstageModalOpen, setEditSubstageModalOpen] = useState(false)
+  const [selectedSubstage, setSelectedSubstage] = useState(null)
 
   useEffect(() => {
     dispatch(getActiveSubStagesByStageId(sNo))
@@ -89,6 +99,11 @@ const MyStage = () => {
     }
   }
 
+  const handleEditSubstage = (substage) => {
+    setSelectedSubstage(substage)
+    setEditSubstageModalOpen(true)
+  }
+
   return (
     <section className="addProject">
       <div className="addForm">
@@ -134,7 +149,7 @@ const MyStage = () => {
                 {stageName}
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6c757d' }}>
-                Owner: {owner} • Machine: {machine} • Duration: {duration} Hrs
+                Owner: {owner} • Machine: {machine} • Duration: {duration} Days
               </p>
               <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#868e96' }}>
                 <strong>Planned:</strong> {formatDate(startDate)} → {formatDate(endDate)} • Created by: {createdBy}
@@ -177,7 +192,7 @@ const MyStage = () => {
             }}
           >
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#212529', margin: 0 }}>
-              📋 Substages
+              Substages
               {activeSubStages.length > 0 && (
                 <span
                   style={{
@@ -204,13 +219,20 @@ const MyStage = () => {
                   key={node.substageId}
                   node={node}
                   depth={0}
-                  onAddChild={null}
-                  onDelete={null}
-                  onToggleComplete={handleToggleComplete}
-                  onProgressEdit={handleProgressEdit}
+                  onToggleComplete={
+                    projectAccess.substage.update ? handleToggleComplete : null
+                  }
+                  onProgressEdit={
+                    projectAccess.substage.update ? handleProgressEdit : null
+                  }
+                  onEdit={projectAccess.substage.update ? handleEditSubstage : null}
                   stageId={sNo}
                   projectNumber={pNo}
-                  employeeAccess={false}
+                  employeeAccess={
+                    projectAccess.substage.add ||
+                    projectAccess.substage.update ||
+                    projectAccess.substage.delete
+                  }
                 />
               ))}
             </div>
@@ -230,6 +252,20 @@ const MyStage = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Substage Modal */}
+      {selectedSubstage && (
+        <EditSubstageModal
+          open={editSubstageModalOpen}
+          onClose={() => {
+            setEditSubstageModalOpen(false)
+            setSelectedSubstage(null)
+          }}
+          substage={selectedSubstage}
+          stageId={sNo}
+          projectNumber={pNo}
+        />
+      )}
     </section>
   )
 }

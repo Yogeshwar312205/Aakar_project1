@@ -216,6 +216,7 @@ const ProjectForm = ({ inputValues, setInputValues, action }) => {
                 startDate: formattedDate,
               }))
             }}
+            format="DD-MM-YYYY"
             sx={{ width: '180px' }}
             renderInput={(params) => <TextField {...params} required />}
           />
@@ -231,6 +232,7 @@ const ProjectForm = ({ inputValues, setInputValues, action }) => {
                 endDate: formattedDate,
               }))
             }}
+            format="DD-MM-YYYY"
             sx={{ width: '180px' }}
             renderInput={(params) => <TextField {...params} required />}
           />
@@ -263,6 +265,7 @@ const ProjectForm = ({ inputValues, setInputValues, action }) => {
               <em>None</em>
             </MenuItem>
             <MenuItem value="Ongoing">Ongoing</MenuItem>
+            <MenuItem value="Pending">Pending</MenuItem>
             <MenuItem value="Completed">Completed</MenuItem>
             <MenuItem value="Overdue">Overdue</MenuItem>
           </Select>

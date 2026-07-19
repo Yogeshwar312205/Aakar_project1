@@ -7,11 +7,15 @@ import './SearchBar.css';
 import { useSelector } from 'react-redux';
 import GeneralSearchBar from '../../components/GenralSearchBar';
 import { fetchDepartmentSkills, fetchAssignedEmployeeData, fetchSkillsForDepartment, fetchDataBySkillsAndDepartment, saveEmployeeData } from './SkillMatrixAPI';
+import {skillTrainingByDepartment} from './UpdateSkillAPI';
+import SkillMatrixReport from './SkillMatrixReport';
+import DepartmentSkillMatrixReport from './DepartmentSkillMatrixReport';
+import SkillMatrixDeptReport from './SkillMatrixDeptReport';
 
 const SearchBar = () => {
   const [skills, setSkills] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [selectedSkills, setSelectedSkills] = useState([]);
+   const [allDept,setAllDept] = useState([]);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,8 +25,18 @@ const SearchBar = () => {
   const [gradeChanges, setGradeChanges] = useState({});
   const [departmentExpSkill,setDepartmentExpSkill] = useState([]);
   const [disableAssign, setDisableAssign] = useState(false);
-  const departmentId = useSelector((state) => state.auth.user?.departmentId); 
+  const [isSkillMatrixReportOpen, setIsSkillMatrixReportOpen] = useState(false);
+  const [selectedEmployeeForReport, setSelectedEmployeeForReport] = useState(null);
+  const [isDepartmentReportOpen, setIsDepartmentReportOpen] = useState(false);
+  const [isSkillMatrixDeptReportOpen, setIsSkillMatrixDeptReportOpen] = useState(false);
+
+  const predepartmentId = useSelector((state) => state.auth.user?.departmentId);
+  const selectedDepartmentId = useSelector((state) => state.department.selectedDepartmentId);
+  const effectiveDepartmentId = predepartmentId || selectedDepartmentId;
+  const [departmentId , setDepartmentId] = useState(effectiveDepartmentId);
   const departmentName = useSelector((state) => state.auth.user?.departmentName);
+  const selectedDepartmentName = useSelector((state) => state.department.selectedDepartmentName);
+
   const access = useSelector((state) =>  state?.auth?.user?.employeeAccess).split(',')[2];
 
   const gradeAdd = access[5] === "1";
@@ -38,7 +52,7 @@ const SearchBar = () => {
   useEffect(() => {
     invalidSelection();
   }, [gradeChanges, selectedEmp]);
-  
+
   function invalidSelection() {
     try {
       const hasInvalidSelection = Object.values(gradeChanges).some((change) => {
@@ -47,7 +61,7 @@ const SearchBar = () => {
         );
         return change.grade === 4 && isCheckboxSelected;
       });
-    
+
       if (hasInvalidSelection) {
         //toast.error('Cannot assign training for grade 4!');
       }
@@ -58,7 +72,9 @@ const SearchBar = () => {
   }
 
   useEffect(()=>{
+    skillTrainingByDepartments();
     if(departmentId){
+
       fetchDepartmentSkills(departmentId)
         .then(skills => {
           setDepartmentExpSkill(skills);
@@ -103,25 +119,13 @@ const SearchBar = () => {
     }
   }, [selectedSkills]);
 
-  // useEffect(() => {
-  //     const department = departments.find(dept => dept.departmentId === departmentId);
-  //     if (department) {
-  //       const departmentDetails = {
-  //         label: department.departmentName,
-  //         value: departmentId,
-  //       };
-  //       const event = new CustomEvent('departmentSelected', { detail: departmentDetails });
-  //       window.dispatchEvent(event);
-  //     } 
-  // }, [departmentId, departments]);
-  
 
   const fetchData = () => {
     setLoading(true);
     fetchDataBySkillsAndDepartment(selectedSkills, departmentId)
       .then(response => {
         console.log("Skill id :",selectedSkills)
-        console.log("All main data: ", response); 
+        console.log("All main data: ", response);
         const groupedData = groupDataByEmployee(response);
         setData(groupedData);
         setLoading(false);
@@ -130,61 +134,51 @@ const SearchBar = () => {
         setError('Failed to fetch data');
         setLoading(false);
       });
-  }; 
+  };
 
-  // const clearDepartment = () => {
-  //   setSelectedDepartment(null);
-  //   setSelectedSkills([]);
-  //   setData([]);
-  // };
 
+    const skillTrainingByDepartments = async () => {
+      try{
+        const response = await skillTrainingByDepartment();
+        const depts = response
+        console.log("Response Data : ",depts);
+        setAllDept(depts)
+        console.log("all depts", allDept);
+      } catch (error){
+        console.error("There Is Error In fetching departments in update skill",error);
+      }
+    };
 
   const OnGradeChange = (employeeId, skillId, newGrade) => {
     const isCheckboxSelected = selectedEmp.some(
       (emp) => emp.employeeId === employeeId && emp.skillId === skillId
     );
-  
+
     setGradeChanges((prev) => ({
       ...prev,
       [`${employeeId}-${skillId}`]: { employeeId, skillId, grade: newGrade },
     }));
 
     if (newGrade === 4 && isCheckboxSelected) {
-      //toast.error('Grade 4 cannot be assigned when the checkbox is selected!');
       setDisableAssign(true);
       console.log("from grade change!!");
-      return; 
+      return;
     }
     if (newGrade === 4) {
       const isCheckboxSelected = selectedEmp.some(
         (emp) => emp.employeeId === employeeId && emp.skillId === skillId
       );
-  
+
       if (isCheckboxSelected) {
         setGradeChanges((prev) => {
           const updated = { ...prev };
-          delete updated[`${employeeId}-${skillId}`]; 
+          delete updated[`${employeeId}-${skillId}`];
           return updated;
         });
       }
     }
   };
-  
 
-  // const handleSkillChange = (selectedOptions) => {
-  //   const isSelectAllSelected = selectedOptions.some(option => option.value === 'select-all');
-  
-  //   if (isSelectAllSelected) {
-  //     if (selectedOptions.length === 1) {
-  //       const allSkills = skills.filter(skill => skill.value !== 'select-all');
-  //       setSelectedSkills(allSkills);
-  //     } else {
-  //       setSelectedSkills([]);
-  //     }
-  //   } else {
-  //     setSelectedSkills(selectedOptions);
-  //   }
-  // };
 
   const removeSkill = (skillToRemove) => {
     setSelectedSkills((prevSkills) => {
@@ -196,7 +190,7 @@ const SearchBar = () => {
       }
       return updatedSkills;
     });
-  };  
+  };
 
   const groupDataByEmployee = (data) => {
     const groupedData = {};
@@ -221,17 +215,16 @@ const SearchBar = () => {
     for (const [key, value] of Object.entries(gradeChanges)){
       console.log("Values : ",value);
       if (value.employeeId === employeeId && value.skillId === skillId) {
-        return value.grade; 
+        return value.grade;
       }
     }
-    return null; 
+    return null;
   }
-
 
   const onSelectionChange = (employeeId, skillId, isChecked) => {
     if (isChecked) {
       setNewSelectedEmp(prevEmp => {
-        
+
           const exists = prevEmp.some(emp => emp.employeeId === employeeId && emp.skillId === skillId);
           if (!exists) {
               return [...prevEmp, { employeeId: employeeId, skillId: skillId }];
@@ -279,25 +272,74 @@ const SearchBar = () => {
       console.log("eId ", eId);
       console.log("sId ", sId);
       console.log("grade ", gradeChanges[`${eId}-${sId}`]);
-      //toast.error('Checkbox cannot be selected for Grade 4!');
       setDisableAssign(true);
       console.log("Called me");
       return true;
     }
     return false;
   });
-  
+
   if (hasGrade4) return;
-  
+
   if (isChecked && grade === 4) {
-    //toast.error('Checkbox cannot be selected for Grade 4!');
     setDisableAssign(true);
     console.log("Called me");
-    return; 
-  }    
+    return;
+  }
   setDisableAssign(false);
 };
-  
+
+  const handleGenerateReport = (employeeId, employeeName) => {
+    console.log(`Generate report for Employee ID: ${employeeId}, Name: ${employeeName}`);
+
+    const employeeData = data.find(emp => emp.employeeId === employeeId);
+
+    if (employeeData) {
+      setSelectedEmployeeForReport({
+        employeeId: employeeId,
+        employeeName: employeeName,
+        employeeData: employeeData
+      });
+      setIsSkillMatrixReportOpen(true);
+    } else {
+      console.error('Employee data not found');
+    }
+  };
+
+  const handleCloseSkillMatrixReport = () => {
+    console.log('Closing skill matrix report');
+    setIsSkillMatrixReportOpen(false);
+    setSelectedEmployeeForReport(null);
+  };
+
+  const handleGenerateDepartmentReport = () => {
+    console.log(`Generate department report for: ${departmentName || selectedDepartmentName}`);
+    if (data && data.length > 0) {
+      setIsDepartmentReportOpen(true);
+    } else {
+      toast.error('No employee data available to generate report');
+    }
+  };
+
+  const handleCloseDepartmentReport = () => {
+    console.log('Closing department report');
+    setIsDepartmentReportOpen(false);
+  };
+
+  const handleGenerateSkillMatrixDeptReport = () => {
+    console.log(`Generate skill matrix department report for: ${departmentName || selectedDepartmentName}`);
+    if (data && data.length > 0) {
+      setIsSkillMatrixDeptReportOpen(true);
+    } else {
+      toast.error('No employee data available to generate report');
+    }
+  };
+
+  const handleCloseSkillMatrixDeptReport = () => {
+    console.log('Closing skill matrix department report');
+    setIsSkillMatrixDeptReportOpen(false);
+  };
+
   const handleSave = () => {
     saveEmployeeData(newSelectedEmp, removeEmp, gradeChanges)
       .then(() => {
@@ -317,12 +359,12 @@ const SearchBar = () => {
     <div className='searchbar-content'>
       {(gradeUpdate || checkboxUpdate) && (
         <div className='searchbar-assign-cls'>
-        <button className='searchbar-assign' 
-          onClick={handleSave} 
+        <button className='searchbar-assign'
+          onClick={handleSave}
           disabled={disableAssign}
           style={{
             cursor: disableAssign ? 'not-allowed' : 'pointer',
-            opacity: disableAssign ? 0.6 : 1, 
+            opacity: disableAssign ? 0.6 : 1,
           }}
         >
           Assign
@@ -330,8 +372,28 @@ const SearchBar = () => {
       </div>)}
 
       <div className='searchbar-button-bar'>
-        <h1 className='search-bar-dept-name'>Department name: {departmentName}</h1>
-        <GeneralSearchBar 
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', gap: '30px' }}>
+          <h3 className='update-skill-dept-name'>Department name: {departmentName || selectedDepartmentName || 'Unknown'}</h3>
+          {data.length > 0 && (
+            <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+              <button
+                className='searchbar-report-btn'
+                onClick={handleGenerateDepartmentReport}
+                title='Generate department skill matrix report for all employees'
+              >
+                Department Report
+              </button>
+              <button
+                className='searchbar-report-btn'
+                onClick={handleGenerateSkillMatrixDeptReport}
+                title='Generate skill matrix report for department'
+              >
+                Skill Matrix Report
+              </button>
+            </div>
+          )}
+        </div>
+        <GeneralSearchBar
           options={departmentExpSkill}
           includeSelectAll = {true}
           isMultiSelect = {true}
@@ -340,7 +402,7 @@ const SearchBar = () => {
           label='Select skills'
         />
       </div>
-    
+
       <div className="selected-skills-container">
         {selectedSkills.map(skill => (
           <div key={skill.id} className="skill-bubble">
@@ -349,10 +411,10 @@ const SearchBar = () => {
           </div>
         ))}
       </div>
-  
+
       {loading && <p>Loading...</p>}
       {error && <p>{error}</p>}
-  
+
       {selectedSkills.length === 0 ? (
         <div className='searchbar-no-data'>No data available!</div>
       ) :
@@ -367,6 +429,7 @@ const SearchBar = () => {
                 {selectedSkills.map(skill => (
                   <th key={skill.id}>{skill.label}</th>
                 ))}
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -378,11 +441,11 @@ const SearchBar = () => {
                   {selectedSkills.map(skill => (
                     <td key={skill.id}>
                       {gradeRead &&
-                        <Grade 
+                        <Grade
                         pemp_id={row.employeeId}
                         pskill_id={skill.id}
                         pgrade={row.skills[skill.id] || 0}
-                        onGradeChange={OnGradeChange} 
+                        onGradeChange={OnGradeChange}
                         isChangable={gradeUpdate}
                       />}
                       {checkboxRead &&
@@ -396,11 +459,47 @@ const SearchBar = () => {
                       />}
                     </td>
                   ))}
+                  <td>
+                    <button
+                      className='searchbar-report-btn'
+                      onClick={() => handleGenerateReport(row.employeeId, row.employeeName)}
+                      title='Generate report for this employee'
+                    >
+                      Report
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+      {isSkillMatrixReportOpen && selectedEmployeeForReport && (
+        <SkillMatrixReport
+          employeeId={selectedEmployeeForReport.employeeId}
+          employeeName={selectedEmployeeForReport.employeeName}
+          selectedSkills={selectedSkills}
+          employeeSkillData={selectedEmployeeForReport.employeeData}
+          onClose={handleCloseSkillMatrixReport}
+        />
+      )}
+      {isDepartmentReportOpen && (
+        <DepartmentSkillMatrixReport
+          departmentName={departmentName || selectedDepartmentName}
+          departmentId={departmentId}
+          employeeData={data}
+          selectedSkills={selectedSkills}
+          onClose={handleCloseDepartmentReport}
+        />
+      )}
+      {isSkillMatrixDeptReportOpen && (
+        <SkillMatrixDeptReport
+          departmentName={departmentName || selectedDepartmentName}
+          departmentId={departmentId}
+          employeeData={data}
+          selectedSkills={selectedSkills}
+          onClose={handleCloseSkillMatrixDeptReport}
+        />
       )}
     </div>
   );

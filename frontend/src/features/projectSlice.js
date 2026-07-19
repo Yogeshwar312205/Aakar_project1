@@ -1,6 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import axios from 'axios'
 
+const BASE_URL = 'http://localhost:3000'
+
 export const addProject = createAsyncThunk(
   'projects/addProject',
   async (project, { rejectWithValue }) => {
@@ -33,7 +35,7 @@ export const addProject = createAsyncThunk(
       }
 
       const response = await axios.post(
-        'http://localhost:3000/api/projects',
+        `${BASE_URL}/api/projects`,
         formData,
         {
           headers: {
@@ -55,7 +57,7 @@ export const fetchHistoryProjects = createAsyncThunk(
   'projects/fetchHistoryProjects',
   async (pNo = '') => {
     const response = await axios.get(
-      `http://localhost:3000/api/historyProjects/${pNo}`,
+      `${BASE_URL}/api/historyProjects/${pNo}`,
       { withCredentials: true }
     )
     console.log(response)
@@ -67,7 +69,7 @@ export const fetchActiveProjects = createAsyncThunk(
   'projects/fetchActiveProjects',
   async () => {
     const response = await axios.get(
-      'http://localhost:3000/api/activeProjects',
+      `${BASE_URL}/api/activeProjects`,
       {
         withCredentials: true,
       }
@@ -80,7 +82,7 @@ export const fetchActiveProjects = createAsyncThunk(
 export const fetchProjects = createAsyncThunk(
   'projects/fetchProjects',
   async () => {
-    const response = await axios.get(`http://localhost:3000/api/projects`, {
+    const response = await axios.get(`${BASE_URL}/api/projects`, {
       withCredentials: true,
     })
     console.log(response)
@@ -92,7 +94,7 @@ export const fetchProjectById = createAsyncThunk(
   'projects/fetchProjectById',
   async (id = '') => {
     const response = await axios.get(
-      `http://localhost:3000/api/projects/${id}`,
+      `${BASE_URL}/api/projects/${id}`,
       {
         withCredentials: true,
       }
@@ -107,7 +109,7 @@ export const updateProject = createAsyncThunk(
     console.log(id)
     console.log(data)
     const response = await axios.put(
-      `http://localhost:3000/api/projects/${id}`,
+      `${BASE_URL}/api/projects/${id}`,
       data,
       {
         headers: {
@@ -124,7 +126,7 @@ export const deleteProject = createAsyncThunk(
   'projects/deleteProject',
   async (id = '') => {
     const response = await axios.delete(
-      `http://localhost:3000/api/projects/${id}`,
+      `${BASE_URL}/api/projects/${id}`,
       {
         withCredentials: true,
       }
@@ -137,7 +139,7 @@ export const fetchProjectHistory = createAsyncThunk(
   'projects/fetchProjectHistory',
   async (projectNumber) => {
     const response = await axios.get(
-      `http://localhost:3000/api/projects/${projectNumber}/history`,
+      `${BASE_URL}/api/projects/${projectNumber}/history`,
       { withCredentials: true }
     )
     return response.data
@@ -148,7 +150,7 @@ export const fetchStuckStages = createAsyncThunk(
   'projects/fetchStuckStages',
   async (projectNumbers) => {
     const response = await axios.post(
-      'http://localhost:3000/api/projects/stuck-stages',
+      `${BASE_URL}/api/projects/stuck-stages`,
       { projectNumbers },
       { withCredentials: true }
     )

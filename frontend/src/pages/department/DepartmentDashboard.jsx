@@ -7,13 +7,14 @@ import { fetchAllWorkingDepartments } from "../../features/departmentSlice.js";
 import { FiPlusCircle, FiBriefcase } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import {getAllEmployees} from "../../features/employeeSlice.js";
+import { getHRManagementAccess } from '../../utils/hrAccess.js';
 
 const DepartmentDashboard = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const access = useSelector((state) =>  state?.auth?.user?.employeeAccess).split(',')
-    const HRManagementAccess = access[0];
+    const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
+    const hrAccess = getHRManagementAccess(employeeAccess);
 
     // Fetch working departments on component mount
     useEffect(() => {
@@ -55,12 +56,14 @@ const DepartmentDashboard = () => {
                         className={'selected'}
                     />
                 </div>
-                {HRManagementAccess[9] === '1' && <button
-                    className="flex border-2 border-[#0061A1] rounded text-[#0061A1] font-semibold p-3 hover:cursor-pointer"
-                    onClick={() => navigate('/department/addDepartment')}>
-                    <FiPlusCircle style={{marginRight: '10px', width: '25px', height: '25px'}}/>
-                    Add department
-                </button>}
+                {hrAccess.department.add && (
+                    <button
+                        className="flex border-2 border-[#0061A1] rounded text-[#0061A1] font-semibold p-3 hover:cursor-pointer"
+                        onClick={() => navigate('/department/addDepartment')}>
+                        <FiPlusCircle style={{marginRight: '10px', width: '25px', height: '25px'}}/>
+                        Add department
+                    </button>
+                )}
             </div>
 
             {/* Table Component */}

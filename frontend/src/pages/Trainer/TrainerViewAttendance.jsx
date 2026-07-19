@@ -13,6 +13,7 @@ const TrainerViewAttendance = () => {
   const [attendanceData, setAttendanceData] = useState([]);
 
   useEffect(() => {
+    console.log("Training id in TrainerViewAttendance: ", trainingId);
     loadAttendanceData();
   }, [sessionId, navigate, trainingId]);
 
@@ -26,7 +27,7 @@ const TrainerViewAttendance = () => {
             attendanceStatus: record.attendanceStatus === 1 ? 'Present' : 'Absent',
           }))
         );
-      } 
+      }
     } catch (error) {
       navigate(`/TrainerAttendance`, { state: { trainingId, sessionId } });
     }
@@ -54,12 +55,12 @@ const TrainerViewAttendance = () => {
   return (
     <div className="TrainerAttendance-container">
       <div className='trainerattendance-title'><h2>Attendence Details</h2></div>
-      
+
       <div className="trainerattendance-tablecomponent-container">
         <div className='trainerattendance-header-and-save'>
           <header className="trainerattendance-header">
             <FiArrowLeftCircle className="trainer-attendance-back-button" onClick={() => navigate(`/TrainerSwitch`)} title="Go back"/>
-            <h4 className='trainer-attendance-title'>Session Details</h4>  
+            <h4 className='trainer-attendance-title'>Session Details</h4>
           </header>
           <button className="TrainerAttendance-save-button" onClick={handleEditAttendance}>
             Edit Attendance

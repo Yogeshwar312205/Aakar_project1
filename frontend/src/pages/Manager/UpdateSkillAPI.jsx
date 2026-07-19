@@ -44,7 +44,7 @@ export const deactivateSkill = async (skillId) => {
       throw error;
     }
   };
-  
+
   // Add a new skill
   export const addSkill = async (skillData) => {
     try {
@@ -57,23 +57,33 @@ export const deactivateSkill = async (skillId) => {
   };
 
   // Remove skill from department skill (for both types 2 and 3)
-export const removeSkillFromDepartment = async (body, url) => {
+export const removeSkillFromDepartment = async (body, skillType) => {
     try {
-      const response = await axios.delete(url, { data: body });
+      // skillType: 'type3' or 'type2' to determine which endpoint
+      const endpoint = skillType === 'type3'
+        ? '/remove-3-in-deparment-skill'
+        : '/remove-2-in-deparment-skill';
+      const response = await axios.delete(`${API_BASE_URL}${endpoint}`, { data: body });
       return response.data;
     } catch (error) {
-      toast.error('Error in removing from department skill');
+      const msg = error?.response?.data?.message || error?.message || 'Error in removing from department skill';
+      toast.error(msg);
       throw error;
     }
   };
-  
+
   // Add skill to department skill (for both types 2 and 3)
-  export const addSkillToDepartment = async (body, url) => {
+  export const addSkillToDepartment = async (body, skillType) => {
     try {
-      const response = await axios.post(url, body);
+      // skillType: 'type3' or 'type2' to determine which endpoint
+      const endpoint = skillType === 'type3'
+        ? '/add-3-in-department-skill'
+        : '/add-2-in-department-skill';
+      const response = await axios.post(`${API_BASE_URL}${endpoint}`, body);
       return response.data;
     } catch (error) {
-      toast.error('Error adding skill to department skill');
+      const msg = error?.response?.data?.message || error?.message || 'Error adding skill to department skill';
+      toast.error(msg);
       throw error;
     }
   };

@@ -27,13 +27,14 @@ import {
   updateSubStage,
 } from '../../../features/subStageSlice'
 import { getAllEmployees } from '../../../features/employeeSlice'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 
 const AddSubStage = () => {
   const { user } = useSelector((state) => state.auth)
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
-  ).split(',')[1]
-  console.log({ employeeAccess: employeeAccess })
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
   const dispatch = useDispatch()
   const params = useParams()
   const { pNo, sNo } = params
@@ -258,7 +259,7 @@ const AddSubStage = () => {
         </section>
 
         <div className="formDiv">
-          {employeeAccess[7] == '1' && (
+          {(projectAccess.stage.update || projectAccess.substage.update) && (
             <SubstageForm
               inputValues={inputValues}
               setInputValues={setInputValues}

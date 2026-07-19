@@ -276,7 +276,6 @@ const TableComponent = ({
                       {columns.map((column) => (
                         <TableCell key={column.id} align={column.align}>
                           {row[column.id]}
-                          
                         </TableCell>
                       ))}
                     </TableRow>

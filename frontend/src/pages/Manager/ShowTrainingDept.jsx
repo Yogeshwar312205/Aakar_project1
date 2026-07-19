@@ -7,6 +7,7 @@ import './ShowTrainingDept.css';
 import { FiArrowLeftCircle } from 'react-icons/fi';
 import { departmentInfo,departmentSkills,departmentEmployeeData } from './showTrainingDeptAPI';
 import { useSelector } from 'react-redux';
+import AssignedTrainingReport from './AssignedTrainingReport';
 
 const ShowTrainingDept = () => {
   const [empData, setEmpData] = useState({});
@@ -14,13 +15,21 @@ const ShowTrainingDept = () => {
   const [skillOptions, setSkillOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
+  const [isTrainingReportOpen, setIsTrainingReportOpen] = useState(false);
+  const [selectedDepartmentForReport, setSelectedDepartmentForReport] = useState(null);
   const navigate = useNavigate();
-  const departmentId = useSelector((state) => state.auth.user?.departmentId); 
+
+  const predepartmentId = useSelector((state) => state.auth.user?.departmentId);
+  const selectedDepartmentId = useSelector((state) => state.department.selectedDepartmentId);
+  const effectiveDepartmentId = predepartmentId || selectedDepartmentId;
+  const [departmentId , setDepartmentId] = useState(effectiveDepartmentId);
+  const departmentName = useSelector((state) => state.auth.user?.departmentName);
+  const selectedDepartmentName = useSelector((state) => state.department.selectedDepartmentName);
 
   useEffect(() => {
       const departments = departmentInfo;
       console.log("Show training department , ",departments);
-      setDepts(departments);  
+      setDepts(departments);
   }, []);
 
   useEffect(() => {
@@ -72,12 +81,10 @@ const ShowTrainingDept = () => {
     }
   }, [departmentId]);
 
-  // Group employee data by department and skill
   const transformDataForTable = () => {
     const departmentRows = Object.keys(empData).map((departmentName) => {
       const employeeSkills = empData[departmentName];
 
-      // Group employees by skill
       const skillsWithEmployees = skillOptions.reduce((acc, skill) => {
         acc[skill.label] = employeeSkills.filter(
           (emp) => emp.skillName === skill.label
@@ -118,6 +125,24 @@ const ShowTrainingDept = () => {
     }));
   };
 
+  const handleGenerateTrainingReport = (departmentName, departmentData) => {
+    console.log(`Generate report for Department: ${departmentName}`);
+    console.log('Department Data:', departmentData);
+
+    setSelectedDepartmentForReport({
+      departmentId: departmentId,
+      departmentName: departmentName,
+      skillsWithEmployees: departmentData
+    });
+    setIsTrainingReportOpen(true);
+  };
+
+  const handleCloseTrainingReport = () => {
+    console.log('Closing training report');
+    setIsTrainingReportOpen(false);
+    setSelectedDepartmentForReport(null);
+  };
+
   return (
     <div className="show-training-content">
       <header className="show-training-dept-dash-header">
@@ -147,13 +172,14 @@ const ShowTrainingDept = () => {
                     {skill.label}
                   </th>
                 ))}
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {tableData.map((row, index) => (
                 <React.Fragment key={index}>
                   <tr
-                    onClick={() => handleRowClick(row.departmentName)} 
+                    onClick={() => handleRowClick(row.departmentName)}
                     style={{ cursor: 'pointer' }}
                   >
                     <td>{row.departmentName}</td>
@@ -162,6 +188,15 @@ const ShowTrainingDept = () => {
                         {row.skillsWithEmployees[skill.label]?.length || 0}
                       </td>
                     ))}
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className='show-training-report-btn'
+                        onClick={() => handleGenerateTrainingReport(row.departmentName, row.skillsWithEmployees)}
+                        title='Generate report for this department'
+                      >
+                        Report
+                      </button>
+                    </td>
                   </tr>
                 {expandedRows[row.departmentName] && (
                   <tr>
@@ -192,6 +227,14 @@ const ShowTrainingDept = () => {
           </table>
         </div>
       ))}
+      {isTrainingReportOpen && selectedDepartmentForReport && (
+        <AssignedTrainingReport
+          departmentId={selectedDepartmentForReport.departmentId}
+          departmentName={selectedDepartmentForReport.departmentName}
+          skillsWithEmployees={selectedDepartmentForReport.skillsWithEmployees}
+          onClose={handleCloseTrainingReport}
+        />
+      )}
     </div>
   );
 };

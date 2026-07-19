@@ -72,8 +72,7 @@ import Activities from './pages/substages/Activities.jsx'
 import AllTemplates from './components/Project/Templates/AllTemplates.jsx'
 import TemplateForm from './components/Project/Templates/TemplateForm.jsx'
 
-//bom 
-
+//bom
 import BomProject from './pages/BOM/BOMProject/BomProject.jsx'
 import BOMPage from './pages/BOM/BOMPage/BOMPage.jsx'
 
@@ -460,14 +459,6 @@ const App = () => {
               }
             />
             <Route
-              path="/profile"
-              element={
-                <PrivateRoute>
-                  <Profile />
-                </PrivateRoute>
-              }
-            />
-            <Route
               path="/allProjects"
               element={
                 <PrivateRoute>
@@ -568,47 +559,35 @@ const App = () => {
               }
             />
 
-
-
-
-             {/* bom routes */}
+            {/* bom routes */}
+            <Route
+              path='/bom-project'
+              element={
+                <PrivateRoute>
+                  <BomProject />
+                </PrivateRoute>
+              }
+            />
 
             <Route
-                path='/bom-project'
-             element={
-               <PrivateRoute>
-                 <BomProject />
-              </PrivateRoute>
-             }
-          />
+              path="/activities"
+              element={
+                <PrivateRoute>
+                  <Activities />
+                </PrivateRoute>
+              }
+            />
 
-          <Route
-            path="/activities"
-            element={
-              <PrivateRoute>
-                <Activities />
-              </PrivateRoute>
-            }
-          />
+            <Route
+              path='/bom-project/bom/:projectId'
+              element={
+                <PrivateRoute>
+                  <BOMPage />
+                </PrivateRoute>
+              }
+            />
 
-
-
-
-          <Route
-            path='/bom-project/bom/:projectId'
-            element={
-              <PrivateRoute>
-                <BOMPage />
-              </PrivateRoute>
-            }
-          />
-
-        </Route>
-
-
-
-
-
+          </Route>
 
           <Route
             path="*"

@@ -54,6 +54,9 @@
     margin-bottom: 1.5%;
     display: flex;
     justify-content: left;
+    align-items: center;
+    position: relative; /* allow absolutely positioned controls inside */
+    padding-right: 140px; /* reserve space for right-side controls */
 }
 
 .employeeSwitch-table-container {
@@ -79,4 +82,43 @@
 
 .edit-button:hover {
     color: #004978;
+}
+
+/* Report buttons styling */
+.employee-skill-report-button,
+.training-report-button {
+    background: linear-gradient(180deg, #0078c9 0%, #0061A1 100%);
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 97, 161, 0.18);
+    transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+.employee-skill-report-button:hover,
+.training-report-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 97, 161, 0.22);
+}
+
+/* Place training report button inside the search box, at the right */
+.training-report-button {
+    /* Use normal flow so button aligns inside headers via flexbox */
+    position: static;
+    padding: 8px 12px;
+    font-size: 0.95rem;
+}
+
+/* Skill report button in header (keeps flow) */
+.employeeSwitch-table-header .employee-skill-report-button {
+    background: #004978;
+    padding: 8px 12px;
+}
+
+@media (max-width: 900px) {
+    .employeeSwitch-search-bar-container { padding-right: 12px; }
+    .training-report-button { margin-left: 8px; }
 }

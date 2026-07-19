@@ -74,13 +74,24 @@ export const addDepartment = asyncHandler(async (req, res) => {
         return res.status(400).json(new ApiError(400, 'Start date should be before the end date.', ['Start date should be before the end date.']));
     }
 
+    const departmentSlug = departmentName.toLowerCase().replace('/S', '');
+
+    const checkForExistenceQuery = `SELECT * FROM department WHERE departmentSlug = ?`;
+
+    const [checkForExistenceQueryResult] = await connection.promise().query(checkForExistenceQuery, departmentSlug);
+
+    if(checkForExistenceQueryResult.length > 0) {
+        return res.status(500).json(new ApiError(500, 'Department Already Existed.', ['Department Already Existed.']));
+    }
+
     // Proceed with the query if both department name and dates are valid
     const query = `INSERT INTO department (
-        departmentName, departmentStartDate, departmentEndDate
-    ) VALUES (?, ?, ?)`;
+        departmentName, departmentSlug, departmentStartDate, departmentEndDate
+    ) VALUES (?, ?, ?, ?)`;
 
     const values = [
         departmentName,
+        departmentSlug,
         departmentStartDate,
         endDate,
     ];
@@ -155,10 +166,10 @@ export const updateDepartment = asyncHandler(async (req, res) => {
         const updatedDepartmentEndDate = departmentEndDate || currentEndDate;        // Use existing date if not provided
 
         // Step 4: Update the department with new or existing values
-        const updateQuery = `UPDATE department SET 
-            departmentName = ?, 
-            departmentStartDate = ?, 
-            departmentEndDate = ? 
+        const updateQuery = `UPDATE department SET
+            departmentName = ?,
+            departmentStartDate = ?,
+            departmentEndDate = ?
             WHERE departmentId = ?`;
 
         const values = [

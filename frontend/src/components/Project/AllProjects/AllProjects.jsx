@@ -8,6 +8,7 @@ import {
   resetProjectState,
 } from '../../../features/projectSlice.js'
 import TableComponent from '../../common/Table/TableComponent.jsx'
+import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
 import './AllProjects.css'
 
 const columns = [
@@ -49,34 +50,11 @@ const columns = [
   },
 ]
 
-const activityColumns = [
-  {
-    label: 'Activity Name',
-    id: 'activityName',
-  },
-  {
-    label: 'Department',
-    id: 'department',
-  },
-  {
-    label: 'Duration',
-    id: 'duration',
-  },
-  {
-    label: 'Machine',
-    id: 'machine',
-  },
-  {
-    label: 'Preferred Person',
-    id: 'preferredPerson',
-  },
-]
-
 const AllProjects = () => {
   const employeeAccess = useSelector(
     (state) => state.auth.user?.employeeAccess
-  ).split(',')[1]
-  console.log({ employeeAccess: employeeAccess })
+  )
+  const projectAccess = getProjectManagementAccess(employeeAccess)
 
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -92,10 +70,10 @@ const AllProjects = () => {
         return activeProjects.filter((op) => op.projectStatus === 'Overdue')
       case 'ongoing':
         return activeProjects.filter((op) => op.projectStatus === 'Ongoing')
+      case 'pending':
+        return activeProjects.filter((op) => op.projectStatus === 'Pending')
       case 'completed':
         return activeProjects.filter((op) => op.projectStatus === 'Completed')
-      case 'activities':
-        return activeProjects.filter((op) => op.projectStatus === 'Activities')
       case 'all':
       default:
         return activeProjects
@@ -116,11 +94,10 @@ const AllProjects = () => {
         .length,
       ongoing: activeProjects.filter((op) => op.projectStatus === 'Ongoing')
         .length,
+      pending: activeProjects.filter((op) => op.projectStatus === 'Pending')
+        .length,
       completed: activeProjects.filter((op) => op.projectStatus === 'Completed')
         .length,
-      activities: activeProjects.filter(
-        (op) => op.projectStatus === 'Activities'
-      ).length,
     }
   }, [activeProjects])
 
@@ -170,19 +147,9 @@ const AllProjects = () => {
               }`}
             />
           </div>
-          <div onClick={() => handleTabClick('activities')}>
-            <Infocard
-              icon={'<FiBriefcase />'}
-              number={counts.activities}
-              text={'Activities'}
-              className={`infoCard ${
-                selectedTab === 'activities' ? 'activities' : ''
-              }`}
-            />
-          </div>
         </div>
 
-        {employeeAccess[1] ? (
+        {projectAccess.project.add ? (
           <button
             className="flex border-2 border-[#0061A1] rounded text-[#0061A1] font-semibold p-3 hover:cursor-pointer"
             onClick={() => navigate('/addProject')}
@@ -200,69 +167,20 @@ const AllProjects = () => {
       {/* Handle loading and error states */}
       {status === 'loading' && <p>Loading projects...</p>}
       {error && <p className="error-message">{error}</p>}
-      {selectedTab == 'activities' && (
-        <div>
-          <FormControl sx={{ m: 1, width: 300, marginTop: '15px' }}>
-            <InputLabel
-              id="demo-multiple-checkbox-label"
-              sx={{ fontSize: '14px' }} // Smaller font size for the label
-            >
-              {name}
-            </InputLabel>
-            <Select
-              labelId="demo-multiple-checkbox-label"
-              id="demo-multiple-checkbox"
-              multiple
-              value={includedSubparts}
-              onChange={handleChange}
-              input={
-                <OutlinedInput
-                  label="Tag"
-                  sx={{
-                    height: '40px', // Reduced height for the input field
-                    fontSize: '14px', // Smaller font size for the input field
-                  }}
-                />
-              }
-              renderValue={(selected) =>
-                selected.map((item) => item.name).join(', ')
-              }
-              MenuProps={MenuProps}
-              sx={{ fontSize: '14px' }} // Smaller font size for the select component
-            >
-              {subpartsList.map((subpart) => (
-                <MenuItem
-                  key={subpart.id}
-                  value={subpart}
-                  sx={{ height: ITEM_HEIGHT, fontSize: '14px' }} // Smaller height and font size for menu items
-                >
-                  <Checkbox
-                    checked={includedSubparts.some(
-                      (item) => item.id === subpart.id
-                    )}
-                    sx={{ padding: '6px' }} // Smaller padding for checkboxes
-                  />
-                  <ListItemText
-                    primary={subpart.name}
-                    sx={{ fontSize: '14px' }}
-                  />{' '}
-                  {/* Smaller font size for list items */}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
-      )}
+
       {/* Only render TableComponent if not loading and no error */}
-      {status !== 'loading' && !error && (
+      {status !== 'loading' && !error && projectAccess.project.read && (
         <TableComponent
           whose={'project'}
           rows={projectsList}
-          columns={selectedTab == 'activities' ? activityColumns : columns}
+          columns={columns}
           linkBasePath={'/myProject'}
           optionLinkBasePath={'/updateProject'}
           activeFilter={selectedTab}
         />
+      )}
+      {status !== 'loading' && !error && !projectAccess.project.read && (
+        <p>You do not have read access for project management.</p>
       )}
     </div>
   )

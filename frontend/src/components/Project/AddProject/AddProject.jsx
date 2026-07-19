@@ -244,7 +244,7 @@ const AddProject = () => {
         <ul style={{ margin: 0, paddingLeft: '16px', listStyle: 'none' }}>
           {topLevel.map((item) => (
             <li key={item.itemId} style={{ fontSize: '14px', fontWeight: 600, color: '#212529', padding: '2px 0' }}>
-              📁 {item.stageName}
+              {item.stageName}
               {item.machine && <span style={{ color: '#868e96', fontWeight: 400 }}> ({item.machine})</span>}
               {renderChildren(item.itemId, 1)}
             </li>

@@ -28,7 +28,7 @@ const CustomTooltip = ({ task }) => {
         {task.name}: {formatDate(task.start)} - {formatDate(task.end)}
       </b>
       {task.machine && <p>Machine: {task.machine}</p>}
-      {task.duration && <p>Duration: {task.duration} hrs</p>}
+      {task.duration && <p>Duration: {task.duration} days</p>}
       {task.progress && <p>Progress: {task.progress}%</p>}
       {task.owner && <p>Owner: {task.owner}</p>}
       {task.createdBy && <p>Created By: {task.createdBy}</p>}

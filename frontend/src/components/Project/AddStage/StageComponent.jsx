@@ -5,6 +5,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
+import { differenceInDays } from 'date-fns'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDispatch, useSelector } from 'react-redux'
@@ -57,10 +58,22 @@ const StageComponent = ({
 
       if (field === 'startDate' || field === 'endDate') {
         updatedStages[index][field] = e ? dayjs(e).format('YYYY-MM-DD') : ''
+
+        // Auto-calculate duration when both dates are available
+        const startDate = updatedStages[index].startDate
+        const endDate = updatedStages[index].endDate
+        if (startDate && endDate) {
+          const start = new Date(startDate)
+          const end = new Date(endDate)
+          if (end >= start) {
+            updatedStages[index].duration = differenceInDays(end, start)
+          }
+        }
       } else {
         const { name, value } = e.target
 
         if (name === 'progress') {
+          // Ensure progress stays within bounds (0-100)
           const numericValue = Math.min(100, Math.max(0, Number(value)))
           updatedStages[index][name] = isNaN(numericValue) ? 0 : numericValue
         } else {
@@ -71,6 +84,35 @@ const StageComponent = ({
       if (updatedStages[index].endDate < updatedStages[index].startDate) {
         updatedStages[index].endDate = ''
         updatedStages[index].duration = 0
+      }
+
+      setStages(updatedStages)
+
+      setIsChanged((prev) => {
+        const updated = [...prev]
+        updated[index] = true
+        return updated
+      })
+    },
+    [index, stages, setStages, setIsChanged]
+  )
+
+  const handleDurationChange = useCallback(
+    (e) => {
+      const { value } = e.target
+      const durationInDays = parseInt(value, 10)
+      const updatedStages = [...stages]
+
+      updatedStages[index].duration = value
+
+      // Auto-calculate end date when duration and start date are available
+      if (!isNaN(durationInDays) && durationInDays >= 0 && updatedStages[index].startDate) {
+        const startDate = new Date(updatedStages[index].startDate)
+        if (!isNaN(startDate.getTime())) {
+          const newEndDate = new Date(startDate)
+          newEndDate.setDate(startDate.getDate() + durationInDays)
+          updatedStages[index].endDate = newEndDate.toISOString().split('T')[0]
+        }
       }
 
       setStages(updatedStages)
@@ -104,6 +146,7 @@ const StageComponent = ({
           freeSolo
           value={stage.stageName || ''}
           onInputChange={(event, newInputValue) => {
+            // Only update if the new value is different from the current value
             if (newInputValue !== stage.stageName) {
               handleChange({
                 target: { name: 'stageName', value: newInputValue },
@@ -177,6 +220,7 @@ const StageComponent = ({
             label="Planned Start Date*"
             value={dayjs(stage.startDate)}
             onChange={(date) => handleChange(date, 'startDate')}
+            format="DD-MM-YYYY"
             sx={{
               width: '200px',
               borderRadius: '1px solid #7D7D7D',
@@ -214,6 +258,7 @@ const StageComponent = ({
             label="Planned End Date*"
             value={dayjs(stage.endDate)}
             onChange={(date) => handleChange(date, 'endDate')}
+            format="DD-MM-YYYY"
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -267,11 +312,11 @@ const StageComponent = ({
         />
         <TextField
           type="number"
-          label="Duration(Hrs)"
+          label="Duration (Days)"
           variant="outlined"
           name="duration"
           value={stage.duration}
-          onChange={(e) => handleChange(e)}
+          onChange={handleDurationChange}
           required
           sx={{
             width: '200px',

@@ -96,7 +96,7 @@ export default function AccordionExpandDefault({ ticketId }) {
         <div>
           <Typography variant="body2" fontWeight="bold">Attachments:</Typography>
           {ticketData.attachments.map((attachment, index) => (
-            
+
             <a
               key={index}
               href={`http://localhost:3000/${attachment}`}

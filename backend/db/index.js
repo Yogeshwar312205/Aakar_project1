@@ -1,12 +1,14 @@
 import mysql from 'mysql2'
 import ApiError from '../utils/ApiError.js'
+import dotenv from 'dotenv'
+dotenv.config()
 
 const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'Shinde@24',
-  database: 'aakar',
-  port: 3306 
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'aakar',
+  port: process.env.DB_PORT || 3306
 })
 
 connection.connect((err) => {

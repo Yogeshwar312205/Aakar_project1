@@ -56,7 +56,7 @@ export default app
 //     }));
 
 //     res.json({ skills }); // Ensure the response is an object with 'skills' property
-//   });
+//   });
 // });
 
 // app.get('/api/skills', async (req, res) => {

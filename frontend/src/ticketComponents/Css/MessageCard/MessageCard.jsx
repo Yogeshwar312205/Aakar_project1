@@ -51,3 +51,4 @@ MessageCard.propTypes = {
 };
 
 export default MessageCard;
+

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { logout } from '../features/authSlice.js'
 import { useNavigate } from 'react-router-dom'
 import { FiAlignLeft, FiLogOut, FiUser } from 'react-icons/fi'
-import logo from '../assets/logo.svg'
+import logo from '../assets/logo.png'
 import './NavBar.css'
 
 const NavBar = () => {

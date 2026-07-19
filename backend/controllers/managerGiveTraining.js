@@ -6,19 +6,19 @@ const router = express.Router();
 
 router.get('/trainer-employee', (req, res) => {
     const { skillIds } = req.query;
-  
+
     if (!skillIds) {
       return res.status(400).json({ error: 'No skills provided!' });
     }
-  
+
     const skillIdArray = skillIds.split(',').map(Number).filter(Boolean);
-  
+
     if (skillIdArray.length === 0) {
       return res.status(400).json({ error: 'Invalid skills provided!' });
     }
-  
+
     const placeholders = skillIdArray.map(() => '?').join(',');
-  
+
     // Step 1: Fetch the department and skill types for the given skills
     const query1 = `
       SELECT DISTINCT skillId, departmentId, departmentSkillType
@@ -26,17 +26,17 @@ router.get('/trainer-employee', (req, res) => {
       WHERE skillId IN (${placeholders})
         AND (departmentSkillType = 1 OR departmentSkillType = 3)
     `;
-  
+
     connection.query(query1, skillIdArray, (err, result) => {
       if (err) {
         console.error('Error fetching department and skill types:', err);
         return res.status(500).json({ error: 'Error fetching department and skill types' });
       }
-  
+
       if (result.length === 0) {
         return res.status(404).json({ error: 'No matching departments or skills found' });
       }
-  
+
       const departmentId = result[0].departmentId;
       const type1Skills = result
         .filter((row) => row.departmentSkillType === 1)
@@ -44,11 +44,11 @@ router.get('/trainer-employee', (req, res) => {
       const type3Skills = result
         .filter((row) => row.departmentSkillType === 3)
         .map((row) => row.skillId);
-  
+
       // Construct query and parameters based on the skill types
       let finalQuery = '';
       let queryParams = [];
-  
+
       if (type3Skills.length > 0) {
         const placeholdersSkill = type3Skills.map(() => '?').join(',');
         finalQuery = `
@@ -73,35 +73,35 @@ router.get('/trainer-employee', (req, res) => {
       } else {
         return res.status(404).json({ error: 'No matching employees found' });
       }
-  
+
       // Execute the final query
       connection.query(finalQuery, queryParams, (err, employees) => {
         if (err) {
           console.error('Error fetching employees:', err);
           return res.status(500).json({ error: 'Error fetching employees' });
         }
-  
+
         return res.status(200).json(employees);
       });
     });
   });
-  
-  
+
+
   router.get('/training-employee', (req, res) => {
     const { skillIds, departmentId } = req.query;
-  
+
     if (!skillIds || !departmentId) {
       return res.status(400).json({ error: 'Skill IDs and Department ID are required' });
     }
-  
+
     const skillIdArray = skillIds.split(',').map(Number).filter(Boolean);
-  
+
     if (skillIdArray.length === 0) {
       return res.status(400).json({ error: 'Invalid skill IDs provided' });
     }
-  
+
     const placeholders = skillIdArray.map(() => '?').join(',');
-  
+
     // Step 1: Fetch employees for departmentSkillType = 1
     const query1 = `
   SELECT DISTINCT es.employeeId, e.employeeName
@@ -111,7 +111,7 @@ router.get('/trainer-employee', (req, res) => {
       JOIN employeeDesignation ed ON e.employeeId = ed.employeeId
       where s.departmentSkillType = 3 and ed.departmentId = ?;
     `;
-  
+
     // Step 2: Fetch employees with grade 4 for skills with departmentSkillType = 3
     const query2 = `
       SELECT DISTINCT e.employeeId, e.employeeName
@@ -121,7 +121,7 @@ router.get('/trainer-employee', (req, res) => {
       JOIN employeeDesignation ed ON e.employeeId = ed.employeeId
       WHERE s.skillType = 3 AND es.grade = 4 AND es.skillId IN (${placeholders}) AND ed.departmentId = ?
     `;
-  
+
     // Execute both queries
     Promise.all([
       new Promise((resolve, reject) => {
@@ -139,7 +139,7 @@ router.get('/trainer-employee', (req, res) => {
     ])
       .then(([type1Employees, type3Employees]) => {
         let finalEmployees;
-  
+
         if (type1Employees.length > 0 && type3Employees.length > 0) {
           // Find intersection of both results
           const type1Set = new Set(type1Employees.map(emp => emp.employeeId));
@@ -148,7 +148,7 @@ router.get('/trainer-employee', (req, res) => {
           // Use the available results
           finalEmployees = type1Employees.length > 0 ? type1Employees : type3Employees;
         }
-  
+
         res.json(finalEmployees);
       })
       .catch(err => {
@@ -160,7 +160,7 @@ router.get('/trainer-employee', (req, res) => {
 //Give Training
 router.get(`/GetDeptGiveTrainData/:dept_id`,(req,res) =>{
   const deptId = req.params.dept_id;
-  const query = `SELECT at.employeeId, e.employeeName, s.skillName, es.skillId, es.grade 
+  const query = `SELECT at.employeeId, e.employeeName, s.skillName, es.skillId, es.grade
     FROM selectedAssignTraining at
     JOIN employeeSkill es ON es.employeeId = at.employeeId AND es.skillId = at.skillId
     JOIN skill s ON at.skillId = s.skillId
@@ -178,11 +178,11 @@ router.get(`/GetDeptGiveTrainData/:dept_id`,(req,res) =>{
 });
 
 
-// department Giving Training 
+// department Giving Training
 router.get(`/GetDeptGiveTrainData/:dept_id/:skill_id?`, (req, res) => {
   const deptId = req.params.dept_id;
   const skillId = req.params.skill_id;
-  const query = `SELECT at.employeeId, e.employeeName, s.skillName, es.skillId, es.grade 
+  const query = `SELECT at.employeeId, e.employeeName, s.skillName, es.skillId, es.grade
   FROM selectedAssignTraining at
   JOIN employeeSkill es ON es.employeeId = at.employeeId AND es.skillId = at.skillId
   JOIN skill s ON at.skillId = s.skillId
@@ -197,7 +197,7 @@ router.get(`/GetDeptGiveTrainData/:dept_id/:skill_id?`, (req, res) => {
     // console.log("Fetching department giving training by skill", result);
     res.json(result);
   });
-  } 
+  }
 );
 
 // Getting skill names which give training by particular department
@@ -218,57 +218,6 @@ WHERE ds.departmentId = ?
     // console.log('DepartmentId',result);
   })
 })
-
-// router.post('/send-multiple-emps-to-trainings', (req, res) => {
-//   const { trainingId, selectedEmployees, selectedEmpToRemove } = req.body;
-
-//   if (!trainingId || !selectedEmployees || !selectedEmployees.length) {
-//     return res.status(400).json({ error: 'Missing trainingId or selectedEmployees' });
-//   }
-
-//   // Query 1: Insert employees into training
-//   const insertValues = selectedEmployees.map(employeeId => [employeeId, trainingId]);
-//   const insertQuery = 'INSERT INTO trainingRegistration (employeeId, trainingId) VALUES ?';
-
-//   connection.query(insertQuery, [insertValues], (insertErr, insertResults) => {
-//     if (insertErr) {
-//       console.error('Error inserting employees into trainings:', insertErr);
-//       return res.status(500).json({ error: 'Failed to add employees to training.' });
-//     }
-
-//     console.log('Inserted employees into trainings:', insertResults);
-
-//     // Proceed with deletion only if employees to remove exist
-//     if (Array.isArray(selectedEmpToRemove) && selectedEmpToRemove.length > 0) {
-//       // Query 2: Delete employees from training
-//       console.log("Remove emps : ",selectedEmpToRemove)
-//       const deleteQuery = `DELETE FROM trainingRegistration WHERE trainingId = ? AND employeeId IN (?)`;
-//       connection.query(deleteQuery, [trainingId, selectedEmpToRemove], (deleteErr, deleteResults) => {
-//         if (deleteErr) {
-//           console.error('Error removing employees from training:', deleteErr);
-//           return res.status(500).json({
-//             message: 'Employees were added, but some could not be removed.',
-//             error: deleteErr.message,
-//             inserted: insertResults.affectedRows,
-//           });
-//         }
-
-//         console.log('Deleted employees from training:', deleteResults);
-//         return res.status(200).json({
-//           message: 'Employees added and removed from training successfully.',
-//           inserted: insertResults.affectedRows,
-//           deleted: deleteResults.affectedRows,
-//         });
-//       });
-//     } else {
-//       // No deletion needed, respond with success for insertion
-//       return res.status(200).json({
-//         message: 'Employees added to training successfully.',
-//         inserted: insertResults.affectedRows,
-//       });
-//     }
-//   });
-// });
 
 router.post('/send-multiple-emps-to-trainings', (req, res) => {
   const { trainingId, selectedEmployees, selectedEmpToRemove } = req.body;
@@ -344,7 +293,7 @@ router.post('/send-multiple-emps-to-trainings', (req, res) => {
 router.get('/get-distinct-department-employess-skill-to-train/:departmentId',(req,res)=>{
   const a = req.params.departmentId;
   const query = `
-    select sa.employeeId , sa.skillId , e.employeeName , d.departmentName ,d.departmentId, s.skillName from selectedAssigntraining sa 
+    select sa.employeeId , sa.skillId , e.employeeName , d.departmentName ,d.departmentId, s.skillName from selectedAssigntraining sa
     inner join employee e on sa.employeeId = e.employeeId
     inner join employeeDesignation ed on e.employeeId = ed.employeeId
     inner join department d on d.departmentId = ed.departmentId
@@ -367,13 +316,13 @@ router.get('/get-distinct-department-employess-skill-to-train/:departmentId',(re
         skillName: row.skillName,
         skillId : row.skillId,
         departmentId : row.departmentId
-        
+
         //grade: row.grade
       })
       // console.log("hi", response)
     })
     return res.json(response)
-    
+
   });
 })
 
@@ -395,7 +344,7 @@ connection.query(query,[departmentId],(err,result) =>{
     return res.status(500).json({ error: 'Database insertion failed' });
   }
   return res.json(result)
-  
+
 });
 });
 
@@ -414,7 +363,7 @@ router.get('/eligible-employee-to-send-to-training', (req, res) => {
   INNER JOIN skill s ON sa.skillId = s.skillId
   INNER JOIN employeeDesignation ed on ed.employeeId = sa.employeeId
   INNER JOIN employee e ON e.employeeId = sa.employeeId
-  WHERE t.trainingId = ? and ed.departmentId = ?`;
+  WHERE t.trainingId = ? AND ed.departmentId = ? AND sa.employeeId != t.trainerId`;
 
   connection.query(query, [trainingId,departmentId], (err, result) => {
     if (err) {
@@ -433,24 +382,24 @@ router.get('/department-eligible-for-training/:departmentId/:skillId?', (req, re
   // SQL query to fetch training data based on the presence of skillId
   const query = skillId
     ? `
-      SELECT t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, 
+      SELECT t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate,
         GROUP_CONCAT(s.skillName SEPARATOR ', ') AS skills, e.employeeName AS trainerName, t.evaluationType
       FROM training t
       INNER JOIN trainingSkills ts ON ts.trainingId = t.trainingId
       INNER JOIN employee e ON e.employeeId = t.trainerId
       INNER JOIN skill s ON s.skillId = ts.skillId
-      WHERE s.departmentId = ? 
-      AND ts.skillId = ? 
+      WHERE s.departmentId = ?
+      AND ts.skillId = ?
       GROUP BY t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, e.employeeName;
     `
     : `
-      SELECT t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, 
+      SELECT t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate,
         GROUP_CONCAT(s.skillName SEPARATOR ', ') AS skills, e.employeeName AS trainerName, t.evaluationType
       FROM training t
       INNER JOIN trainingSkills ts ON ts.trainingId = t.trainingId
       INNER JOIN employee e ON e.employeeId = t.trainerId
       INNER JOIN skill s ON s.skillId = ts.skillId
-      WHERE s.departmentId = ? 
+      WHERE s.departmentId = ?
       GROUP BY t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, e.employeeName;
     `;
 

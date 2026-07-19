@@ -51,7 +51,7 @@ export const getHistorySubStagesBySubStageId = asyncHandler(
        FROM substage ss
        INNER JOIN employee eo ON ss.owner = eo.employeeId
        INNER JOIN employee cb ON ss.createdBy = cb.employeeId
-       WHERE ss.historyOf = ? 
+       WHERE ss.historyOf = ?
        ORDER BY ss.timestamp DESC;`
 
     db.query(query, [subStageId], (err, data) => {
@@ -102,7 +102,7 @@ export const getActiveSubStagesByStageId = asyncHandler(async (req, res) => {
 FROM substage ss
 INNER JOIN employee eo ON ss.owner = eo.employeeId
 INNER JOIN employee cb ON ss.createdBy = cb.employeeId
-WHERE ss.stageId = ? 
+WHERE ss.stageId = ?
 AND ss.historyOf IS NULL;`
 
   db.query(query, [stageId], (err, data) => {
@@ -243,14 +243,14 @@ export const updateSubStage = asyncHandler(async (req, res) => {
   const selectQuery = `SELECT * FROM substage WHERE substageId = ?`;
   const insertQuery = `
     INSERT INTO substage (
-      stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration, 
+      stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration,
       seqPrevStage, createdBy, progress, historyOf, updateReason, projectNumber
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const updateQuery = `
-    UPDATE substage SET 
-      stageId = ?, parentSubstageId = ?, substageName = ?, startDate = ?, endDate = ?, 
-      owner = ?, machine = ?, duration = ?, seqPrevStage = ?, 
+    UPDATE substage SET
+      stageId = ?, parentSubstageId = ?, substageName = ?, startDate = ?, endDate = ?,
+      owner = ?, machine = ?, duration = ?, seqPrevStage = ?,
       createdBy = ?, timestamp = ?, progress = ?, historyOf = NULL
     WHERE substageId = ?
   `;
@@ -300,7 +300,7 @@ export const updateSubStage = asyncHandler(async (req, res) => {
 
       // Create history for the substage
       const insertValues = [
-        substage.substageId,
+        substage.stageId,  // Fixed: use stageId not substageId
         substage.parentSubstageId || null,
         substage.substageName,
         substage.startDate,
@@ -318,7 +318,7 @@ export const updateSubStage = asyncHandler(async (req, res) => {
 
       // Prepare updated fields
       const updatedFields = {
-        substageId: req.body.substageId || substage.substageId,
+        stageId: req.body.stageId || substage.stageId,  // Fixed: use stageId
         parentSubstageId: req.body.parentSubstageId !== undefined ? req.body.parentSubstageId : substage.parentSubstageId,
         substageName: req.body.substageName || substage.substageName,
         startDate: req.body.startDate || substage.startDate,
@@ -359,7 +359,7 @@ export const updateSubStage = asyncHandler(async (req, res) => {
           .replace("T", " ")
           .replace("Z", "");
         const updateValues = [
-          updatedFields.substageId,
+          updatedFields.stageId || substage.stageId,  // Fixed: use stageId
           updatedFields.parentSubstageId || null,
           updatedFields.substageName,
           updatedFields.startDate,
@@ -427,40 +427,146 @@ export const createSubStage = asyncHandler(async (req, res) => {
     }
 
     const employeeId = result[0].employeeId
+    const parentSubstageId = req.body.parentSubstageId || null
 
-    const stageQuery = `INSERT INTO substage (
-      stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration, 
-      seqPrevStage, createdBy, progress, ProjectNumber
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
-    const values = [
-      // req.body.substageId,
-      req.body.stageId,
-      req.body.parentSubstageId || null,
-      req.body.substagename,
-      req.body.startDate,
-      req.body.endDate,
-      employeeId, // Use employeeId for owner
-      req.body.machine,
-      req.body.duration,
-      req.body.seqPrevStage,
-      req.user[0].employeeId,
-      req.body.progress,
-      req.body.projectNumber,
-    ]
-
-    console.log('Creating substage with values:', values)
-
-    db.query(stageQuery, values, (err, data) => {
-      if (err) {
-        console.log(err)
-        return res
-          .status(500)
-          .json(new ApiResponse(500, null, 'Error creating substage'))
+    // Recursively update all ancestor parents' completion status
+    const updateAncestorsCompletion = (currentParentId, callback) => {
+      if (!currentParentId) {
+        callback()
+        return
       }
-      res
-        .status(201)
-        .json(new ApiResponse(201, data, 'Substage created successfully'))
+
+      // Update current parent to incomplete if it was completed
+      const updateParentQuery = `
+        UPDATE substage 
+        SET isCompleted = 0, 
+            progress = 0,
+            executedStartDate = NULL,
+            executedEndDate = NULL
+        WHERE substageId = ? AND isCompleted = 1
+      `
+      
+      db.query(updateParentQuery, [currentParentId], (err, updateResult) => {
+        if (err) {
+          console.log('Error updating ancestor completion status:', err)
+          callback()
+          return
+        }
+        
+        if (updateResult.affectedRows > 0) {
+          console.log(`Ancestor substage ${currentParentId} marked as incomplete due to new descendant`)
+        }
+
+        // Find the parent of current parent (grandparent) and recursively update
+        const findGrandparentQuery = `SELECT parentSubstageId FROM substage WHERE substageId = ?`
+        db.query(findGrandparentQuery, [currentParentId], (err, grandparentResult) => {
+          if (err || grandparentResult.length === 0) {
+            callback()
+            return
+          }
+
+          const grandparentId = grandparentResult[0].parentSubstageId
+          if (grandparentId) {
+            // Recursively update grandparent
+            updateAncestorsCompletion(grandparentId, callback)
+          } else {
+            callback()
+          }
+        })
+      })
+    }
+
+    updateAncestorsCompletion(parentSubstageId, () => {
+      const stageQuery = `INSERT INTO substage (
+        stageId, parentSubstageId, substageName, startDate, endDate, owner, machine, duration,
+        seqPrevStage, createdBy, progress, ProjectNumber
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+      const values = [
+        // req.body.substageId,
+        req.body.stageId,
+        parentSubstageId,
+        req.body.substagename,
+        req.body.startDate,
+        req.body.endDate,
+        employeeId, // Use employeeId for owner
+        req.body.machine,
+        req.body.duration,
+        req.body.seqPrevStage,
+        req.user[0].employeeId,
+        req.body.progress,
+        req.body.projectNumber,
+      ]
+
+      console.log('Creating substage with values:', values)
+
+      db.query(stageQuery, values, (err, data) => {
+        if (err) {
+          console.log(err)
+          return res
+            .status(500)
+            .json(new ApiResponse(500, null, 'Error creating substage'))
+        }
+
+        // After creating substage, recalculate stage progress
+        const stageId = req.body.stageId
+        const projectNumber = req.body.projectNumber
+
+        // Recalculate stage progress based on substage completion
+        db.query(
+          'SELECT COUNT(*) as total, SUM(isCompleted) as completed FROM substage WHERE stageId = ? AND historyOf IS NULL',
+          [stageId],
+          (err, stats) => {
+            if (!err && stats.length > 0) {
+              const total = stats[0].total || 1
+              const completed = stats[0].completed || 0
+              const stageProgress = Math.round((completed / total) * 100)
+
+              // Update stage progress
+              db.query(
+                'UPDATE stage SET progress = ? WHERE stageId = ?',
+                [stageProgress, stageId],
+                (err) => {
+                  if (err) {
+                    console.log('Error updating stage progress:', err)
+                  } else {
+                    console.log(`Stage ${stageId} progress updated to ${stageProgress}%`)
+                  }
+
+                  // Recalculate project progress
+                  if (projectNumber) {
+                    db.query(
+                      'SELECT AVG(progress) as avgProgress FROM stage WHERE projectNumber = ? AND historyOf IS NULL',
+                      [projectNumber],
+                      (err, projStats) => {
+                        if (!err && projStats.length > 0) {
+                          const projectProgress = Math.round(projStats[0].avgProgress || 0)
+                          db.query(
+                            'UPDATE project SET progress = ? WHERE projectNumber = ?',
+                            [projectProgress, projectNumber],
+                            (err) => {
+                              if (err) {
+                                console.log('Error updating project progress:', err)
+                              } else {
+                                console.log(`Project ${projectNumber} progress updated to ${projectProgress}%`)
+                              }
+                            }
+                          )
+                        }
+                      }
+                    )
+                  }
+                }
+              )
+            }
+
+            // Return success response
+            res
+              .status(201)
+              .json(new ApiResponse(201, data, 'Substage created successfully'))
+          }
+        )
+      })
     })
   })
 })
@@ -538,10 +644,10 @@ export const deleteSubStage = asyncHandler(async (req, res) => {
 export const getSingleSubStageById = asyncHandler(async (req, res) => {
   const subStageId = req.params.id
   console.log('Fetching substage with ID:', subStageId)
-  const query = `SELECT ss.*, ss.parentSubstageId, eo.employeeName AS owner, cb.employeeName AS createdBy, 
+  const query = `SELECT ss.*, ss.parentSubstageId, eo.employeeName AS owner, cb.employeeName AS createdBy,
                         eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById
                  FROM substage ss
-                 INNER JOIN employee eo ON ss.owner = eo.employeeId 
+                 INNER JOIN employee eo ON ss.owner = eo.employeeId
                  INNER JOIN employee cb ON ss.createdBy = cb.employeeId
                  WHERE ss.subStageId = ? AND ss.historyOf IS NULL`
 
@@ -670,12 +776,12 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
           //    executedStartDate = MIN of substages' executedStartDate
           //    executedEndDate = MAX of substages' executedEndDate (only if ALL substages completed)
           const stageExecDateQuery = `
-            SELECT 
+            SELECT
               MIN(executedStartDate) as stageExecStart,
               MAX(executedEndDate) as stageExecEnd,
               COUNT(*) as totalSubs,
               SUM(isCompleted) as completedSubs
-            FROM substage 
+            FROM substage
             WHERE stageId = ? AND historyOf IS NULL
           `
           db.query(stageExecDateQuery, [stageId], (err, execStats) => {
@@ -699,12 +805,12 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
 
                         // 7. Auto-compute project executed dates from stages
                         const projExecDateQuery = `
-                          SELECT 
+                          SELECT
                             MIN(executedStartDate) as projExecStart,
                             MAX(executedEndDate) as projExecEnd,
                             COUNT(*) as totalStages,
                             SUM(CASE WHEN progress = 100 THEN 1 ELSE 0 END) as completedStages
-                          FROM stage 
+                          FROM stage
                           WHERE projectNumber = ? AND historyOf IS NULL
                         `
                         db.query(projExecDateQuery, [projectNumber], (err, projExecStats) => {
@@ -826,12 +932,12 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
 
           // 4. Auto-compute stage executed dates
           const stageExecDateQuery = `
-            SELECT 
+            SELECT
               MIN(executedStartDate) as stageExecStart,
               MAX(executedEndDate) as stageExecEnd,
               COUNT(*) as totalSubs,
               SUM(isCompleted) as completedSubs
-            FROM substage 
+            FROM substage
             WHERE stageId = ? AND historyOf IS NULL
           `
           db.query(stageExecDateQuery, [stageId], (err, execStats) => {
@@ -855,12 +961,12 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
 
                         // 7. Auto-compute project executed dates
                         const projExecDateQuery = `
-                          SELECT 
+                          SELECT
                             MIN(executedStartDate) as projExecStart,
                             MAX(executedEndDate) as projExecEnd,
                             COUNT(*) as totalStages,
                             SUM(CASE WHEN progress = 100 THEN 1 ELSE 0 END) as completedStages
-                          FROM stage 
+                          FROM stage
                           WHERE projectNumber = ? AND historyOf IS NULL
                         `
                         db.query(projExecDateQuery, [projectNumber], (err, projExecStats) => {
@@ -929,4 +1035,3 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
     })
   })
 })
-

@@ -9,6 +9,7 @@ import { fetchTrainings, fetchTrainingEmployees } from './trainerapi';
 import Modal from 'react-modal';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
+import TrainerReportGenerator from './TrainerReportGenerator';
 
 
 const Tickit = ({ text, icon, onClick, count }) => (
@@ -27,6 +28,7 @@ const TrainerSwitch = () => {
   const [employeesData, setEmployeesData] = useState([]);
   const [employeecount, setemployeecount] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showTrainerReport, setShowTrainerReport] = useState(false);
   const navigate = useNavigate();
   const employeeId = useSelector((state) => state.auth.user?.employeeId);
   const trainerName = useSelector((state) => state.auth.user?.employeeName);
@@ -36,7 +38,7 @@ const TrainerSwitch = () => {
     const start = dayjs(startDate).format("DD-MM-YYYY");
     const end = dayjs(endDate).format("DD-MM-YYYY");
     const today = dayjs(new Date()).format("DD-MM-YYYY");
-  
+
     if (today >= start && today <= end) {
       return "Ongoing"
     } else if (today > end) {
@@ -72,14 +74,14 @@ const TrainerSwitch = () => {
       console.error("No trainings available to fetch employees.");
       return;
     }
-  
+
     try {
       const allEmployees = [];
       let totalEmployees = 0; // To track the total count
-  
+
       for (const training of trainings) {
         const response = await fetchTrainingEmployees(training.trainingId);
-  
+
         // Ensure response has the correct structure
         if (response && response.data) {
           const employeesWithDetails = response.data.map((employee) => ({
@@ -89,12 +91,12 @@ const TrainerSwitch = () => {
             startTrainingDate: training.startTrainingDate,
             endTrainingDate:training.endTrainingDate,
           }));
-  
+
           allEmployees.push(...employeesWithDetails);
           totalEmployees += response.count || employeesWithDetails.length; // Use `count` or fallback to data length
         }
       }
-  
+
       setEmployeesData(allEmployees);
       console.log("data", allEmployees)
       setCount(totalEmployees);
@@ -103,13 +105,13 @@ const TrainerSwitch = () => {
       setCount(0);
     }
   };
-  
+
   useEffect(() => {
     if (trainings.length > 0) {
       handleViewEmployees(setemployeecount);
     }
-  }, [trainings]); 
-  
+  }, [trainings]);
+
   const modalopen1 = async () =>{
     setIsModalOpen(true);
   }
@@ -143,6 +145,7 @@ const TrainerSwitch = () => {
     const today = dayjs(new Date()).format("DD-MM-YYYY");
     const trainingEndDate = training.endTrainingDate;
     const isActive = today > trainingEndDate ? 1 : 0;
+    console.log("traininId", training.trainingId)
     navigate('/TrainerTrainingDetails', {
       state: {
         trainingId: training.trainingId,
@@ -176,9 +179,9 @@ const TrainerSwitch = () => {
   const renderSkillsBubbles = (skills) => {
     console.log("Rendered skills: ", skills);
     if (!skills || skills.trim() === '') {
-      return <span>No Skills</span>;  
+      return <span>No Skills</span>;
     }
-   
+
     const skillList = skills.split(', ');
     return (
       <div className="skills-bubbles-container">
@@ -235,15 +238,6 @@ const TrainerSwitch = () => {
   return (
     <div>
       <div className="trainerSwitch-training-content">
-        {/* <header className="trainerSwitch-dash-header">
-          <FiArrowLeftCircle
-            className="employeeSwitch-back-button"
-            onClick={() => navigate(`/Overall-Switch`)}
-            title="Go back"
-          />
-          <h4 className="employeeSwitch-title">Back to main page</h4>
-        </header> */}
-
         <div className="trainerSwitch-tickets">
           <div className="trainerSwitch-ticket" >
             <Tickit text="Total Trainings" count={trainings.length} />
@@ -260,6 +254,13 @@ const TrainerSwitch = () => {
             setSelectedValues={handleSearch}
             includeSelectAll={false}
           />
+          <button
+            className="trainer-report-button"
+            onClick={() => setShowTrainerReport(true)}
+            disabled={trainings.length === 0}
+          >
+            Trainer Report
+          </button>
         </div>
         <div className="trainerSwitch-table-container">
           <TableCo
@@ -281,6 +282,15 @@ const TrainerSwitch = () => {
                 <TableCo rows={employeesData} columns={employeeColumns} />
           </div>
         </div>
+      )}
+
+      {/* Trainer Report Generator */}
+      {showTrainerReport && (
+        <TrainerReportGenerator
+          trainerName={trainerName}
+          trainingsData={trainings}
+          onClose={() => setShowTrainerReport(false)}
+        />
       )}
     </div>
   );

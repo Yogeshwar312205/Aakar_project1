@@ -29,7 +29,7 @@ const CustomTooltip = ({ task }) => {
         {formatDate(task.end.toLocaleDateString())}
       </b>
       {task.machine && <p>Machine: {task.machine}</p>}
-      {task.durationHrs && <p>Duration: {task.durationHrs} hrs</p>}
+      {task.durationHrs && <p>Duration: {task.durationHrs} days</p>}
       {task.progress && <p>Progress: {task.progress}%</p>}
       {task.owner && <p>Owner: {task.owner}</p>}
       {task.createdBy && <p>Created By: {task.createdBy}</p>}

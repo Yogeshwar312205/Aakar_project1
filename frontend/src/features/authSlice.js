@@ -49,6 +49,26 @@ export const logoutThunk = createAsyncThunk('auth/logout', async (_, { dispatch 
     dispatch(logout());
 });
 
+// Fetch current employee access thunk
+export const fetchEmployeeAccess = createAsyncThunk(
+    'auth/fetchEmployeeAccess',
+    async (employeeId, { rejectWithValue }) => {
+        try {
+            const response = await axios.get(
+                `${API_BASE_URL}/employee/${employeeId}/access`,
+                {
+                    withCredentials: true,
+                }
+            );
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data || { message: 'Failed to fetch employee access' }
+            );
+        }
+    }
+);
+
 // Slice
 const authSlice = createSlice({
     name: 'auth',
@@ -73,6 +93,17 @@ const authSlice = createSlice({
             state.accessToken = action.payload.accessToken;
             state.refreshToken = action.payload.refreshToken;
             state.isAuthenticated = true;
+        },
+        updateEmployeeAccess: (state, action) => {
+            if (state.user) {
+                state.user.employeeAccess = action.payload;
+                // Update localStorage
+                const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+                if (authData.employee) {
+                    authData.employee.employeeAccess = action.payload;
+                    localStorage.setItem('authData', JSON.stringify(authData));
+                }
+            }
         },
     },
     extraReducers: (builder) => {
@@ -110,10 +141,42 @@ const authSlice = createSlice({
 
                 // Clear localStorage
                 localStorage.removeItem('authData');
+            })
+
+            // Fetch employee access logic
+            .addCase(fetchEmployeeAccess.fulfilled, (state, action) => {
+                // If account is deactivated, logout
+                if (action.payload.deactivated) {
+                    state.user = null;
+                    state.jobProfiles = [];
+                    state.accessToken = null;
+                    state.refreshToken = null;
+                    state.isAuthenticated = false;
+                    localStorage.removeItem('authData');
+                } else if (state.user && action.payload.employeeAccess) {
+                    // Update access in state and localStorage
+                    state.user.employeeAccess = action.payload.employeeAccess;
+                    const authData = JSON.parse(localStorage.getItem('authData') || '{}');
+                    if (authData.employee) {
+                        authData.employee.employeeAccess = action.payload.employeeAccess;
+                        localStorage.setItem('authData', JSON.stringify(authData));
+                    }
+                }
+            })
+            .addCase(fetchEmployeeAccess.rejected, (state, action) => {
+                // If forbidden (403), logout the user
+                if (action.payload?.message === 'Account has been deactivated') {
+                    state.user = null;
+                    state.jobProfiles = [];
+                    state.accessToken = null;
+                    state.refreshToken = null;
+                    state.isAuthenticated = false;
+                    localStorage.removeItem('authData');
+                }
             });
     },
 });
 
 // Export actions and reducer
-export const { logout, loginSuccess } = authSlice.actions;
+export const { logout, loginSuccess, updateEmployeeAccess } = authSlice.actions;
 export default authSlice.reducer;

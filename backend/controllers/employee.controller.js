@@ -540,6 +540,49 @@ export const editEmployeeWithRelations = asyncHandler(async (req, res) => {
     }
 });
 
+export const getCurrentEmployeeAccess = asyncHandler(async (req, res) => {
+    const { employeeId } = req.params;
+
+    if (!employeeId) {
+        return res.status(400).json({ message: "Employee ID is required" });
+    }
+
+    try {
+        const [employee] = await connection.promise().query(
+            "SELECT employeeAccess, employeeEndDate FROM employee WHERE employeeId = ?",
+            [employeeId]
+        );
+
+        if (employee.length === 0) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        // Check if employee account is deactivated
+        const employeeData = employee[0];
+        if (employeeData.employeeEndDate) {
+            const endDate = new Date(employeeData.employeeEndDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            endDate.setHours(0, 0, 0, 0);
+            
+            if (endDate <= today) {
+                return res.status(403).json({ 
+                    message: "Account has been deactivated",
+                    deactivated: true 
+                });
+            }
+        }
+
+        res.status(200).json({
+            employeeAccess: employeeData.employeeAccess,
+            deactivated: false
+        });
+    } catch (error) {
+        console.error("Error fetching employee access:", error.message);
+        res.status(500).json({ message: "Failed to fetch employee access" });
+    }
+});
+
 export const getAllEmployees = asyncHandler(async (req, res) => {
     const query = `
     SELECT

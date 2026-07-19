@@ -37,6 +37,7 @@ import TrainerEditAttendance from './pages/Trainer/TrainerEditAttendance.jsx'
 import EmployeeTrainingEnrolled from './pages/Trainer/EmployeeTrainingEnrolled.jsx'
 import ManagerEmployeeTrainingEnrolled from './pages/Manager/ManagerEmployeeTrainingEnrolled.jsx'
 import SendConformEmpToTraining from './pages/Manager/SendConformEmpToTraining.jsx'
+import AccessSyncWrapper from './components/AccessSyncWrapper'
 
 //Ticket
 import Dashboard from './ticketComponents/Dashboard/Dashboard.jsx'
@@ -98,6 +99,8 @@ const App = () => {
         containerId="main"
       />
       <Router>
+        {/* Enable real-time access sync for all authenticated users */}
+        <AccessSyncWrapper />
         <Routes>
           <Route
             path="/login"

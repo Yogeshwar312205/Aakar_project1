@@ -67,6 +67,20 @@ export const loginEmployee = asyncHandler(async (req, res) => {
 
             const employee = results[0];
             console.log(employee);
+            
+            // Check if the employee account has been deactivated
+            if (employee.employeeEndDate) {
+                const endDate = new Date(employee.employeeEndDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                endDate.setHours(0, 0, 0, 0);
+                
+                if (endDate <= today) {
+                    console.log("Login attempt blocked - employee account deactivated:", employeeEmail);
+                    return res.status(401).json({ message: "Account has been deactivated. Please contact HR." });
+                }
+            }
+            
             // Check if the password matches
             console.log("Password to compare:", employeePassword);
             console.log("Hashed password from DB:", employee.employeePassword);

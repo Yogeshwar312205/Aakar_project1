@@ -40,14 +40,17 @@ export const addEmployee = createAsyncThunk(
 
 export const updateEmployee = createAsyncThunk(
   'employees/updateEmployee',
-  async ({ employeeId, payload }, { rejectWithValue }) => {
+  async ({ employeeId, payload }, { dispatch, rejectWithValue }) => {
     try {
       console.log('Updating employee:', employeeId, payload)
       const response = await axios.put(
         `${BASE_URL}/${employeeId}/with-relations`,
-        payload
+        payload,
+        { withCredentials: true }
       )
       console.log('Update response:', response.data)
+      // Refresh the employees list in the store so the UI shows updated data
+      await dispatch(getAllEmployees())
       return response.data
     } catch (error) {
       console.error('Error updating employee:', error)

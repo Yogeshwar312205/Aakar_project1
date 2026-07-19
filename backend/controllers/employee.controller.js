@@ -470,6 +470,41 @@ export const editEmployeeWithRelations = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'Employee not found.' });
         }
 
+        // ✅ FIX: Update jobProfiles (designations/roles) for the employee
+        // This was completely missing before, causing role updates to be ignored.
+        if (jobProfiles && Array.isArray(jobProfiles) && jobProfiles.length > 0) {
+            // Delete existing designations for this employee
+            await connection.promise().query(
+                'DELETE FROM employeeDesignation WHERE employeeId = ?',
+                [id]
+            );
+
+            // Re-insert updated designations
+            for (const profile of jobProfiles) {
+                let { designationId, designationName, departmentId, managerId } = profile;
+
+                if (!departmentId) {
+                    console.warn('Skipping job profile - Department ID is required.');
+                    continue;
+                }
+
+                // If designationId is 0 or missing, create a new designation
+                if ((!designationId || designationId === 0) && designationName) {
+                    const insertDesigQuery = `INSERT INTO designation (designationName) VALUES (?)`;
+                    const [desigInsertResult] = await connection.promise().query(insertDesigQuery, [designationName]);
+                    designationId = desigInsertResult.insertId;
+                }
+
+                const insertJobProfileQuery = `INSERT INTO employeeDesignation (employeeId, designationId, departmentId, managerId) VALUES (?, ?, ?, ?)`;
+                await connection.promise().query(insertJobProfileQuery, [
+                    id,
+                    designationId || null,
+                    departmentId,
+                    managerId || null,
+                ]);
+            }
+        }
+
         res.status(200).json({ message: 'Employee updated successfully.' });
     } catch (error) {
         console.error('Error updating employee:', error);
@@ -494,6 +529,9 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
         e.employeeAccess,
         e.createdAt,
         e.employeeEndDate,
+        ed.departmentId,
+        ed.designationId,
+        ed.managerId,
         d.departmentName,
         ds.designationName,
         m.employeeName AS managerName
@@ -551,8 +589,11 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
             // Add the job profile to the employee's jobProfiles array
             if (row.designationName || row.departmentName || row.managerName) {
                 employeesMap[customEmployeeId].jobProfiles.push({
+                    designationId: row.designationId,
                     designationName: row.designationName,
+                    departmentId: row.departmentId,
                     departmentName: row.departmentName,
+                    managerId: row.managerId,
                     managerName: row.managerName,
                 });
             }

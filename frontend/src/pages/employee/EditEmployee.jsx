@@ -111,7 +111,9 @@ const EditEmployee = () => {
             })),
         };
 
-        console.log('Updating employee:', payload);
+        console.log('=== UPDATING EMPLOYEE ===');
+        console.log('Designations before map:', JSON.stringify(employeeDesignations, null, 2));
+        console.log('Payload to send:', JSON.stringify(payload, null, 2));
 
         // Dispatch Redux action
         dispatch(updateEmployee({ employeeId: payload.employee.employeeId, payload }))

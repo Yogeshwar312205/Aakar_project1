@@ -75,35 +75,53 @@ const AddEmployeeDepartment = ({ employeeDesignations: initialEmployeeDesignatio
     };
 
     const handleDeleteDesignation = (index) => {
-        const updatedDesignations = [...employeeDesignations];
-        updatedDesignations.splice(index, 1);
+        // Create new array without the item at index
+        const updatedDesignations = employeeDesignations.filter((_, i) => i !== index);
         setLocalEmployeeDesignations(updatedDesignations);
         setEmployeeDesignations(updatedDesignations);
     };
 
     const handleAutocompleteChange = (event, newValue, name, index) => {
-        const updatedDesignations = [...employeeDesignations];
-
         // Prevent empty departmentId and managerId
         if ((name === 'departmentId' || name === 'managerId') && !newValue) {
             return;
         }
 
-        updatedDesignations[index][name] = newValue || '';
+        // Create a deep copy with the updated value - preserve all original properties
+        const updatedDesignations = employeeDesignations.map((designation, i) => {
+            if (i === index) {
+                // Create new object preserving all properties
+                return {
+                    ...designation,
+                    [name]: newValue || ''
+                };
+            }
+            // Return original object for other indices (no need to copy)
+            return designation;
+        });
+        
         setLocalEmployeeDesignations(updatedDesignations);
         setEmployeeDesignations(updatedDesignations);
     };
 
     const handleDesignationNameChange = (event, newInputValue, index) => {
-        const updatedDesignations = [...employeeDesignations];
-        updatedDesignations[index].designationName = newInputValue;
-
-        // Check if designationName is valid
-        if (!isValidDesignation(newInputValue)) {
-            updatedDesignations[index].designationId = 0;
-        } else {
-            updatedDesignations[index].designationId = null;
-        }
+        // Create a deep copy by mapping through and creating new objects
+        const updatedDesignations = employeeDesignations.map((designation, i) => {
+            if (i === index) {
+                const updated = { ...designation, designationName: newInputValue };
+                
+                // Check if designationName is valid
+                if (!isValidDesignation(newInputValue)) {
+                    updated.designationId = 0;
+                } else {
+                    updated.designationId = null;
+                }
+                
+                return updated;
+            }
+            // Return original object for other indices
+            return designation;
+        });
 
         setLocalEmployeeDesignations(updatedDesignations);
         setEmployeeDesignations(updatedDesignations);
@@ -143,8 +161,13 @@ const AddEmployeeDepartment = ({ employeeDesignations: initialEmployeeDesignatio
                                             onChange={(event, newValue) => {
                                                 handleAutocompleteChange(event, newValue ? newValue.value : null, 'designationId', index);
                                                 if (newValue) {
-                                                    const updatedDesignations = [...employeeDesignations];
-                                                    updatedDesignations[index].designationName = '';
+                                                    // Create a deep copy and clear designationName
+                                                    const updatedDesignations = employeeDesignations.map((designation, i) => {
+                                                        if (i === index) {
+                                                            return { ...designation, designationName: '' };
+                                                        }
+                                                        return designation;
+                                                    });
                                                     setLocalEmployeeDesignations(updatedDesignations);
                                                 }
                                             }}

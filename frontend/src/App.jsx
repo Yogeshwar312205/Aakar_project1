@@ -94,6 +94,8 @@ const App = () => {
         pauseOnHover
         theme="light"
         transition={Bounce}
+        enableMultiContainer={false}
+        containerId="main"
       />
       <Router>
         <Routes>

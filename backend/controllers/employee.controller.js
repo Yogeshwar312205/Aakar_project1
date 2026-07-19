@@ -488,11 +488,25 @@ export const editEmployeeWithRelations = asyncHandler(async (req, res) => {
                     continue;
                 }
 
-                // If designationId is 0 or missing, create a new designation
-                if ((!designationId || designationId === 0) && designationName) {
-                    const insertDesigQuery = `INSERT INTO designation (designationName) VALUES (?)`;
-                    const [desigInsertResult] = await connection.promise().query(insertDesigQuery, [designationName]);
-                    designationId = desigInsertResult.insertId;
+                // If designationId is null/0 but we have a name, try to find existing designation
+                if ((!designationId || designationId === 0 || designationId === null) && designationName) {
+                    // Try to find existing designation by name
+                    const [existingDesig] = await connection.promise().query(
+                        'SELECT designationId FROM designation WHERE designationName = ?',
+                        [designationName]
+                    );
+                    
+                    if (existingDesig.length > 0) {
+                        // Use existing designation
+                        designationId = existingDesig[0].designationId;
+                        console.log(`Found existing designation: ${designationName} (ID: ${designationId})`);
+                    } else {
+                        // Create new designation
+                        const insertDesigQuery = `INSERT INTO designation (designationName) VALUES (?)`;
+                        const [desigInsertResult] = await connection.promise().query(insertDesigQuery, [designationName]);
+                        designationId = desigInsertResult.insertId;
+                        console.log(`Created new designation: ${designationName} (ID: ${designationId})`);
+                    }
                 }
 
                 const insertJobProfileQuery = `INSERT INTO employeeDesignation (employeeId, designationId, departmentId, managerId) VALUES (?, ?, ?, ?)`;

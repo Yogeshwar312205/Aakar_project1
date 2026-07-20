@@ -1,21 +1,26 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
-import { FiEdit, FiUser } from 'react-icons/fi'
+import { FiEdit, FiUser, FiLock } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
+import ChangePassword from '../components/ChangePassword/ChangePassword'
 
 const Profile = () => {
   // Getting user data from Redux state
   const user = useSelector((state) => state.auth.user)
   const jobProfiles = useSelector((state) => state.auth.jobProfiles)
   const navigate = useNavigate()
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+
   return (
     <div className="profile-container px-24 py-8">
       <div className={`flex items-center justify-between`}>
         <h1 className="text-4xl font-bold">Profile</h1>
-        {/*<button onClick={() => navigate("/edit")}*/}
-        {/*        className={`flex p-1 items-center justify-between w-max py-2 px-4 rounded-md text-white font-semibold gap-3 bg-[#3249D7] hover:bg-[#5B6DDF]`}>*/}
-        {/*    <FiEdit /> Edit Profile*/}
-        {/*</button>*/}
+        <button
+          onClick={() => setChangePasswordOpen(true)}
+          className={`flex p-1 items-center justify-between w-max py-2 px-4 rounded-md text-white font-semibold gap-3 bg-[#0061A1] hover:bg-[#004d80]`}
+        >
+          <FiLock /> Change Password
+        </button>
       </div>
       {/* Displaying user avatar */}
       <div className="avatar mt-4 flex items-center space-x-4">
@@ -58,6 +63,12 @@ const Profile = () => {
           </ul>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePassword
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </div>
   )
 }

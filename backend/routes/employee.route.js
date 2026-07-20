@@ -6,6 +6,7 @@ import {
     deleteEmployee,
     getAllEmployees,
     getCurrentEmployeeAccess,
+    changePassword,
     loginEmployee,
     logoutEmployee,
     editEmployeeWithRelations, importEmployees,
@@ -22,6 +23,7 @@ router.post('/deleteEmployee', deleteEmployee)
 // router.post('/updateEmployee', updateEmployee)
 router.get('/getAllEmployees', getAllEmployees)
 router.get('/:employeeId/access', authMiddleware, getCurrentEmployeeAccess)
+router.put('/:employeeId/change-password', authMiddleware, changePassword)
 router.post('/moveEmployee', moveEmployee)
 router.post('/deleteMultipleEmployees', deleteMultipleEmployees)
 router.put('/:id/with-relations', editEmployeeWithRelations);

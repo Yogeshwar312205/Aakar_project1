@@ -583,6 +583,76 @@ export const getCurrentEmployeeAccess = asyncHandler(async (req, res) => {
     }
 });
 
+export const changePassword = asyncHandler(async (req, res) => {
+    const { employeeId } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    console.log('=== CHANGE PASSWORD REQUEST ===');
+    console.log('Employee ID:', employeeId);
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current password and new password are required" });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ message: "New password must be at least 6 characters long" });
+    }
+
+    try {
+        // Get current employee data
+        const [employee] = await connection.promise().query(
+            "SELECT employeeId, employeePassword, employeeEndDate FROM employee WHERE employeeId = ?",
+            [employeeId]
+        );
+
+        if (employee.length === 0) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        const employeeData = employee[0];
+
+        // Check if account is deactivated
+        if (employeeData.employeeEndDate) {
+            const endDate = new Date(employeeData.employeeEndDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            endDate.setHours(0, 0, 0, 0);
+            
+            if (endDate <= today) {
+                return res.status(403).json({ message: "Account has been deactivated" });
+            }
+        }
+
+        // Verify current password
+        const isPasswordValid = await bcrypt.compare(currentPassword, employeeData.employeePassword);
+        
+        if (!isPasswordValid) {
+            console.log('❌ Current password incorrect');
+            return res.status(401).json({ message: "Current password is incorrect" });
+        }
+
+        console.log('✅ Current password verified');
+
+        // Hash new password
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        console.log('✅ New password hashed');
+
+        // Update password
+        await connection.promise().query(
+            "UPDATE employee SET employeePassword = ? WHERE employeeId = ?",
+            [hashedNewPassword, employeeId]
+        );
+
+        console.log('✅ Password updated successfully');
+
+        res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+        console.error("Error changing password:", error.message);
+        res.status(500).json({ message: "Failed to change password: " + error.message });
+    }
+});
+
 export const getAllEmployees = asyncHandler(async (req, res) => {
     const query = `
     SELECT

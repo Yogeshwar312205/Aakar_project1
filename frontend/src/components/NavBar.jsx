@@ -19,7 +19,9 @@ const NavBar = () => {
   }
 
   const toggleDropdown = () => {
+    console.log('🔵 Profile icon clicked, current state:', dropdownOpen)
     setDropdownOpen(!dropdownOpen)
+    console.log('🔵 Dropdown should now be:', !dropdownOpen)
   }
 
   useEffect(() => {
@@ -65,15 +67,29 @@ const NavBar = () => {
                   <div
                     ref={dropdownRef}
                     className="dropdown-menu bg-white shadow-md rounded-md p-2"
+                    style={{
+                      position: 'absolute',
+                      top: '45px',
+                      right: '0',
+                      backgroundColor: 'white',
+                      zIndex: 9999,
+                      border: '2px solid red', // Temporary - to see if it renders
+                    }}
                   >
                     <button
-                      onClick={() => navigate('/profile')}
+                      onClick={() => {
+                        console.log('My Profile clicked')
+                        navigate('/profile')
+                      }}
                       className={`flex items-center justify-start gap-3`}
                     >
                       <FiUser className={`ml-3`} /> My Profile
                     </button>
                     <button
-                      onClick={handleLogout}
+                      onClick={() => {
+                        console.log('Logout clicked')
+                        handleLogout()
+                      }}
                       className={`flex items-center justify-start gap-3`}
                     >
                       <FiLogOut className={`ml-3`} /> Logout

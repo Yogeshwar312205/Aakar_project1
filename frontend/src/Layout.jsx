@@ -13,9 +13,9 @@ const Layout = () => {
     return (
         <div className="layout-container">
             {isAuthenticated && <Sidebar />}
-            <div className="main-content">
+            <div className="layout-grid">
                 {isAuthenticated && <Navbar />}
-                <div className="content-area bg-green-600">
+                <div className="content-area">
                     <Outlet />
                 </div>
             </div>

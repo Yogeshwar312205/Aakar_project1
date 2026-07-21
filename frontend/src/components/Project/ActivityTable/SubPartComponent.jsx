@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import axios from 'axios'
+import { activityCache } from '../../../utils/activityCache'
 // InfoCard component for showing status reason, using portal for precise positioning
 function StatusInfoCard({ reason, onClose, anchorRef, onMarkCompleted, onMarkPending, currentStatus }) {
   const [pos, setPos] = useState({ top: 0, left: 0 })
@@ -73,12 +75,9 @@ function StatusInfoCard({ reason, onClose, anchorRef, onMarkCompleted, onMarkPen
   return createPortal(card, document.body)
 }
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchActivities, fetchActivitiesBySubstageId, mapActivityToSubstage, unmapActivityFromSubstage } from '../../../features/activitiesSlice'
+import { fetchActivities, fetchActivitiesBySubstageId, fetchActivitiesBatch, mapActivityToSubstage, unmapActivityFromSubstage } from '../../../features/activitiesSlice'
 import TableComponent from '../../Table/TableComponent'
-
 import { FaCheckCircle, FaRegCircle } from 'react-icons/fa'
-
-import axios from 'axios'
 
 export default function SubPartComponent({ tableMode = true, editMode = false }) {
   // For info card popup
@@ -93,6 +92,11 @@ export default function SubPartComponent({ tableMode = true, editMode = false })
         activityName,
         status: newStatus,
       }, { withCredentials: true })
+      
+      // Invalidate cache for this substage
+      activityCache.invalidate(`substage_${substageId}`);
+      console.log('🗑️ Cache invalidated for substage after status update:', substageId);
+      
       // Refresh activities for this substage
       dispatch(fetchActivitiesBySubstageId(substageId))
       setInfoCard((prev) => ({ ...prev, currentStatus: newStatus }))
@@ -116,31 +120,32 @@ export default function SubPartComponent({ tableMode = true, editMode = false })
   const rowsRef = useRef(null)
   const colsRef = useRef(null)
 
-  // fetch activities for each active substage, with per-substage loading indicators
+  // Batch fetch activities for all active substages - PERFORMANCE FIX
   useEffect(() => {
-    const fetchFor = async (id) => {
-      try {
-        setLoadingMap((p) => ({ ...p, [id]: true }))
-        await dispatch(fetchActivitiesBySubstageId(id))
-      } catch (e) {
-        console.error('fetch activities failed for', id, e)
-      } finally {
-        setLoadingMap((p) => {
-          const c = { ...p }
-          delete c[id]
-          return c
-        })
-      }
-    }
+    // Collect substage IDs that don't have activities loaded yet
+    const substageIds = activeSubStages
+      .map(sub => sub.substageId ?? sub.subStageId)
+      .filter(id => id && !activitiesBySubstage[id]);
 
-    activeSubStages.forEach((sub) => {
-      const id = sub.substageId ?? sub.subStageId
-      if (!id) return
-      if (!activitiesBySubstage[id] && !loadingMap[id]) {
-        fetchFor(id)
+    // If no substages need loading, skip
+    if (substageIds.length === 0) return;
+
+    console.log('📦 Batch fetching activities for', substageIds.length, 'substages');
+
+    // Use batch fetch instead of individual calls
+    const fetchBatch = async () => {
+      try {
+        setLoadingMap({ batch: true });
+        await dispatch(fetchActivitiesBatch(substageIds));
+      } catch (error) {
+        console.error('❌ Batch fetch failed:', error);
+      } finally {
+        setLoadingMap({});
       }
-    })
-  }, [activeSubStages, activitiesBySubstage, loadingMap, dispatch])
+    };
+
+    fetchBatch();
+  }, [activeSubStages.length, dispatch]); // Only depend on count to avoid excessive re-fetches
 
   // derive unique activity columns
   const masterActivities = useMemo(() => {

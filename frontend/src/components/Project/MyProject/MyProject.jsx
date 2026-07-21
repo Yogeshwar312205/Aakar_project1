@@ -88,12 +88,12 @@ const MyProject = () => {
       }
     }
 
-    // Refresh every 5 seconds when page is visible
+    // Refresh every 30 seconds when page is visible (reduced from 5 seconds)
     intervalId = setInterval(() => {
       if (!document.hidden) {
         refreshData()
       }
-    }, 5000)
+    }, 30000) // Changed from 5000ms to 30000ms (30 seconds)
 
     // Listen for visibility changes
     document.addEventListener('visibilitychange', handleVisibilityChange)

@@ -240,18 +240,55 @@ const UpdateProject = () => {
       // 1. Delete stages marked for deletion
       if (projectAccess.stage.delete) {
         for (const stageId of deletedStageIds) {
-          await dispatch(deleteStage(stageId)).unwrap()
+          try {
+            await dispatch(deleteStage(stageId)).unwrap()
+          } catch (error) {
+            // If stage doesn't exist (404), skip it silently
+            if (error?.response?.status === 404 || error?.code === 'ERR_BAD_REQUEST') {
+              console.log(`Stage ${stageId} not found in database, skipping deletion`)
+              continue
+            }
+            // For other errors, throw to stop the process
+            throw error
+          }
         }
       }
 
       // 2. Delete substages marked for deletion
       if (projectAccess.substage.delete) {
-        for (const substageId of deletedSubstageIds) {
-          await dispatch(deleteSubStage(substageId)).unwrap()
+        // Filter out tempIds (they start with 'temp-' or 'temp_') and ensure only real DB IDs are deleted
+        const validSubstageIds = deletedSubstageIds.filter(id => {
+          const idStr = String(id)
+          // Skip if it's a tempId
+          if (idStr.startsWith('temp-') || idStr.startsWith('temp_')) {
+            console.log(`Skipping tempId: ${id}`)
+            return false
+          }
+          // Skip if it exists in pendingSubstages
+          if (pendingSubstages.some(s => s.tempId === id || s.substageId === id)) {
+            console.log(`Skipping pending substage: ${id}`)
+            return false
+          }
+          return true
+        })
+
+        for (const substageId of validSubstageIds) {
+          try {
+            await dispatch(deleteSubStage(substageId)).unwrap()
+          } catch (error) {
+            // If substage doesn't exist (404), skip it silently
+            if (error?.response?.status === 404 || error?.code === 'ERR_BAD_REQUEST') {
+              console.log(`Substage ${substageId} not found in database, skipping deletion`)
+              continue
+            }
+            // For other errors, throw to stop the process
+            throw error
+          }
         }
       }
 
-      // 3. Save pending stages to database
+      // 3. Save pending stages to database and map tempIds to real IDs
+      const stageIdMapping = {} // Map tempId to real stageId
       if (projectAccess.stage.add) {
         for (const stage of pendingStages) {
           const stageData = {
@@ -267,20 +304,54 @@ const UpdateProject = () => {
             createdBy: user.employeeId,
             progress: stage.progress || 0,
           }
-          await dispatch(addStage(stageData)).unwrap()
+          const result = await dispatch(addStage(stageData)).unwrap()
+          
+          // Map tempId to real database stageId
+          // Backend returns insertId from the MySQL INSERT operation
+          const newStageId = result?.insertId || result?.stageId || result?.id
+          if (stage.tempId && newStageId) {
+            stageIdMapping[stage.tempId] = newStageId
+            console.log(`✅ Mapped tempId ${stage.tempId} to real stageId ${newStageId}`)
+          } else {
+            console.warn('Warning: Could not map tempId for stage:', stage, 'Result:', result)
+          }
         }
       }
 
-      // 4. Save pending substages to database
+      // 4. Save pending substages to database with corrected stageIds
       if (projectAccess.substage.add && pendingSubstages.length > 0) {
         for (const substage of pendingSubstages) {
           const ownerString =
             substage.owner ||
             `${user.employeeName || 'User'}(${user.customEmployeeId || user.employeeId})`
 
+          // If substage's stageId is a tempId, replace it with the real stageId
+          let realStageId = substage.stageId
+          const stageIdStr = String(substage.stageId)
+          if ((stageIdStr.startsWith('temp-') || stageIdStr.startsWith('temp_')) && stageIdMapping[substage.stageId]) {
+            realStageId = stageIdMapping[substage.stageId]
+            console.log(`✅ Replacing substage's tempId ${substage.stageId} with real stageId ${realStageId}`)
+          } else if (stageIdStr.startsWith('temp-') || stageIdStr.startsWith('temp_')) {
+            // TempId exists but no mapping found - log error
+            console.error(`❌ ERROR: No mapping found for tempId ${substage.stageId}. Available mappings:`, stageIdMapping)
+            throw new Error(`Cannot save substage: Stage tempId ${substage.stageId} has no mapping to real stageId`)
+          }
+
+          // Similarly, handle parentSubstageId if it's a tempId (for nested substages)
+          let realParentSubstageId = substage.parentSubstageId
+          if (realParentSubstageId) {
+            const parentIdStr = String(realParentSubstageId)
+            if (parentIdStr.startsWith('temp-') || parentIdStr.startsWith('temp_')) {
+              // This would require tracking substage tempId mappings as well
+              // For now, set to null if parent is a tempId (rare edge case)
+              console.warn(`⚠️ Parent substage has tempId ${realParentSubstageId}, setting to null`)
+              realParentSubstageId = null
+            }
+          }
+
           const substageData = {
-            stageId: substage.stageId,
-            parentSubstageId: substage.parentSubstageId || null,
+            stageId: realStageId, // Use mapped real stageId
+            parentSubstageId: realParentSubstageId || null,
             substagename: substage.substageName,
             startDate: substage.startDate || new Date().toISOString().split('T')[0],
             endDate: substage.endDate || new Date().toISOString().split('T')[0],
@@ -301,7 +372,21 @@ const UpdateProject = () => {
         // Refresh substages to get updated parent completion status from backend
         // The backend automatically marks parents as incomplete when children are added
         if (selectedStageId) {
-          await dispatch(getActiveSubStagesByStageId(selectedStageId)).unwrap()
+          // If selectedStageId is a tempId, get the real stageId from mapping
+          let realSelectedStageId = selectedStageId
+          const selectedIdStr = String(selectedStageId)
+          if ((selectedIdStr.startsWith('temp-') || selectedIdStr.startsWith('temp_')) && stageIdMapping[selectedStageId]) {
+            realSelectedStageId = stageIdMapping[selectedStageId]
+            console.log(`Using mapped real stageId ${realSelectedStageId} for refresh instead of ${selectedStageId}`)
+          }
+          
+          // Only refresh if we have a valid real stageId (not a tempId)
+          const realIdStr = String(realSelectedStageId)
+          if (!realIdStr.startsWith('temp-') && !realIdStr.startsWith('temp_')) {
+            await dispatch(getActiveSubStagesByStageId(realSelectedStageId)).unwrap()
+          } else {
+            console.log(`Skipping substage refresh for tempId ${selectedStageId} - will be refreshed on next page load`)
+          }
         }
       }
 
@@ -492,8 +577,11 @@ const UpdateProject = () => {
     if (window.confirm('Delete this substage and all its children?')) {
       // Check if it's a pending substage (not yet in DB)
       const isPending = pendingSubstages.some(s => s.tempId === substageId)
+      // Also check if it's a tempId (starts with 'temp-' or 'temp_')
+      const idStr = String(substageId)
+      const isTempId = idStr.startsWith('temp-') || idStr.startsWith('temp_')
 
-      if (isPending) {
+      if (isPending || isTempId) {
         // Remove from pending substages (and any children)
         setPendingSubstages(pendingSubstages.filter(
           s => s.tempId !== substageId && s.parentSubstageId !== substageId
@@ -501,8 +589,11 @@ const UpdateProject = () => {
         toast.info('Substage removed')
       } else {
         // Mark for deletion (will be deleted on Save Details)
-        setDeletedSubstageIds([...deletedSubstageIds, substageId])
-        toast.info('Substage marked for deletion (pending save)')
+        // Only add if it's not already in the list and it's a valid DB ID
+        if (!deletedSubstageIds.includes(substageId)) {
+          setDeletedSubstageIds([...deletedSubstageIds, substageId])
+          toast.info('Substage marked for deletion (pending save)')
+        }
       }
     }
   }

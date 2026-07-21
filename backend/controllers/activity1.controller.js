@@ -76,15 +76,32 @@ export const getActivitiesBySubStageId = asyncHandler(async (req, res) => {
 // Get history activities by activity ID
 export const getHistoryActivitiesByActivityId = asyncHandler(async (req, res) => {
   const activityId = req.params.id
-  const query = `SELECT a.*, eo.employeeName AS owner, cb.employeeName AS createdBy, eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById
+  
+  const query = `
+    SELECT a.*, eo.employeeName AS owner, cb.employeeName AS createdBy, 
+           eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById,
+           'history' as recordType
     FROM activity1 a
     INNER JOIN employee eo ON a.owner = eo.employeeId
     INNER JOIN employee cb ON a.createdBy = cb.employeeId
     WHERE a.historyOf = ?
-    ORDER BY a.timestamp DESC;`
+    
+    UNION ALL
+    
+    SELECT sa.*, eo2.employeeName AS owner, cb2.employeeName AS createdBy,
+           eo2.customEmployeeId AS ownerId, cb2.customEmployeeId AS createdById,
+           'current' as recordType
+    FROM substage_activity sa
+    LEFT JOIN employee eo2 ON sa.owner = eo2.employeeId
+    LEFT JOIN employee cb2 ON sa.createdBy = cb2.employeeId
+    WHERE sa.activityId = ?
+    
+    ORDER BY timestamp DESC;
+  `
 
-  db.query(query, [activityId], (err, data) => {
+  db.query(query, [activityId, activityId], (err, data) => {
     if (err) {
+      console.error('Error retrieving history activities:', err);
       res.status(500).send(new ApiError(500, 'Error retrieving history activities'))
       return
     }
@@ -100,6 +117,7 @@ export const getHistoryActivitiesByActivityId = asyncHandler(async (req, res) =>
       endDate: activity.endDate
         ? new Date(activity.endDate).toLocaleDateString('en-CA')
         : null,
+      isCurrent: activity.recordType === 'current'
     }))
     res
       .status(200)
@@ -182,6 +200,58 @@ export const getActiveActivitiesBySubStageId = asyncHandler(async (req, res) => 
         .json(new ApiResponse(200, activities, 'Active activities retrieved successfully.'))
     })
   })
+})
+
+// Get activities for multiple substages (batch operation)
+export const getActivitiesForMultipleSubstages = asyncHandler(async (req, res) => {
+  const { substageIds } = req.body;
+  
+  if (!substageIds || !Array.isArray(substageIds) || substageIds.length === 0) {
+    return res.status(400).json(new ApiResponse(400, {}, 'Substage IDs array required'));
+  }
+
+  console.log('Batch fetching activities for substages:', substageIds);
+
+  const placeholders = substageIds.map(() => '?').join(',');
+  
+  const query = `
+    SELECT a.*, eo.employeeName AS owner, cb.employeeName AS createdBy, 
+           eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById
+    FROM substage_activity a
+    LEFT JOIN employee eo ON a.owner = eo.employeeId
+    LEFT JOIN employee cb ON a.createdBy = cb.employeeId
+    WHERE a.substageId IN (${placeholders})
+    ORDER BY a.substageId, a.timestamp DESC
+  `;
+
+  db.query(query, substageIds, (err, data) => {
+    if (err) {
+      console.error('Error fetching batch activities:', err);
+      return res.status(500).json(new ApiResponse(500, {}, 'Error retrieving activities'));
+    }
+
+    // Group by substageId for frontend convenience
+    const grouped = {};
+    data.forEach(activity => {
+      const subId = activity.substageId;
+      if (!grouped[subId]) grouped[subId] = [];
+      grouped[subId].push({
+        ...activity,
+        startDate: activity.startDate 
+          ? new Date(activity.startDate).toLocaleDateString('en-CA') 
+          : null,
+        endDate: activity.endDate 
+          ? new Date(activity.endDate).toLocaleDateString('en-CA') 
+          : null,
+      });
+    });
+
+    console.log(`Batch fetch completed: ${Object.keys(grouped).length} substages, ${data.length} total activities`);
+
+    res.status(200).json(
+      new ApiResponse(200, grouped, 'Activities retrieved successfully')
+    );
+  });
 })
 
 // Get activities by project number

@@ -1,6 +1,7 @@
 // src/features/activitiesSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
+import { activityCache } from '../utils/activityCache'
 
 const API_BASE_URL = 'http://localhost:3000/api/v1/activity'
 
@@ -15,18 +16,70 @@ export const fetchActivities = createAsyncThunk(
 export const fetchActivitiesBySubstageId = createAsyncThunk(
   'activities/fetchBySubstage',
   async (substageId) => {
+    // Check cache first
+    const cacheKey = `substage_${substageId}`;
+    const cached = activityCache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Using cached activities for substage:', substageId);
+      return { substageId, payload: { data: cached } };
+    }
+
     try {
       const resp = await axios.get(
         `${API_BASE_URL}/activeActivities/${substageId}`,
         { withCredentials: true }
       )
+      
+      const activities = resp.data?.data || [];
+      
+      // Cache the result
+      activityCache.set(cacheKey, activities);
+      console.log('📦 Cached activities for substage:', substageId);
+      
       return { substageId, payload: resp.data }
     } catch (err) {
       // If backend returns 404 for no activities, treat as empty list instead of erroring
       if (err?.response?.status === 404) {
+        activityCache.set(cacheKey, []);
         return { substageId, payload: { data: [] } }
       }
       throw err
+    }
+  }
+)
+
+// NEW: Batch fetch activities for multiple substages
+export const fetchActivitiesBatch = createAsyncThunk(
+  'activities/fetchBatch',
+  async (substageIds) => {
+    if (!substageIds || substageIds.length === 0) {
+      return {};
+    }
+
+    console.log('🚀 Batch fetching activities for', substageIds.length, 'substages');
+
+    try {
+      const resp = await axios.post(
+        `${API_BASE_URL}/batch-substage-activities`,
+        { substageIds },
+        { withCredentials: true }
+      );
+
+      const grouped = resp.data?.data || {};
+      
+      // Cache each substage's activities
+      Object.entries(grouped).forEach(([subId, activities]) => {
+        const cacheKey = `substage_${subId}`;
+        activityCache.set(cacheKey, activities);
+        console.log('📦 Cached', activities.length, 'activities for substage:', subId);
+      });
+
+      console.log('✅ Batch fetch completed:', Object.keys(grouped).length, 'substages');
+
+      return grouped;
+    } catch (err) {
+      console.error('❌ Batch fetch failed:', err);
+      throw err;
     }
   }
 )
@@ -52,6 +105,11 @@ export const mapActivityToSubstage = createAsyncThunk(
   'activities/mapToSubstage',
   async ({ substageId, activityName }, thunkAPI) => {
     const resp = await axios.post(`${API_BASE_URL}/substage-activity`, { substageId, activityName }, { withCredentials: true })
+    
+    // Invalidate cache for this substage
+    activityCache.invalidate(`substage_${substageId}`);
+    console.log('🗑️ Cache invalidated for substage:', substageId);
+    
     // Refresh activities for this substage so frontend gets canonical activityIds from backend
     try {
       thunkAPI.dispatch(fetchActivitiesBySubstageId(substageId))
@@ -70,6 +128,11 @@ export const unmapActivityFromSubstage = createAsyncThunk(
     if (activityId) params.activityId = activityId
     else if (activityName) params.activityName = activityName
     const resp = await axios.delete(`${API_BASE_URL}/substage-activity`, { params, withCredentials: true })
+    
+    // Invalidate cache for this substage
+    activityCache.invalidate(`substage_${substageId}`);
+    console.log('🗑️ Cache invalidated for substage:', substageId);
+    
     try {
       thunkAPI.dispatch(fetchActivitiesBySubstageId(substageId))
     } catch (e) {
@@ -89,7 +152,15 @@ const initialState = {
 const activitiesSlice = createSlice({
   name: 'activities',
   initialState,
-  reducers: {},
+  reducers: {
+    setBatchActivities: (state, action) => {
+      // action.payload is { [substageId]: [activities] }
+      state.activitiesBySubstage = {
+        ...state.activitiesBySubstage,
+        ...action.payload
+      };
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchActivities.pending, (state) => {
@@ -173,9 +244,28 @@ const activitiesSlice = createSlice({
       .addCase(deleteActivity.rejected, (state, action) => {
         state.error = action.error?.message || 'Failed to delete activity'
       })
+
+      // Batch fetch cases
+      .addCase(fetchActivitiesBatch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchActivitiesBatch.fulfilled, (state, action) => {
+        state.loading = false;
+        // action.payload is { [substageId]: [activities] }
+        state.activitiesBySubstage = {
+          ...state.activitiesBySubstage,
+          ...action.payload
+        };
+      })
+      .addCase(fetchActivitiesBatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error?.message || 'Failed to batch fetch activities';
+      })
   },
 })
 
+export const { setBatchActivities } = activitiesSlice.actions;
 export default activitiesSlice.reducer
 
 

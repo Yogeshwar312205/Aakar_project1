@@ -11,6 +11,7 @@ import {
   getHistoryActivitiesByActivityId,
   getActiveActivitiesBySubStageId,
   getActivitiesByProjectNumber,
+  getActivitiesForMultipleSubstages,
   updateActivity1,
   createActivity1,
   deleteActivity1,
@@ -37,6 +38,9 @@ router.delete('/deleteactivity/:id', deleteActivity); //
 
 // Get all activities for a substage
 router.get('/activities/:id', getActivitiesBySubStageId)
+
+// Batch get activities for multiple substages
+router.post('/batch-substage-activities', getActivitiesForMultipleSubstages)
 
 // Get history activities for an activity
 router.get('/historyActivities/:id', getHistoryActivitiesByActivityId)

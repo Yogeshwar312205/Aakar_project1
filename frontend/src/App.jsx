@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import {
   BrowserRouter as Router,
@@ -38,6 +38,7 @@ import EmployeeTrainingEnrolled from './pages/Trainer/EmployeeTrainingEnrolled.j
 import ManagerEmployeeTrainingEnrolled from './pages/Manager/ManagerEmployeeTrainingEnrolled.jsx'
 import SendConformEmpToTraining from './pages/Manager/SendConformEmpToTraining.jsx'
 import AccessSyncWrapper from './components/AccessSyncWrapper'
+import { setupAxiosInterceptors } from './utils/axiosInterceptor'
 
 //Ticket
 import Dashboard from './ticketComponents/Dashboard/Dashboard.jsx'
@@ -80,6 +81,11 @@ import BOMPage from './pages/BOM/BOMPage/BOMPage.jsx'
 export const API_BASE_URL = `http://localhost:3000`
 const App = () => {
   const { isAuthenticated } = useSelector((state) => state.auth)
+
+  // Setup axios interceptor for automatic token refresh
+  useEffect(() => {
+    setupAxiosInterceptors();
+  }, []);
 
   return (
     <>

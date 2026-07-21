@@ -9,6 +9,7 @@ import {
     changePassword,
     loginEmployee,
     logoutEmployee,
+    refreshAccessToken,
     editEmployeeWithRelations, importEmployees,
 } from '../controllers/employee.controller.js'
 import { authMiddleware } from '../middleware/authMiddleware.js'
@@ -19,6 +20,7 @@ const router = Router()
 router.post('/addEmployee', addEmployee)
 router.post('/loginEmployee', loginEmployee)
 router.post('/logoutEmployee', authMiddleware, logoutEmployee)
+router.post('/refreshToken', refreshAccessToken)
 router.post('/deleteEmployee', deleteEmployee)
 // router.post('/updateEmployee', updateEmployee)
 router.get('/getAllEmployees', getAllEmployees)

@@ -7,7 +7,7 @@ export const generateAccessToken = (user) => {
             employeeEmail: user.employeeEmail,
         },
         process.env.JWT_ACCESS_SECRET,
-        { expiresIn: '30m' }
+        { expiresIn: '8h' } // Extended to 8 hours for better UX
     );
 };
 

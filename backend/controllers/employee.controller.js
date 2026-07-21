@@ -226,6 +226,59 @@ export const logoutEmployee = asyncHandler(async (req, res) => {
     }
 });
 
+// Refresh access token using refresh token
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+    try {
+        const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+
+        if (!incomingRefreshToken) {
+            return res.status(401).json({ message: "Refresh token not found" });
+        }
+
+        // Verify refresh token
+        const decoded = jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_SECRET);
+
+        // Get employee from database
+        const [employeeRows] = await connection.promise().query(
+            'SELECT * FROM employee WHERE customEmployeeId = ?',
+            [decoded.customEmployeeId]
+        );
+
+        if (employeeRows.length === 0) {
+            return res.status(401).json({ message: "Invalid refresh token" });
+        }
+
+        const employee = employeeRows[0];
+
+        // Check if refresh token matches stored token
+        if (employee.employeeRefreshToken !== incomingRefreshToken) {
+            return res.status(401).json({ message: "Refresh token mismatch" });
+        }
+
+        // Generate new access token
+        const newAccessToken = await generateAccessToken(employee);
+
+        // Set new access token cookie
+        const cookieOptions = {
+            httpOnly: true,
+            secure: true,
+            sameSite: "None",
+        };
+
+        return res
+            .status(200)
+            .cookie("accessToken", newAccessToken, cookieOptions)
+            .json(
+                new ApiResponse(200, {
+                    accessToken: newAccessToken,
+                }, "Access token refreshed successfully")
+            );
+    } catch (error) {
+        console.error("Error refreshing token:", error.message);
+        return res.status(401).json({ message: "Invalid or expired refresh token" });
+    }
+});
+
 export const addEmployee = asyncHandler(async (req, res) => {
     try {
         const employee = req.body;

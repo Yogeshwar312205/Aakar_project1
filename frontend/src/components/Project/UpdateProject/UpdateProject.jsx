@@ -121,7 +121,13 @@ const UpdateProject = () => {
   // Load substages when a stage is selected
   useEffect(() => {
     if (selectedStageId) {
-      dispatch(getActiveSubStagesByStageId(selectedStageId))
+      // Only fetch substages if selectedStageId is a real DB ID (not a tempId)
+      const stageIdStr = String(selectedStageId)
+      if (!stageIdStr.startsWith('temp-') && !stageIdStr.startsWith('temp_')) {
+        dispatch(getActiveSubStagesByStageId(selectedStageId))
+      } else {
+        console.log(`Skipping substage fetch for tempId: ${selectedStageId} (new stage not yet saved)`)
+      }
     }
   }, [dispatch, selectedStageId])
 

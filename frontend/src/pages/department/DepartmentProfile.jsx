@@ -5,53 +5,73 @@ import { useDispatch, useSelector } from 'react-redux'
 import TableComponent from '../../components/Table/TableComponent.jsx'
 import { MdAutoDelete } from 'react-icons/md'
 import '../employee/EmployeeDashboard.css'
-import { deleteDepartment } from '../..//features/departmentSlice.js'
+import {
+  deleteDepartment,
+  fetchAllDepartments,
+} from '../..//features/departmentSlice.js'
 import { notify } from '../../components/Toast/SuccessNotify.js'
 import moment from 'moment'
 import Modal from 'react-modal'
 import {
+  getAllEmployees,
   deleteMultipleEmployees,
   moveEmployee,
 } from '../..//features/employeeSlice.js'
 import { getHRManagementAccess } from '../../utils/hrAccess.js'
 
+// Set the app element for accessibility
+Modal.setAppElement('#root')
+
 function DepartmentProfile() {
   const { id } = useParams()
   const dispatch = useDispatch() // Use dispatch hook to dispatch actions
-  const { employees, loading, error } = useSelector((state) => state.employee)
-  const allDepartmentData = useSelector((state) => state.department) // Fetch employees from Redux store
-  const departmentData = allDepartmentData.departments
-  const workingDepartments = departmentData.working
+  const navigate = useNavigate()
+  
+  // All useState hooks MUST be at the top, before any conditional returns
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedEmployees, setSelectedEmployees] = useState([])
   const [showSecondModal, setShowSecondModal] = useState(false)
   const [showDeleteEmployeeModal, setShowDeleteEmployeeModal] = useState(false)
   const [selectedDepartment, setSelectedDepartment] = useState(null)
-  const [showDeleteDepartmentModal, setShowDeleteDepartmentModal] =
-    useState(false)
-
+  const [showDeleteDepartmentModal, setShowDeleteDepartmentModal] = useState(false)
+  
+  // All useSelector hooks
+  const { employees, loading, error } = useSelector((state) => state.employee)
+  const allDepartmentData = useSelector((state) => state.department) // Fetch employees from Redux store
   const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
   const hrAccess = getHRManagementAccess(employeeAccess);
+  
+  const departmentData = allDepartmentData.departments
+  const workingDepartments = departmentData.working
 
-  if (!workingDepartments || workingDepartments.length === 0) {
+  // All useEffect hooks
+  useEffect(() => {
+    dispatch(fetchAllDepartments())
+    dispatch(getAllEmployees())
+  }, [dispatch])
+
+  useEffect(() => {
+    console.log('Selected Employees Updated:', selectedEmployees)
+  }, [selectedEmployees])
+
+  // NOW conditional returns are safe (all hooks called)
+  if (allDepartmentData.loading || loading) {
     return <div>Loading...</div>
   }
 
-  function getDepartmentById(departmentId) {
-    return workingDepartments.find(
-      (department) => department.departmentId === departmentId
-    )
-  }
-
-  const department = getDepartmentById(parseInt(id))
+  const allDepartments = departmentData.all || []
+  const department = allDepartments.find(
+    (department) => department.departmentId === parseInt(id)
+  )
   console.log(department)
 
   if (!department) {
     return <div>Department not found.</div>
   }
 
-  const filteredDepartments = workingDepartments.filter(
-    (dept) => dept.departmentId !== department.departmentId
+  const filteredDepartments = allDepartments.filter(
+    (dept) =>
+      dept.departmentId !== department.departmentId && !dept.departmentEndDate
   )
 
   const filteredEmployees = employees.filter((employeeData) =>
@@ -86,10 +106,6 @@ function DepartmentProfile() {
     })
   }
 
-  useEffect(() => {
-    console.log('Selected Employees Updated:', selectedEmployees)
-  }, [selectedEmployees])
-
   // Show the second modal for department selection
   const handleMoveEmployees = () => {
     if (selectedEmployees.length === 0) {
@@ -110,9 +126,46 @@ function DepartmentProfile() {
     setShowDeleteEmployeeModal(true)
   }
 
-  function confirmDepartmentDelete() {
-    console.log('Deleting Department:', department)
-    handleDelete()
+  async function confirmDepartmentDelete() {
+    console.log('=== confirmDepartmentDelete called ===')
+    console.log('Department:', department)
+    console.log('Department ID:', department?.departmentId)
+    console.log('Filtered Employees:', filteredEmployees)
+    console.log('Filtered Employees Length:', filteredEmployees?.length)
+    
+    // Check if department has employees
+    if (filteredEmployees && filteredEmployees.length > 0) {
+      alert('Please move or delete employees to another department first!')
+      setShowDeleteDepartmentModal(false)
+      return
+    }
+    
+    try {
+      console.log('Attempting to delete department ID:', department.departmentId)
+      
+      // Dispatch delete action and wait for it to complete
+      const result = await dispatch(deleteDepartment(department.departmentId)).unwrap()
+      
+      console.log('Delete successful:', result)
+      
+      // Close modal first
+      setShowDeleteDepartmentModal(false)
+      
+      // Show success message
+      notify('Department closed successfully!')
+      
+      // Navigate to departments page
+      navigate('/departments')
+      
+      // Refresh all departments list after navigation (will be picked up by the departments page)
+      dispatch(fetchAllDepartments())
+      
+    } catch (error) {
+      console.error('Error deleting department:', error)
+      const errorMessage = error?.message || error || 'Unknown error'
+      alert(`Failed to close department: ${errorMessage}`)
+      setShowDeleteDepartmentModal(false)
+    }
   }
 
   function confirmEmployeeDelete() {
@@ -201,8 +254,6 @@ function DepartmentProfile() {
   })
 
   console.log('Processed Employees:', processedRows)
-
-  const navigate = useNavigate()
 
   const columns = [
     { id: 'empId', label: 'Employee ID', align: 'left' },

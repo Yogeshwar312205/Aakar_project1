@@ -4,7 +4,7 @@ import {useDispatch, useSelector} from "react-redux";
 import {FiArrowLeftCircle, FiSave} from "react-icons/fi";
 import TextField from "@mui/material/TextField";
 import {notify} from "../../components/Toast/SuccessNotify.js";
-import {fetchAllWorkingDepartments, updateDepartment} from "../../features/departmentSlice.js";
+import {fetchAllDepartments, updateDepartment} from "../../features/departmentSlice.js";
 
 const EditDesignation = () => {
 
@@ -15,18 +15,24 @@ const EditDesignation = () => {
     console.log(id)
 
     useEffect(() => {
-        dispatch(fetchAllWorkingDepartments());
+        dispatch(fetchAllDepartments());
     }, [dispatch]);
 
     const { departments } = useSelector((state) => state.department);
 
-    console.log(departments.working)
+    console.log(departments.all)
 
     const department = useMemo(() => {
-        return departments.working.find((department) => department.departmentId === parseInt(id));
+        return departments.all.find((department) => department.departmentId === parseInt(id));
     }, [departments, id]);
 
-    const [departmentName, setDepartmentName] = useState(department.departmentName);
+    const [departmentName, setDepartmentName] = useState(department?.departmentName || '');
+
+    useEffect(() => {
+        if (department) {
+            setDepartmentName(department.departmentName || '');
+        }
+    }, [department]);
 
     const handleChange = (e) => {
         setDepartmentName(e.target.value);
@@ -34,6 +40,7 @@ const EditDesignation = () => {
 
 
     const handleSave = () => {
+        if (!department) return;
         dispatch(updateDepartment({ departmentId: department.departmentId, departmentName }))
             .unwrap()
             .then(() => {
@@ -43,6 +50,10 @@ const EditDesignation = () => {
             .catch((err) => {
                 console.log(err);
             })
+    }
+
+    if (!department) {
+        return <div>Loading...</div>;
     }
 
     return (

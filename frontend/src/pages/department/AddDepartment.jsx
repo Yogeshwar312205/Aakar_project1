@@ -7,7 +7,7 @@ import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import {useDispatch} from "react-redux";
-import {addDepartment} from "../..//features/departmentSlice.js";
+import {addDepartment, fetchAllDepartments} from "../..//features/departmentSlice.js";
 import {Bounce, toast} from "react-toastify";
 import {useNavigate} from "react-router-dom";
 
@@ -25,7 +25,6 @@ const AddDepartment = () => {
     const rows = [];
 
     const [departmentName, setDepartmentName] = useState('');
-    const [departmentId, setDepartmentId] = useState('');
     const [departmentStartDate, setDepartmentStartDate] = useState(null);
     const [departmentEndDate, setDepartmentEndDate] = useState(null);
 
@@ -50,7 +49,7 @@ const AddDepartment = () => {
     };
 
     const notify = () =>
-        toast.success('Employee Added Successfully!', {
+        toast.success('Department added successfully!', {
             position: 'top-right',
             autoClose: 5000,
             hideProgressBar: false,
@@ -64,19 +63,49 @@ const AddDepartment = () => {
 
 
     const handleSubmit = () => {
+        if (!departmentName.trim()) {
+            toast.error('Department name is required.');
+            return;
+        }
+
+        const validStartDate = departmentStartDate && dayjs(departmentStartDate).isValid()
+            ? dayjs(departmentStartDate)
+            : null;
+        const validEndDate = departmentEndDate && dayjs(departmentEndDate).isValid()
+            ? dayjs(departmentEndDate)
+            : null;
+
+        if (departmentStartDate && !validStartDate) {
+            toast.error('Department start date is invalid.');
+            return;
+        }
+
+        if (departmentEndDate && !validEndDate) {
+            toast.error('Department end date is invalid.');
+            return;
+        }
+
+        if (validStartDate && validEndDate && (validStartDate.isAfter(validEndDate) || validStartDate.isSame(validEndDate))) {
+            toast.error('Start date should be before the end date.');
+            return;
+        }
+
         const payload = {
-            departmentName,
-            departmentStartDate: departmentStartDate ? departmentStartDate.format('YYYY-MM-DD') : null,
-            departmentEndDate: departmentEndDate ? departmentEndDate.format('YYYY-MM-DD') : null,
+            departmentName: departmentName.trim(),
+            departmentStartDate: validStartDate ? validStartDate.format('YYYY-MM-DD') : null,
+            departmentEndDate: validEndDate ? validEndDate.format('YYYY-MM-DD') : null,
         };
 
         dispatch(addDepartment(payload))
+            .unwrap()
             .then(() => {
                 notify();
+                // Refresh the departments list to ensure it's in sync with database
+                dispatch(fetchAllDepartments());
                 navigate('/departments');
             })
-            .catch((err) => {
-                toast.error('Failed to add department.');
+            .catch((errMessage) => {
+                toast.error(errMessage || 'Failed to add department.');
             })
     };
 
@@ -132,7 +161,11 @@ const AddDepartment = () => {
                                 value={departmentStartDate} // Ensure it's a dayjs object or null
                                 onChange={(newDate) => handleDateChange('start', newDate)}
                                 format="DD/MM/YYYY" // Optional: format displayed in the input box
-                                renderInput={(params) => <TextField {...params} />}
+                                slotProps={{
+                                    textField: {
+                                        variant: "outlined"
+                                    }
+                                }}
                                 sx={{width: "300px"}}
                             />
                         </LocalizationProvider>
@@ -143,7 +176,11 @@ const AddDepartment = () => {
                                 value={departmentEndDate}
                                 onChange={(newDate) => handleDateChange('end', newDate)}
                                 format="DD/MM/YYYY" // Optional: format displayed in the input box
-                                renderInput={(params) => <TextField {...params} />}
+                                slotProps={{
+                                    textField: {
+                                        variant: "outlined"
+                                    }
+                                }}
                                 sx={{width: "300px"}}
                             />
                         </LocalizationProvider>

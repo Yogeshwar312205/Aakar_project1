@@ -10,7 +10,7 @@ export const fetchAllDepartments = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const response = await axios.get(`${BASE_URL}/getAllDepartments`);
-            return response.data;
+            return response.data.data;
         } catch (err) {
             return rejectWithValue(err.response?.data?.message || 'Failed to fetch departments');
         }
@@ -49,9 +49,13 @@ export const addDepartment = createAsyncThunk(
         try {
             // console.log(departmentData);
             const response = await axios.post(`${BASE_URL}/addDepartment`, departmentData);
-            return response.data;
+            return response.data.data;
         } catch (err) {
-            return rejectWithValue(err.response?.data?.message || 'Failed to add department');
+            const backendMessage =
+                err.response?.data?.message ||
+                (Array.isArray(err.response?.data?.errors) ? err.response.data.errors[0] : null) ||
+                err.message;
+            return rejectWithValue(backendMessage || 'Failed to add department');
         }
     }
 );
@@ -59,11 +63,16 @@ export const addDepartment = createAsyncThunk(
 export const deleteDepartment = createAsyncThunk(
     'department/deleteDepartment',
     async (departmentId, { rejectWithValue }) => {
-        // console.log("Redux deleteDepartment", departmentId);
+        console.log("Redux deleteDepartment", departmentId);
         try {
-            const response = await axios.post(`${BASE_URL}/deleteDepartment/`, {deptId: departmentId});
+            const response = await axios.post(
+                `${BASE_URL}/deleteDepartment/`, 
+                { deptId: departmentId },
+                { withCredentials: true } // Add credentials for cookie-based auth
+            );
             return response.data;
         } catch (err) {
+            console.error('Delete department error:', err);
             return rejectWithValue(err.response?.data?.message || 'Failed to delete department');
         }
     }
@@ -132,7 +141,9 @@ const departmentSlice = createSlice({
                 state.departments.closed = action.payload;
             })
             .addCase(addDepartment.fulfilled, (state, action) => {
+                console.log('✅ Department added to Redux state:', action.payload);
                 state.departments.all.push(action.payload);
+                console.log('📊 Total departments in state:', state.departments.all.length);
             })
             .addCase(deleteDepartment.fulfilled, (state, action) => {
                 state.departments.all = state.departments.all.filter(

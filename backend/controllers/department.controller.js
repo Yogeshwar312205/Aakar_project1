@@ -2,7 +2,6 @@ import { connection } from '../db/index.js'
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
-import nameValidate from "../validators/name.validate.js";
 import dateValidate from "../validators/date.validate.js";
 
 // Get all departments
@@ -53,35 +52,56 @@ export const getClosedDepartments = asyncHandler(async (req, res) => {
 // Create a new department
 export const addDepartment = asyncHandler(async (req, res) => {
     const { departmentName, departmentStartDate, departmentEndDate } = req.body;
+    const normalizedDepartmentName = typeof departmentName === "string" ? departmentName.trim() : "";
 
-    // Validate the department name
-    const nameValidationError = nameValidate(departmentName);
-    if (nameValidationError) {
-        return res.status(400).json(new ApiError(400, nameValidationError, [nameValidationError]));
+    // Department naming rules should align with database limits and common department formats.
+    if (!normalizedDepartmentName) {
+        return res.status(400).json(new ApiError(400, 'Department name is required.', ['Department name is required.']));
     }
 
-    // Validate the start date
-    const startDateValidationError = dateValidate(departmentStartDate);
-    if (startDateValidationError) {
-        return res.status(400).json(new ApiError(400, startDateValidationError, [startDateValidationError]));
+    if (normalizedDepartmentName.length > 50) {
+        return res.status(400).json(new ApiError(400, 'Department name should be 50 characters or fewer.', ['Department name should be 50 characters or fewer.']));
+    }
+
+    // Validate optional dates only when they are provided
+    if (departmentStartDate) {
+        const startDateValidationError = dateValidate(departmentStartDate);
+        if (startDateValidationError) {
+            return res.status(400).json(new ApiError(400, startDateValidationError, [startDateValidationError]));
+        }
+    }
+
+    if (departmentEndDate) {
+        const endDateValidationError = dateValidate(departmentEndDate);
+        if (endDateValidationError) {
+            return res.status(400).json(new ApiError(400, endDateValidationError, [endDateValidationError]));
+        }
     }
 
     // Ensure the start date is before the end date
-    const startDate = new Date(departmentStartDate);
+    const startDate = departmentStartDate ? new Date(departmentStartDate) : null;
     const endDate = departmentEndDate ? new Date(departmentEndDate) : null;
 
-    if (endDate !== null && startDate >= endDate) {
+    if (startDate !== null && endDate !== null && startDate >= endDate) {
         return res.status(400).json(new ApiError(400, 'Start date should be before the end date.', ['Start date should be before the end date.']));
     }
 
-    const departmentSlug = departmentName.toLowerCase().replace('/S', '');
+    const departmentSlug = normalizedDepartmentName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-');
+
+    if (!departmentSlug) {
+        return res.status(400).json(new ApiError(400, 'Department name must include letters or numbers.', ['Department name must include letters or numbers.']));
+    }
 
     const checkForExistenceQuery = `SELECT * FROM department WHERE departmentSlug = ?`;
 
-    const [checkForExistenceQueryResult] = await connection.promise().query(checkForExistenceQuery, departmentSlug);
+    const [checkForExistenceQueryResult] = await connection.promise().query(checkForExistenceQuery, [departmentSlug]);
 
     if(checkForExistenceQueryResult.length > 0) {
-        return res.status(500).json(new ApiError(500, 'Department Already Existed.', ['Department Already Existed.']));
+        return res.status(409).json(new ApiError(409, 'Department already exists.', ['Department already exists.']));
     }
 
     // Proceed with the query if both department name and dates are valid
@@ -90,9 +110,9 @@ export const addDepartment = asyncHandler(async (req, res) => {
     ) VALUES (?, ?, ?, ?)`;
 
     const values = [
-        departmentName,
+        normalizedDepartmentName,
         departmentSlug,
-        departmentStartDate,
+        startDate,
         endDate,
     ];
 
@@ -104,33 +124,77 @@ export const addDepartment = asyncHandler(async (req, res) => {
 
         res
             .status(201)
-            .json(new ApiResponse(201, { departmentId: result.insertId, ...req.body }, 'Department created successfully.'));
+            .json(new ApiResponse(201, {
+                departmentId: result.insertId,
+                departmentName: normalizedDepartmentName,
+                departmentSlug,
+                departmentStartDate: startDate,
+                departmentEndDate: endDate
+            }, 'Department created successfully.'));
     });
 });
 
 // Delete a department - just putting today's date (date as closing) in end date field - no removal of data is taken place
 export const deleteDepartment = asyncHandler(async (req, res) => {
     const deptId = req.body.deptId;  // Extract deptId from the body
+    
+    console.log('=== DELETE DEPARTMENT CALLED ===');
+    console.log('Department ID to delete:', deptId);
 
-    const query = `UPDATE department SET departmentEndDate = ? WHERE departmentId = ?`;
-
-    const d = new Date();
-    const formattedDate = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().split('T')[0];
-
-    const values = [
-        formattedDate,
-        deptId,
-    ];
-
-    connection.query(query, values, (err, data) => {
-        if (err) {
-            console.log('Database error:', err);  // Log the error to debug
-            return res.status(500).json(new ApiError(500, 'Error deleting department'));
+    // First check if department exists and if it's already closed
+    const checkQuery = `SELECT departmentId, departmentEndDate FROM department WHERE departmentId = ?`;
+    
+    connection.query(checkQuery, [deptId], (checkErr, checkResult) => {
+        if (checkErr) {
+            console.log('Database error during check:', checkErr);
+            return res.status(500).json(new ApiError(500, 'Error checking department status'));
         }
-        if (data.affectedRows === 0) {
+        
+        if (checkResult.length === 0) {
+            console.log('Department not found');
             return res.status(404).json(new ApiError(404, 'Department not found'));
         }
-        res.status(200).json(new ApiResponse(200, req.body, 'Department deleted successfully.'));
+        
+        const department = checkResult[0];
+        console.log('Current department state:', department);
+        
+        // If already has an end date, it's already "deleted"
+        if (department.departmentEndDate !== null) {
+            console.log('Department already closed with end date:', department.departmentEndDate);
+            return res.status(400).json(new ApiError(400, 'Department is already closed'));
+        }
+        
+        // Proceed with setting end date
+        const updateQuery = `UPDATE department SET departmentEndDate = ? WHERE departmentId = ? AND departmentEndDate IS NULL`;
+
+        const d = new Date();
+        const formattedDate = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().split('T')[0];
+        
+        console.log('Setting departmentEndDate to:', formattedDate);
+
+        const values = [
+            formattedDate,
+            deptId,
+        ];
+
+        connection.query(updateQuery, values, (err, data) => {
+            if (err) {
+                console.log('Database error during update:', err);
+                return res.status(500).json(new ApiError(500, 'Error deleting department'));
+            }
+            
+            console.log('Update query result:', data);
+            console.log('Affected rows:', data.affectedRows);
+            console.log('Changed rows:', data.changedRows);
+            
+            if (data.affectedRows === 0) {
+                console.log('No rows affected - department may have been already closed');
+                return res.status(400).json(new ApiError(400, 'Department could not be closed'));
+            }
+            
+            console.log('Department deleted successfully!');
+            res.status(200).json(new ApiResponse(200, { deptId, departmentEndDate: formattedDate }, 'Department deleted successfully.'));
+        });
     });
 });
 

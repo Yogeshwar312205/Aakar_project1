@@ -10,7 +10,7 @@ import {useDispatch} from "react-redux";
 import {addDepartment} from "../..//features/departmentSlice.js";
 import {Bounce, toast} from "react-toastify";
 import {useNavigate} from "react-router-dom";
-import {addDesignation} from "../../features/designationSlice.js";
+import {addDesignation, fetchDesignations} from "../../features/designationSlice.js";
 import {notify} from "../../components/Toast/SuccessNotify.js";
 
 const AddDesignation = () => {
@@ -20,14 +20,26 @@ const AddDesignation = () => {
     const [designationName, setDesignationName] = useState('');
 
     const handleSubmit = () => {
+        // Validate designation name
+        if (!designationName || !designationName.trim()) {
+            toast.error('Designation name is required.');
+            return;
+        }
+
+        console.log('Submitting designation:', designationName);
+
         dispatch(addDesignation(designationName))
             .unwrap()
             .then(() => {
                 notify("Designation added successfully!");
+                // Refresh designations list to ensure sync with database
+                dispatch(fetchDesignations());
                 navigate('/designations');
             })
             .catch((err) => {
-                toast.error('Failed to add designation.');
+                console.error('Error adding designation:', err);
+                const errorMessage = err?.message || err || 'Failed to add designation.';
+                toast.error(errorMessage);
             })
     };
 

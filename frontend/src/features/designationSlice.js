@@ -14,9 +14,21 @@ export const fetchDesignations = createAsyncThunk(
 
 export const addDesignation = createAsyncThunk(
     'designation/addDesignation',
-    async (designationName) => {
-        const response = await axios.post(`${BASE_URL}/addDesignation`, { designationName });
-        return response.data.data;  // Use response.data.data instead of response.data.result
+    async (designationName, { rejectWithValue }) => {
+        try {
+            console.log('Redux: Adding designation:', designationName);
+            const response = await axios.post(
+                `${BASE_URL}/addDesignation`, 
+                { designationName },
+                { withCredentials: true } // Add credentials for cookie-based auth
+            );
+            console.log('Redux: Designation added:', response.data.data);
+            return response.data.data;
+        } catch (error) {
+            console.error('Redux: Error adding designation:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to add designation';
+            return rejectWithValue(errorMessage);
+        }
     }
 );
 
@@ -70,14 +82,18 @@ const designationSlice = createSlice({
         // Handle add designation
         builder.addCase(addDesignation.pending, (state) => {
             state.loading = true;
+            state.error = null;
         });
         builder.addCase(addDesignation.fulfilled, (state, action) => {
             state.loading = false;
+            console.log('✅ Designation added to Redux state:', action.payload);
             state.designations.push(action.payload);
+            console.log('📊 Total designations in state:', state.designations.length);
         });
         builder.addCase(addDesignation.rejected, (state, action) => {
             state.loading = false;
-            state.error = action.error.message;
+            state.error = action.payload || action.error.message;
+            console.error('❌ Failed to add designation:', state.error);
         });
 
         // Handle update designation

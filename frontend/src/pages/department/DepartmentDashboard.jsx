@@ -3,7 +3,7 @@ import Infocard from '../../components/Infocard/Infocard.jsx';
 import TableComponent from '../../components/Table/TableComponent.jsx';
 import { useDispatch, useSelector } from "react-redux";
 import React, { useEffect } from "react";
-import { fetchAllWorkingDepartments } from "../../features/departmentSlice.js";
+import { fetchAllDepartments } from "../../features/departmentSlice.js";
 import { FiPlusCircle, FiBriefcase } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import {getAllEmployees} from "../../features/employeeSlice.js";
@@ -16,26 +16,39 @@ const DepartmentDashboard = () => {
     const employeeAccess = useSelector((state) => state?.auth?.user?.employeeAccess) || '';
     const hrAccess = getHRManagementAccess(employeeAccess);
 
-    // Fetch working departments on component mount
+    // Fetch all departments on component mount
     useEffect(() => {
         dispatch(getAllEmployees());
-        dispatch(fetchAllWorkingDepartments());
+        dispatch(fetchAllDepartments());
     }, [dispatch]);
 
-    // Access working departments from Redux state
+    // Access all departments from Redux state
     const { departments } = useSelector(state => state.department);
 
-    // Populate rows from working departments
-    const rows = departments.working.map((department) => {
-        const date = new Date(department.departmentStartDate);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-        const year = date.getFullYear();
+    // Debug logging
+    console.log('📋 All departments from Redux:', departments.all);
+    console.log('📋 Total departments:', departments.all.length);
+
+    // Filter out closed departments (only show departments where departmentEndDate is NULL)
+    // When a department is deleted, departmentEndDate is set to today's date, so it will be filtered out
+    const activeDepartments = departments.all.filter(dept => 
+        dept.departmentEndDate === null || dept.departmentEndDate === undefined
+    );
+
+    console.log('✅ Active departments (after filter):', activeDepartments);
+    console.log('✅ Total active departments:', activeDepartments.length);
+
+    // Populate rows from active departments only
+    const rows = activeDepartments.map((department) => {
+        const date = department.departmentStartDate ? new Date(department.departmentStartDate) : null;
+        const formattedStartDate = date && !Number.isNaN(date.getTime())
+            ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+            : '-';
 
         return {
             deptId: department.departmentId,
             deptName: department.departmentName,
-            deptStartDate: `${day}/${month}/${year}`, // Format as DD-MM-YYYY
+            deptStartDate: formattedStartDate,
         };
     });
 

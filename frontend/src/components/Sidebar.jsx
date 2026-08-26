@@ -235,6 +235,18 @@ const Sidebar = () => {
           icon: 'AiOutlineCheckCircle',
           access: trainerAccess,
         },
+        {
+          name: 'Trainers',
+          slug: '/training/trainers',
+          icon: 'FaChalkboardTeacher',
+          access: TrainingManagementAccess?.[0] === '1' ? '1' : '0',
+        },
+        {
+          name: 'Training Records',
+          slug: '/training/records',
+          icon: 'MdBook',
+          access: TrainingManagementAccess?.[0] === '1' ? '1' : '0',
+        },
       ],
     },
   ]

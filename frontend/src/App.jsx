@@ -78,6 +78,10 @@ import TemplateForm from './components/Project/Templates/TemplateForm.jsx'
 import BomProject from './pages/BOM/BOMProject/BomProject.jsx'
 import BOMPage from './pages/BOM/BOMPage/BOMPage.jsx'
 
+// Trainers & Training Records module
+import TrainersPage from './pages/Training/TrainersPage.jsx'
+import TrainingRecordsPage from './pages/Training/TrainingRecordsPage.jsx'
+
 export const API_BASE_URL = `http://localhost:3000`
 const App = () => {
   const { isAuthenticated } = useSelector((state) => state.auth)
@@ -571,6 +575,24 @@ const App = () => {
             />
 
             {/* bom routes */}
+            {/* Trainers & Training Records routes */}
+            <Route
+              path="/training/trainers"
+              element={
+                <PrivateRoute>
+                  <TrainersPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/training/records"
+              element={
+                <PrivateRoute>
+                  <TrainingRecordsPage />
+                </PrivateRoute>
+              }
+            />
+
             <Route
               path='/bom-project'
               element={

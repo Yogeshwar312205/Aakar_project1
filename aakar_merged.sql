@@ -20,8 +20,8 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 -- Create database if not exists
-CREATE DATABASE IF NOT EXISTS `aakar`;
-USE `aakar`;
+CREATE DATABASE IF NOT EXISTS `aakarerpv1`;
+USE `aakarerpv1`;
 
 -- ============================================
 -- 1. CORE TABLES (HR Section)

@@ -1,0 +1,219 @@
+/* ============================================================
+   TrainersPage.css — Clones the UpdateSkill.css patterns
+   ============================================================ */
+
+.trainers-container {
+  margin-left: 100px;
+  width: calc(100% - 150px);
+  margin-top: 40px;
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.trainers-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: calc(100% - 75px);
+  margin-left: 40px;
+}
+
+.trainers-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+/* Outlined button (same as .Add-skill) */
+.Add-trainer {
+  background-color: #ffffff;
+  color: #0061a1;
+  border: 2px solid #0061a1;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  min-width: 165px;
+  height: 46px;
+  border-radius: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+  margin-top: 15px;
+}
+
+.Add-trainer:hover {
+  background-color: rgb(225, 239, 243);
+}
+
+/* Solid blue button (same as .Skill-report) */
+.Trainer-report {
+  background-color: #0061a1;
+  color: white;
+  border: 2px solid #0061a1;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  min-width: 165px;
+  height: 46px;
+  border-radius: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+  margin-top: 15px;
+}
+
+.Trainer-report:hover {
+  background-color: #004f78;
+}
+
+/* Input form row (same as .input-box) */
+.trainer-input-box {
+  width: calc(100% - 120px);
+  height: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-top: 30px;
+  border-radius: 10px;
+  border: 1.5px solid #7D7D7D;
+  background: #FFF;
+  gap: 15px;
+  margin-left: 50px;
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.trainer-input-box .MuiTextField-root {
+  min-width: 240px;
+}
+
+.trainer-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  width: 100%;
+  align-items: center;
+}
+
+.trainer-type-selector {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.trainer-type-selector label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+}
+
+.trainer-type-selector input[type="radio"] {
+  accent-color: #0061a1;
+  width: 18px;
+  height: 18px;
+}
+
+.trainer-save-btn {
+  width: 100px;
+  background-color: #0061A1;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+  margin-top: 5px;
+}
+
+.trainer-save-btn:hover {
+  background-color: #004f78;
+}
+
+/* Action buttons column */
+.trainer-action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.trainer-action-buttons .action-icon {
+  cursor: pointer;
+  color: #0061A1;
+  transition: opacity 0.3s ease;
+}
+
+.trainer-action-buttons .action-icon:hover {
+  opacity: 0.7;
+}
+
+/* Table container (same as .update-skill-table-container) */
+.trainer-table-container {
+  width: 95% !important;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 50px !important;
+  margin-left: 40px !important;
+  border-radius: 15px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Status badges */
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-internal {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.badge-external {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.badge-active {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge-expired {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.badge-inactive {
+  background-color: #f5f5f5;
+  color: #757575;
+}
+
+/* Header buttons group */
+.trainers-header-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}

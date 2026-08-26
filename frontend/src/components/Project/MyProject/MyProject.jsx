@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { FiArrowLeftCircle, FiEdit, FiClock, FiEdit2, FiCheck, FiX } from 'react-icons/fi'
 import { FaChartGantt } from 'react-icons/fa6'
+import { MdLock } from 'react-icons/md'
 import { formatDate } from '../../common/functions/formatDate.js'
 import { useDispatch, useSelector } from 'react-redux'
 import LinearProgress from '@mui/joy/LinearProgress'
@@ -22,6 +23,7 @@ import { BASE_URL } from '../../../constants.js'
 import { ProjectHistory } from '../ProjectHistory/index.js'
 import { toast } from 'react-toastify'
 import { getProjectManagementAccess } from '../../../utils/projectAccess.js'
+import { canEditStage, isReadOnly, getPermissionBadge } from '../../../utils/rbacUtils.js'
 import {
   Dialog,
   DialogTitle,
@@ -404,6 +406,9 @@ const MyProject = () => {
                 activeStages.map((stage, index) => {
                   const stageProgress = stage.progress || 0
                   const isEditing = editingStageId === stage.stageId
+                  const editable = canEditStage(stage) // RBAC check
+                  const readonly = isReadOnly(stage) // RBAC check
+                  
                   return (
                     <div
                       key={stage.stageId}
@@ -449,8 +454,29 @@ const MyProject = () => {
                         {stageProgress >= 100 ? '✓' : index + 1}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: '15px', color: '#212529' }}>
-                          {stage.stageName}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: 600, fontSize: '15px', color: '#212529' }}>
+                            {stage.stageName}
+                          </span>
+                          {/* RBAC: Show read-only badge */}
+                          {readonly && (
+                            <span
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                background: '#fee2e2',
+                                color: '#dc2626',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <MdLock size={12} />
+                              {getPermissionBadge(stage)}
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '12px', color: '#6c757d' }}>
                           Owner: {stage.owner} • Machine: {stage.machine} • <strong>Planned:</strong> {formatDate(stage.startDate)} → {formatDate(stage.endDate)}
@@ -529,7 +555,8 @@ const MyProject = () => {
                               >
                                 {stageProgress}%
                               </span>
-                              {projectAccess.stage.update && (
+                              {/* RBAC: Only show edit button if user can edit */}
+                              {projectAccess.stage.update && editable && (
                                 <button
                                   onClick={(e) =>
                                     handleStageProgressEditStart(
@@ -560,6 +587,10 @@ const MyProject = () => {
                                   <FiEdit2 size={14} />
                                 </button>
                               )}
+                              {/* RBAC: Show lock icon if read-only */}
+                              {readonly && (
+                                <MdLock size={14} style={{ color: '#dc2626', marginLeft: '4px' }} title="Read Only" />
+                              )}
                             </div>
                             <LinearProgress
                               determinate
@@ -569,8 +600,8 @@ const MyProject = () => {
                           </>
                         )}
                       </div>
-                      {/* Edit Stage Button */}
-                      {projectAccess.stage.update && !isEditing && (
+                      {/* RBAC: Edit Stage Button - only show if user can edit */}
+                      {projectAccess.stage.update && editable && !isEditing && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation()

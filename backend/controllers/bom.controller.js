@@ -19,6 +19,14 @@ const addBomDesign = asyncHandler(async (req, res) => {
         );
     }
 
+    // RBAC Authorization Check: Only Stage_Owners can create BOM items
+    const { rbac } = req;
+    if (rbac.isManager !== true && !rbac.ownedStages.includes(parseInt(stageId))) {
+        return res.status(403).json(
+            new ApiError(403, 'Only stage owners can create BOM items')
+        );
+    }
+
     connection.beginTransaction((err) => {
         if (err) {
             return res.status(500).json({ statusCode: 500, success: false, message: `Error starting transaction: ${err.message}` });
@@ -70,14 +78,23 @@ const addBomDesign = asyncHandler(async (req, res) => {
     });
 });
 
-// Fetch BOM Details by Project Number (with stage info)
+// Fetch BOM Details by Project Number (with stage info and RBAC filtering)
 const fetchBomDetailsByProjectNumber = asyncHandler(async (req, res) => {
     const { projectNumber } = req.params;
+    const { rbac } = req;
+
     if (!projectNumber) {
         return res.status(400).json(new ApiError(400, 'Project number is required'));
     }
 
-    const fetchBomDetailsQuery = `
+    console.log('[BOM Controller] Fetching BOM for project:', projectNumber, 'RBAC:', {
+        isManager: rbac.isManager,
+        ownedStages: rbac.ownedStages,
+        role: rbac.role
+    });
+
+    // Base query to fetch BOM details
+    let fetchBomDetailsQuery = `
         SELECT
             bd.bomId, bd.itemId, bd.ELength, bd.EWidth, bd.EHeight, bd.EQuantity,
             bd.ALength, bd.AWidth, bd.AHeight, bd.AQuantity,
@@ -86,19 +103,42 @@ const fetchBomDetailsByProjectNumber = asyncHandler(async (req, res) => {
         FROM bomdetails AS bd
         JOIN itemmaster AS im ON bd.itemId = im.itemId
         WHERE bd.projectNumber = ?
-        ORDER BY bd.bomId
     `;
 
-    connection.query(fetchBomDetailsQuery, [projectNumber], (err, data) => {
+    let queryParams = [projectNumber];
+
+    // Apply RBAC filtering: ONLY if user is not Manager
+    if (rbac.isManager === false) {
+        if (rbac.ownedStages.length === 0) {
+            // User has no stage ownership - cannot see any BOMs
+            console.log('[BOM Controller] Assignee with no stage ownership - returning empty');
+            return res.status(200).json(new ApiResponse(200, [], 'No BOM details accessible'));
+        }
+
+        // Filter by owned stages only
+        fetchBomDetailsQuery += ` AND bd.stageId IN (?)`;
+        queryParams.push(rbac.ownedStages);
+        console.log('[BOM Controller] Filtering BOM by ownedStages:', rbac.ownedStages);
+    } else if (rbac.isManager === true) {
+        console.log('[BOM Controller] Manager - No filtering, returning all BOMs');
+    }
+
+    fetchBomDetailsQuery += ` ORDER BY bd.bomId`;
+
+    connection.query(fetchBomDetailsQuery, queryParams, (err, data) => {
         if (err) {
             return res.status(500).json(new ApiError(500, `Error fetching BOM details: ${err.sqlMessage || err.message}`));
         }
 
-        if (data.length === 0) {
-            return res.status(200).json(new ApiResponse(200, [], 'No BOM details found for the given project number'));
-        }
+        console.log('[BOM Controller] BOM items found:', data.length);
 
-        res.status(200).json(new ApiResponse(200, data, 'BOM details fetched successfully.'));
+        // Add canEdit flag to each BOM item based on user permissions
+        const bomDetailsWithPermissions = data.map(bomItem => ({
+            ...bomItem,
+            canEdit: rbac.isManager === true || rbac.ownedStages.includes(bomItem.stageId)
+        }));
+
+        res.status(200).json(new ApiResponse(200, bomDetailsWithPermissions, 'BOM details fetched successfully.'));
     });
 });
 
@@ -145,6 +185,37 @@ const updateBomDesign = asyncHandler(async (req, res) => {
         return res.status(400).json(new ApiError(400, "Item ID, bom id, project number, and stage are required."));
     }
 
+    // RBAC Authorization Check: Verify user can edit this BOM item's stage
+    const { rbac } = req;
+    
+    // First, get the current stageId of the BOM item to verify ownership
+    const [currentBomData] = await connection.promise().query(
+        'SELECT stageId FROM bomdetails WHERE bomId = ?',
+        [bomId]
+    );
+    
+    if (!currentBomData || currentBomData.length === 0) {
+        return res.status(404).json(new ApiError(404, 'BOM item not found'));
+    }
+    
+    const currentStageId = currentBomData[0].stageId;
+    
+    // Check if user can edit the current stage
+    if (rbac.isManager !== true && !rbac.ownedStages.includes(parseInt(currentStageId))) {
+        return res.status(403).json(
+            new ApiError(403, 'You do not have permission to edit this BOM item')
+        );
+    }
+    
+    // If user is trying to move the BOM to a different stage, check permission for new stage
+    if (parseInt(stageId) !== parseInt(currentStageId)) {
+        if (rbac.isManager !== true && !rbac.ownedStages.includes(parseInt(stageId))) {
+            return res.status(403).json(
+                new ApiError(403, 'You do not have permission to move this BOM item to the target stage')
+            );
+        }
+    }
+
     const updateItemQuery = `
         UPDATE itemmaster
         SET itemCode = ?, itemName = ?, specification = ?
@@ -186,6 +257,28 @@ const deleteBomDesign = asyncHandler(async (req, res) => {
         return res.status(400).json(new ApiError(400, "Item ID is required."));
     }
 
+    // RBAC Authorization Check: Verify user can delete this BOM item
+    const { rbac } = req;
+    
+    // First, get the stageId of the BOM item to verify ownership
+    const [bomData] = await connection.promise().query(
+        'SELECT stageId FROM bomdetails WHERE itemId = ?',
+        [itemId]
+    );
+    
+    if (!bomData || bomData.length === 0) {
+        return res.status(404).json(new ApiError(404, 'BOM item not found'));
+    }
+    
+    const stageId = bomData[0].stageId;
+    
+    // Check if user has permission to delete (must be Manager or Stage Owner)
+    if (rbac.isManager !== true && !rbac.ownedStages.includes(parseInt(stageId))) {
+        return res.status(403).json(
+            new ApiError(403, 'You do not have permission to delete this BOM item')
+        );
+    }
+
     const deleteBomDetailsQuery = `DELETE FROM bomdetails WHERE itemId = ?`;
     connection.query(deleteBomDetailsQuery, [itemId], (err) => {
         if (err) {
@@ -212,6 +305,14 @@ const importBomFromProject = asyncHandler(async (req, res) => {
 
     if (!targetStageId) {
         return res.status(400).json(new ApiError(400, 'Target stage is required for import.'));
+    }
+
+    // RBAC Authorization Check: User must be Manager or own the target stage
+    const { rbac } = req;
+    if (rbac.isManager !== true && !rbac.ownedStages.includes(parseInt(targetStageId))) {
+        return res.status(403).json(
+            new ApiError(403, 'You do not have permission to import BOM items to this stage')
+        );
     }
 
     try {
@@ -410,6 +511,14 @@ const importBomFromExcel = asyncHandler(async (req, res) => {
     if (isNaN(parsedStageId)) {
         return res.status(400).json(
             new ApiError(400, 'Stage ID must be a valid number')
+        );
+    }
+
+    // RBAC Authorization Check: User must be Manager or own the target stage
+    const { rbac } = req;
+    if (rbac.isManager !== true && !rbac.ownedStages.includes(parsedStageId)) {
+        return res.status(403).json(
+            new ApiError(403, 'You do not have permission to import BOM items to this stage')
         );
     }
 

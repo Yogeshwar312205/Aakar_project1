@@ -27,6 +27,7 @@ import stageRoutes from './routes/stage.routes.js'
 import substageRoutes from './routes/substage.routes.js'
 import substagesMasterRoutes from './routes/substagesMaster.routes.js'
 import stageTemplateRoutes from './routes/stageTemplate.routes.js'
+import assignmentRoutes from './routes/assignment.routes.js'
 import morgan from "morgan"
 
 import bomRoute from './routes/bom.route.js';
@@ -70,6 +71,7 @@ app.use('/api', stageRoutes)
 app.use('/api', substageRoutes)
 app.use('/api/v1', substagesMasterRoutes)
 app.use('/api', stageTemplateRoutes)
+app.use('/api/assignments', assignmentRoutes)
 app.use('/api/', activityRoute)
 
 // Training routes

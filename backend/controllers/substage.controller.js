@@ -7,40 +7,109 @@ export const getSubStagesByStageId = asyncHandler(async (req, res) => {
   console.log(req.params)
 
   const stageId = req.params.id
-  const query = `SELECT ss.*, ss.parentSubstageId, eo.employeeName AS owner, cb.employeeName AS createdBy,eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById
+  
+  // Extract rbac context from req.rbac
+  const rbac = req.rbac || {}
+  const currentUserId = req.user[0]?.employeeId
+  
+  console.log('[Substage Controller] Getting substages for stageId:', stageId, 'RBAC:', {
+    isManager: rbac.isManager,
+    ownedStages: rbac.ownedStages,
+    ownedSubstages: rbac.ownedSubstages,
+    role: rbac.role
+  })
+  
+  // Base query - Include ownerEmployeeId for ownership checks
+  let query = `SELECT ss.*, ss.parentSubstageId, eo.employeeName AS owner, cb.employeeName AS createdBy, eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById, eo.employeeId AS ownerEmployeeId
 FROM substage ss
 INNER JOIN employee eo ON ss.owner = eo.employeeId
 INNER JOIN employee cb ON ss.createdBy = cb.employeeId
-WHERE ss.stageId = ?;`
+WHERE ss.stageId = ?`
+  
+  let queryParams = [stageId]
+  
+  // Apply RBAC filtering: ONLY if user is not a Manager
+  if (rbac.isManager === false) {
+    // User is Assignee (not Manager) - check if they own the parent stage
+    const ownsParentStage = rbac.ownedStages && rbac.ownedStages.includes(parseInt(stageId))
+    
+    console.log('[Substage Controller] User is Assignee - Owns parent stage:', ownsParentStage)
+    
+    if (!ownsParentStage) {
+      // User doesn't own parent stage, so only show substages they own
+      if (rbac.ownedSubstages && rbac.ownedSubstages.length > 0) {
+        query += ` AND ss.substageId IN (?)`
+        queryParams.push(rbac.ownedSubstages)
+        console.log('[Substage Controller] Filtering by ownedSubstages:', rbac.ownedSubstages)
+      } else {
+        // User has no substage ownership and doesn't own parent stage - return empty
+        query += ` AND 1 = 0`
+        console.log('[Substage Controller] No substage ownership - returning empty')
+      }
+    } else {
+      console.log('[Substage Controller] User owns parent stage - showing all substages')
+    }
+    // If user owns parent stage, no additional filtering needed - they see all substages
+  } else if (rbac.isManager === true) {
+    console.log('[Substage Controller] Manager - No filtering, returning all substages')
+  }
+  
+  query += `;`
 
-  db.query(query, [stageId], (err, data) => {
+  db.query(query, queryParams, (err, data) => {
     if (err) {
-      res.status(200).send(new ApiError(500, 'Error retrieving stage'))
+      console.error('Error retrieving substages:', err)
+      res.status(500).send(new ApiError(500, 'Error retrieving substages'))
       return
     }
 
     if (data.length === 0) {
-      res.status(200).send(new ApiError(404, 'Stage not found'))
+      res.status(200).send(new ApiError(404, 'No substages found'))
       return
     }
-    const substages = data.map((substage) => ({
-      ...substage,
-      startDate: substage.startDate
-        ? new Date(substage.startDate).toLocaleDateString('en-CA')
-        : null,
-      endDate: substage.endDate
-        ? new Date(substage.endDate).toLocaleDateString('en-CA')
-        : null,
-      executedStartDate: substage.executedStartDate
-        ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
-        : null,
-      executedEndDate: substage.executedEndDate
-        ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
-        : null,
-    }))
+    
+    console.log('[Substage Controller] Substages found:', data.length)
+    
+    // Map substages with permission flags and date formatting
+    const substages = data.map((substage) => {
+      // Determine if user directly owns this substage
+      const isDirectOwner = substage.ownerEmployeeId === currentUserId
+      
+      // canEdit: Manager can edit all, or if user owns substage directly, or if user owns parent stage
+      const canEdit = rbac.isManager === true
+        || (rbac.ownedSubstages && rbac.ownedSubstages.includes(substage.substageId))
+        || (rbac.ownedStages && rbac.ownedStages.includes(parseInt(stageId)))
+      
+      // canMarkComplete: Only the direct owner can mark as complete
+      const canMarkComplete = isDirectOwner
+      
+      return {
+        ...substage,
+        canEdit,
+        canMarkComplete,
+        // Add flag to indicate if user directly owns this substage (useful for UI differentiation)
+        isOwnedByUser: rbac.ownedSubstages && rbac.ownedSubstages.includes(substage.substageId),
+        isOwnedByCurrentUser: isDirectOwner, // Direct ownership by current logged-in user
+        startDate: substage.startDate
+          ? new Date(substage.startDate).toLocaleDateString('en-CA')
+          : null,
+        endDate: substage.endDate
+          ? new Date(substage.endDate).toLocaleDateString('en-CA')
+          : null,
+        executedStartDate: substage.executedStartDate
+          ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
+          : null,
+        executedEndDate: substage.executedEndDate
+          ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
+          : null,
+      }
+    })
+    
+    console.log('[Substage Controller] Returning', substages.length, 'substages with canEdit and canMarkComplete flags')
+    
     res
       .status(200)
-      .json(new ApiResponse(200, substages, 'Stage retrieved successfully.'))
+      .json(new ApiResponse(200, substages, 'Substages retrieved successfully.'))
   })
 })
 
@@ -98,14 +167,59 @@ export const getHistorySubStagesBySubStageId = asyncHandler(
 
 export const getActiveSubStagesByStageId = asyncHandler(async (req, res) => {
   const stageId = req.params.id
-  const query = `SELECT ss.*, ss.parentSubstageId, eo.employeeName AS owner, cb.employeeName AS createdBy,eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById
+  
+  // Extract RBAC context
+  const rbac = req.rbac || {}
+  const currentUserId = req.user[0]?.employeeId
+  
+  console.log('[getActiveSubStages] Getting active substages for stageId:', stageId, 'RBAC:', {
+    isManager: rbac.isManager,
+    ownedStages: rbac.ownedStages,
+    ownedSubstages: rbac.ownedSubstages,
+    currentUserId
+  })
+  
+  // Base query - Include ownerEmployeeId for ownership checks
+  let query = `SELECT ss.*, ss.parentSubstageId, eo.employeeName AS owner, cb.employeeName AS createdBy, eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById, eo.employeeId AS ownerEmployeeId
 FROM substage ss
 INNER JOIN employee eo ON ss.owner = eo.employeeId
 INNER JOIN employee cb ON ss.createdBy = cb.employeeId
 WHERE ss.stageId = ?
-AND ss.historyOf IS NULL;`
+AND ss.historyOf IS NULL`
+  
+  let queryParams = [stageId]
+  
+  // Apply RBAC filtering: ONLY if user is not a Manager
+  if (rbac.isManager === false) {
+    // User is Assignee (not Manager) - check if they own the parent stage
+    const ownsParentStage = rbac.ownedStages && rbac.ownedStages.includes(parseInt(stageId))
+    
+    console.log('[getActiveSubstages] User is Assignee - Owns parent stage:', ownsParentStage)
+    
+    if (!ownsParentStage) {
+      // User doesn't own parent stage, so only show substages they own
+      if (rbac.ownedSubstages && rbac.ownedSubstages.length > 0) {
+        query += ` AND ss.substageId IN (?)`
+        queryParams.push(rbac.ownedSubstages)
+        console.log('[getActiveSubstages] Filtering by ownedSubstages:', rbac.ownedSubstages)
+      } else {
+        // User has no substage ownership and doesn't own parent stage - return empty
+        query += ` AND 1 = 0`
+        console.log('[getActiveSubstages] No substage ownership - returning empty')
+      }
+    } else {
+      console.log('[getActiveSubstages] User owns parent stage - showing all substages')
+    }
+  } else if (rbac.isManager === true) {
+    console.log('[getActiveSubstages] Manager - No filtering, returning all substages')
+  }
+  
+  query += `;`
+  
+  console.log('[getActiveSubstages] Final Query:', query)
+  console.log('[getActiveSubstages] Query Params:', queryParams)
 
-  db.query(query, [stageId], (err, data) => {
+  db.query(query, queryParams, (err, data) => {
     if (err) {
       console.error('Error retrieving active substages:', err)
       return res
@@ -118,6 +232,8 @@ AND ss.historyOf IS NULL;`
         .status(404)
         .send(new ApiError(404, 'No active substages found'))
     }
+    
+    console.log('[getActiveSubstages] Substages found:', data.length)
 
     // Helper function to order substages by seqPrevStage
     const orderSubstagesBySeqPrevStage = (substages) => {
@@ -159,24 +275,53 @@ AND ss.historyOf IS NULL;`
       return orderedSubstages
     }
 
-    // Format dates and order the substages
-    const substages = data.map((substage) => ({
-      ...substage,
-      startDate: substage.startDate
-        ? new Date(substage.startDate).toLocaleDateString('en-CA')
-        : null,
-      endDate: substage.endDate
-        ? new Date(substage.endDate).toLocaleDateString('en-CA')
-        : null,
-      executedStartDate: substage.executedStartDate
-        ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
-        : null,
-      executedEndDate: substage.executedEndDate
-        ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
-        : null,
-    }))
+    // Format dates and add RBAC permission flags
+    const substages = data.map((substage) => {
+      // Determine if user directly owns this substage
+      const isDirectOwner = substage.ownerEmployeeId === currentUserId
+      
+      // canEdit: Manager can edit all, or if user owns substage directly, or if user owns parent stage
+      const canEdit = rbac.isManager === true
+        || (rbac.ownedSubstages && rbac.ownedSubstages.includes(substage.substageId))
+        || (rbac.ownedStages && rbac.ownedStages.includes(parseInt(stageId)))
+      
+      // canMarkComplete: Only the direct owner can mark as complete
+      const canMarkComplete = isDirectOwner
+      
+      console.log('[getActiveSubstages] Substage', substage.substageId, ':', {
+        substageName: substage.substageName,
+        owner: substage.owner,
+        ownerEmployeeId: substage.ownerEmployeeId,
+        currentUserId,
+        isDirectOwner,
+        canEdit,
+        canMarkComplete,
+        rbacIsManager: rbac.isManager
+      })
+      
+      return {
+        ...substage,
+        canEdit,
+        canMarkComplete,
+        isOwnedByCurrentUser: isDirectOwner,
+        startDate: substage.startDate
+          ? new Date(substage.startDate).toLocaleDateString('en-CA')
+          : null,
+        endDate: substage.endDate
+          ? new Date(substage.endDate).toLocaleDateString('en-CA')
+          : null,
+        executedStartDate: substage.executedStartDate
+          ? new Date(substage.executedStartDate).toLocaleDateString('en-CA')
+          : null,
+        executedEndDate: substage.executedEndDate
+          ? new Date(substage.executedEndDate).toLocaleDateString('en-CA')
+          : null,
+      }
+    })
 
     // const orderedSubstages = orderSubstagesBySeqPrevStage(substages)
+    
+    console.log('[getActiveSubstages] Returning', substages.length, 'substages with canEdit and canMarkComplete flags')
 
     // Return the ordered substages
     res
@@ -238,6 +383,37 @@ WHERE ss.projectNumber = ?;`
 export const updateSubStage = asyncHandler(async (req, res) => {
   console.log(req.body);
   const substageId = req.params.id; // Get the current substage ID from the request parameters
+  const { rbac } = req;
+
+  // RBAC Authorization Check
+  if (rbac.isManager !== true) {
+    // Check if user directly owns this substage
+    const directlyOwned = rbac.ownedSubstages.includes(parseInt(substageId));
+    
+    if (!directlyOwned) {
+      // Query to get parent stageId for additional check
+      const [substageCheck] = await db.promise().query(
+        'SELECT stageId FROM substage WHERE substageId = ?',
+        [substageId]
+      );
+
+      // Check if substage exists
+      if (!substageCheck || substageCheck.length === 0) {
+        return res.status(404).json({
+          message: 'Substage not found'
+        });
+      }
+
+      // Check if user owns the parent stage
+      const ownsParentStage = rbac.ownedStages.includes(substageCheck[0].stageId);
+      
+      if (!ownsParentStage) {
+        return res.status(403).json({
+          message: 'You do not have permission to edit this substage'
+        });
+      }
+    }
+  }
 
   // SQL queries
   const selectQuery = `SELECT * FROM substage WHERE substageId = ?`;
@@ -732,6 +908,30 @@ export const getSubStageChildren = asyncHandler(async (req, res) => {
 export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
   const substageId = req.params.id
   const { isCompleted, executedStartDate, executedEndDate } = req.body
+  const currentUserId = req.user[0]?.employeeId
+
+  // Permission check: User must be the direct owner to mark as complete
+  // First, get the substage owner
+  const [substageData] = await db.promise().query(
+    'SELECT owner, stageId, projectNumber FROM substage WHERE substageId = ?',
+    [substageId]
+  )
+  
+  if (!substageData || substageData.length === 0) {
+    return res.status(404).send(new ApiError(404, 'Substage not found'))
+  }
+  
+  const substageOwner = substageData[0].owner // This is employeeId
+  
+  // Only the direct owner can mark task as complete (not even Manager can do this)
+  if (substageOwner !== currentUserId) {
+    console.log('[Substage Controller] Permission denied: User', currentUserId, 'cannot mark substage', substageId, 'as complete. Owner is:', substageOwner)
+    return res.status(403).json(
+      new ApiError(403, 'Only the assigned employee can mark this task as completed')
+    )
+  }
+  
+  console.log('[Substage Controller] User', currentUserId, 'is owner of substage', substageId, '- allowing completion toggle')
 
   const newProgress = isCompleted ? 100 : 0
   const execStart = isCompleted && executedStartDate ? executedStartDate : null
@@ -751,13 +951,8 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
     }
 
     // 2. Get the stageId and projectNumber
-    db.query('SELECT stageId, projectNumber FROM substage WHERE substageId = ?', [substageId], (err, rows) => {
-      if (err || rows.length === 0) {
-        return res.status(200).json(new ApiResponse(200, { substageId, isCompleted }, 'Completion updated.'))
-      }
-
-      const stageId = rows[0].stageId
-      const projectNumber = rows[0].projectNumber
+    const stageId = substageData[0].stageId
+    const projectNumber = substageData[0].projectNumber
 
       // 3. Recalculate stage progress = % of substages completed
       db.query(
@@ -881,7 +1076,6 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
           })
         }
       )
-    })
   })
 })
 
@@ -889,6 +1083,7 @@ export const toggleSubStageCompletion = asyncHandler(async (req, res) => {
 export const updateSubStageProgress = asyncHandler(async (req, res) => {
   const substageId = req.params.id
   const { progress, executedStartDate, executedEndDate } = req.body
+  const currentUserId = req.user[0]?.employeeId
 
   if (progress === undefined || progress < 0 || progress > 100) {
     return res.status(400).json(new ApiResponse(400, null, 'Progress must be between 0 and 100'))
@@ -896,6 +1091,28 @@ export const updateSubStageProgress = asyncHandler(async (req, res) => {
 
   const newProgress = Math.round(progress)
   const isCompleted = newProgress >= 100 ? 1 : 0
+  
+  // Permission check: Only the direct owner can set progress to 100% (mark as complete)
+  if (isCompleted) {
+    const [substageData] = await db.promise().query(
+      'SELECT owner FROM substage WHERE substageId = ?',
+      [substageId]
+    )
+    
+    if (!substageData || substageData.length === 0) {
+      return res.status(404).send(new ApiError(404, 'Substage not found'))
+    }
+    
+    const substageOwner = substageData[0].owner
+    
+    if (substageOwner !== currentUserId) {
+      console.log('[Substage Controller] Permission denied: User', currentUserId, 'cannot set substage', substageId, 'to 100%. Owner is:', substageOwner)
+      return res.status(403).json(
+        new ApiError(403, 'Only the assigned employee can mark this task as completed (100%)')
+      )
+    }
+  }
+  
   const execStart = isCompleted && executedStartDate ? executedStartDate : null
   const execEnd = isCompleted && executedEndDate ? executedEndDate : null
 

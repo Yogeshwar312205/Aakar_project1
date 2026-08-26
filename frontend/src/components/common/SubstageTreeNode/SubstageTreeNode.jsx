@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { FiChevronDown, FiChevronRight, FiPlusCircle, FiEdit2, FiCheck, FiX } from 'react-icons/fi'
 import { RiDeleteBinLine } from 'react-icons/ri'
+import { MdLock } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import LinearProgress from '@mui/joy/LinearProgress'
 import { formatDate } from '../functions/formatDate.js'
+import { canEditSubstage, canMarkSubstageComplete, isReadOnly, getPermissionBadge } from '../../../utils/rbacUtils.js'
 import {
   Dialog,
   DialogTitle,
@@ -72,11 +74,19 @@ const SubstageTreeNode = ({
   const navigate = useNavigate()
   const isCompleted = !!node.isCompleted
   const allChildrenDone = hasChildren ? areAllChildrenCompleted(node) : isCompleted
-  const canComplete = !hasChildren || areAllChildrenCompleted(node)
   const canToggleCompletion = !!onToggleComplete
+  
+  // RBAC checks
+  const editable = canEditSubstage(node) // Check if user can edit this substage
+  const canComplete = canMarkSubstageComplete(node) // Check if user can mark as complete
+  const readonly = isReadOnly(node) // Check if substage is read-only
 
   const handleCheckboxChange = () => {
     if (hasChildren && !areAllChildrenCompleted(node)) {
+      return
+    }
+    // Check canComplete permission instead of canToggleCompletion
+    if (!canComplete) {
       return
     }
     if (!isCompleted) {
@@ -130,6 +140,12 @@ const SubstageTreeNode = ({
       if (hasChildren && !areAllChildrenCompleted(node)) {
         return
       }
+      // Check permission to mark as complete
+      if (!canComplete) {
+        // Show error message
+        alert('Only the assigned employee can mark this task as 100% complete')
+        return
+      }
       // Show executed dates dialog before saving 100%
       setExecutedStartDate(dayjs())
       setExecutedEndDate(dayjs())
@@ -163,9 +179,9 @@ const SubstageTreeNode = ({
       <div className={`tree-node-header ${isCompleted ? 'completed' : ''}`}>
         {/* Completion checkbox */}
         <div className="tree-node-checkbox" title={
-          !canToggleCompletion
-            ? 'You do not have update access for this substage'
-            : hasChildren && !canComplete
+          !canComplete
+            ? 'Only the assigned employee can mark this task as complete'
+            : hasChildren && !areAllChildrenCompleted(node)
             ? 'Complete all child substages first'
             : isCompleted ? 'Mark as incomplete' : 'Mark as complete'
         }>
@@ -173,12 +189,12 @@ const SubstageTreeNode = ({
             type="checkbox"
             checked={isCompleted}
             onChange={handleCheckboxChange}
-            disabled={!canToggleCompletion || (hasChildren && !canComplete)}
+            disabled={!canComplete || (hasChildren && !areAllChildrenCompleted(node))}
             style={{
               width: '18px',
               height: '18px',
               cursor:
-                !canToggleCompletion || (hasChildren && !canComplete)
+                !canComplete || (hasChildren && !areAllChildrenCompleted(node))
                   ? 'not-allowed'
                   : 'pointer',
               accentColor: '#0061A1',
@@ -200,9 +216,60 @@ const SubstageTreeNode = ({
 
         <div className="tree-node-content">
           <div className="tree-node-info">
-            <span className={`tree-node-name ${isCompleted ? 'name-completed' : ''}`}>
-              {node.stageName || node.substageName}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className={`tree-node-name ${isCompleted ? 'name-completed' : ''}`}>
+                {node.stageName || node.substageName}
+              </span>
+              {/* RBAC: Show read-only badge */}
+              {readonly && (
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    background: '#fee2e2',
+                    color: '#dc2626',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                  }}
+                >
+                  <MdLock size={10} />
+                  {getPermissionBadge(node)}
+                </span>
+              )}
+              {/* RBAC: Show ownership indicator if user directly owns this substage */}
+              {node.isOwnedByUser && editable && (
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    background: '#dbeafe',
+                    color: '#1e40af',
+                  }}
+                >
+                  Owner
+                </span>
+              )}
+              {/* RBAC: Show inherited access indicator */}
+              {!node.isOwnedByUser && editable && !readonly && (
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    background: '#e0e7ff',
+                    color: '#4338ca',
+                  }}
+                >
+                  Inherited Access
+                </span>
+              )}
+            </div>
             <span className="tree-node-meta">
               Owner: {node.owner || '—'} | Machine: {node.machine || '—'} | Duration: {node.duration || '—'} days
             </span>
@@ -280,7 +347,8 @@ const SubstageTreeNode = ({
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span className="tree-node-progress-text">{node.progress || 0}%</span>
-                {onProgressEdit && (
+                {/* RBAC: Only show progress edit if user can edit */}
+                {onProgressEdit && editable && (
                   <button
                     onClick={handleProgressEditStart}
                     style={{
@@ -301,6 +369,10 @@ const SubstageTreeNode = ({
                     <FiEdit2 size={13} />
                   </button>
                 )}
+                {/* RBAC: Show lock icon if read-only */}
+                {readonly && (
+                  <MdLock size={13} style={{ color: '#dc2626', marginLeft: '4px' }} title="Read Only" />
+                )}
               </div>
             )}
           </div>
@@ -319,7 +391,8 @@ const SubstageTreeNode = ({
           </div>
 
           <div className="tree-node-actions">
-            {canAdd && onAddChild && (
+            {/* RBAC: Only show add child button if user can edit */}
+            {canAdd && onAddChild && editable && (
               <button
                 className="tree-action-btn add"
                 onClick={(e) => {
@@ -331,7 +404,8 @@ const SubstageTreeNode = ({
                 <FiPlusCircle size={16} />
               </button>
             )}
-            {onEdit && (
+            {/* RBAC: Only show edit button if user can edit */}
+            {onEdit && editable && (
               <button
                 className="tree-action-btn edit"
                 onClick={(e) => {
@@ -344,7 +418,8 @@ const SubstageTreeNode = ({
                 <span style={{ marginLeft: '4px', fontSize: '12px' }}>Edit</span>
               </button>
             )}
-            {canDelete && onDelete && (
+            {/* RBAC: Only show delete button if user can edit */}
+            {canDelete && onDelete && editable && (
               <button
                 className="tree-action-btn delete"
                 onClick={(e) => {

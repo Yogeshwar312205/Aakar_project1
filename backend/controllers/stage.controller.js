@@ -51,20 +51,63 @@ export const getAllStages = asyncHandler(async (req, res) => {
 
 export const getActiveStagesByProjectNumber = asyncHandler(async (req, res) => {
   const pNo = req.params.id
-  const query = `SELECT s.*, eo.customEmployeeId AS ownerId , cb.employeeName AS createdBy,eo.employeeName AS owner,cb.customEmployeeId AS createdById
+  
+  // Extract rbac context from req.rbac
+  const rbac = req.rbac || {}
+  
+  console.log('[Stage Controller] Getting active stages for project:', pNo, 'RBAC:', {
+    isManager: rbac.isManager,
+    ownedStages: rbac.ownedStages,
+    role: rbac.role
+  })
+  
+  console.log('[Stage Controller] ========== STAGE QUERY DEBUG ==========')
+  console.log('[Stage Controller] Project Number:', pNo)
+  console.log('[Stage Controller] RBAC Object:', JSON.stringify(rbac, null, 2))
+  console.log('[Stage Controller] ==========================================')
+  
+  // Base query
+  let query = `SELECT s.*, eo.customEmployeeId AS ownerId, cb.employeeName AS createdBy, eo.employeeName AS owner, cb.customEmployeeId AS createdById
      FROM stage s
      INNER JOIN employee eo ON s.owner = eo.employeeId
      INNER JOIN employee cb ON s.createdBy = cb.employeeId
      WHERE s.projectNumber = ?
-     AND s.historyOf IS NULL;`
+     AND s.historyOf IS NULL`
+  
+  let queryParams = [pNo]
+  
+  // Apply RBAC filtering: ONLY if user is not a Manager
+  if (rbac.isManager === false) {
+    // User is Assignee (not Manager) - apply filtering
+    if (rbac.ownedStages && rbac.ownedStages.length > 0) {
+      // Add conditional SQL: AND s.stageId IN (?) when user is Assignee with ownedStages
+      query += ` AND s.stageId IN (?)`
+      queryParams.push(rbac.ownedStages)
+      console.log('[Stage Controller] Filtering stages by ownedStages:', rbac.ownedStages)
+    } else {
+      // Assignee with no owned stages should see no stages
+      query += ` AND 1 = 0`
+      console.log('[Stage Controller] Assignee with no owned stages - returning empty')
+    }
+  } else if (rbac.isManager === true) {
+    console.log('[Stage Controller] Manager - No filtering, returning all stages')
+  }
+  
+  query += `;`
 
-  db.query(query, [pNo], (err, data) => {
+  console.log('[Stage Controller] Final Query:', query)
+  console.log('[Stage Controller] Query Params:', queryParams)
+
+  db.query(query, queryParams, (err, data) => {
     if (err) {
       console.error('Error retrieving active stages:', err)
       return res
         .status(500)
         .send(new ApiError(500, 'Error retrieving active stages'))
     }
+
+    console.log('[Stage Controller] Stages found:', data.length)
+    console.log('[Stage Controller] Raw stages:', data.map(s => ({ stageId: s.stageId, stageName: s.stageName, owner: s.owner })))
 
     // Helper function to order stages based on seqPrevStage
     const orderStages = (stages) => {
@@ -99,22 +142,51 @@ export const getActiveStagesByProjectNumber = asyncHandler(async (req, res) => {
       return orderedStages
     }
 
-    // Convert dates and prepare stages
-    const stages = data.map((stage) => ({
-      ...stage,
-      startDate: stage.startDate
-        ? new Date(stage.startDate).toLocaleDateString('en-CA')
-        : null,
-      endDate: stage.endDate
-        ? new Date(stage.endDate).toLocaleDateString('en-CA')
-        : null,
-      executedStartDate: stage.executedStartDate
-        ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
-        : null,
-      executedEndDate: stage.executedEndDate
-        ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
-        : null,
-    }))
+    // Get current user's employeeId for ownership checks
+    const currentUserId = req.user[0]?.employeeId
+    
+    // Convert dates and prepare stages with canEdit and canMarkComplete flags
+    const stages = data.map((stage) => {
+      // Determine if user directly owns this stage (assigned to them)
+      const isDirectOwner = stage.owner === currentUserId // stage.owner is employeeId from DB
+      
+      // canEdit: Manager can edit all, Assignee can edit only owned stages
+      const canEdit = rbac.isManager === true || (rbac.ownedStages && rbac.ownedStages.includes(stage.stageId))
+      
+      // canMarkComplete: Only the direct owner can mark as complete (Manager cannot complete others' work)
+      const canMarkComplete = isDirectOwner
+      
+      console.log('[Stage Controller] Stage', stage.stageId, ':', {
+        stageName: stage.stageName,
+        owner: stage.owner,
+        currentUserId,
+        isDirectOwner,
+        canEdit,
+        canMarkComplete,
+        rbacIsManager: rbac.isManager
+      })
+      
+      return {
+        ...stage,
+        canEdit,
+        canMarkComplete,
+        isOwnedByCurrentUser: isDirectOwner, // For UI display
+        startDate: stage.startDate
+          ? new Date(stage.startDate).toLocaleDateString('en-CA')
+          : null,
+        endDate: stage.endDate
+          ? new Date(stage.endDate).toLocaleDateString('en-CA')
+          : null,
+        executedStartDate: stage.executedStartDate
+          ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
+          : null,
+        executedEndDate: stage.executedEndDate
+          ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
+          : null,
+      }
+    })
+
+    console.log('[Stage Controller] Returning', stages.length, 'stages with canEdit and canMarkComplete flags')
 
     // Get stages in order based on seqPrevStage
     const orderedStages = orderStages(stages)
@@ -173,8 +245,29 @@ export const getHistoryStagesByStageId = asyncHandler(async (req, res) => {
 // Get stage by stage ID
 export const getSingleStageByStageId = asyncHandler(async (req, res) => {
   const stageId = req.params.id
+  const rbac = req.rbac || {}
+  const currentUserId = req.user[0]?.employeeId
+  
+  console.log('[getSingleStageByStageId] ========== DEBUG ==========')
+  console.log('[getSingleStageByStageId] Stage ID:', stageId)
+  console.log('[getSingleStageByStageId] Current User:', currentUserId)
+  console.log('[getSingleStageByStageId] RBAC:', JSON.stringify(rbac, null, 2))
+  console.log('[getSingleStageByStageId] =====================================')
+  
+  // RBAC Authorization Check - Manager bypass, Assignee must own stage
+  if (rbac.isManager !== true) {
+    // User is not Manager - check if they own this stage
+    if (!rbac.ownedStages || !rbac.ownedStages.includes(parseInt(stageId))) {
+      console.log('[getSingleStageByStageId] Access DENIED: User', currentUserId, 'cannot access stage', stageId)
+      return res.status(403).json(new ApiError(403, 'You do not have permission to view this stage'))
+    }
+    console.log('[getSingleStageByStageId] Access GRANTED: User owns stage', stageId)
+  } else {
+    console.log('[getSingleStageByStageId] Access GRANTED: User is Manager')
+  }
+  
   const query = `
-          SELECT s.*, eo.employeeName AS owner, cb.employeeName AS createdBy, eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById
+          SELECT s.*, eo.employeeName AS owner, cb.employeeName AS createdBy, eo.customEmployeeId AS ownerId, cb.customEmployeeId AS createdById, eo.employeeId AS ownerEmployeeId
           FROM stage s
           INNER JOIN employee eo ON s.owner = eo.employeeId
           INNER JOIN employee cb ON s.createdBy = cb.employeeId
@@ -190,21 +283,29 @@ export const getSingleStageByStageId = asyncHandler(async (req, res) => {
       res.status(200).send(new ApiError(404, 'Stage not found'))
       return
     }
-    const stages = data.map((stage) => ({
-      ...stage,
-      startDate: stage.startDate
-        ? new Date(stage.startDate).toLocaleDateString('en-CA')
-        : null,
-      endDate: stage.endDate
-        ? new Date(stage.endDate).toLocaleDateString('en-CA')
-        : null,
-      executedStartDate: stage.executedStartDate
-        ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
-        : null,
-      executedEndDate: stage.executedEndDate
-        ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
-        : null,
-    }))
+    
+    const stages = data.map((stage) => {
+      const isDirectOwner = stage.ownerEmployeeId === currentUserId
+      
+      return {
+        ...stage,
+        canEdit: rbac.isManager === true || (rbac.ownedStages && rbac.ownedStages.includes(parseInt(stageId))),
+        canMarkComplete: isDirectOwner,
+        isOwnedByCurrentUser: isDirectOwner,
+        startDate: stage.startDate
+          ? new Date(stage.startDate).toLocaleDateString('en-CA')
+          : null,
+        endDate: stage.endDate
+          ? new Date(stage.endDate).toLocaleDateString('en-CA')
+          : null,
+        executedStartDate: stage.executedStartDate
+          ? new Date(stage.executedStartDate).toLocaleDateString('en-CA')
+          : null,
+        executedEndDate: stage.executedEndDate
+          ? new Date(stage.executedEndDate).toLocaleDateString('en-CA')
+          : null,
+      }
+    })
 
     res
       .status(200)
@@ -404,6 +505,14 @@ export const deleteStage = asyncHandler(async (req, res) => {
 //update stage and store history
 export const updateStage = asyncHandler(async (req, res) => {
   const stageId = req.params.id
+  const { rbac } = req
+  
+  // RBAC permission check
+  if (rbac.isManager !== true && !rbac.ownedStages.includes(parseInt(stageId))) {
+    return res.status(403).json({
+      message: 'You do not have permission to edit this stage'
+    })
+  }
 
   const selectQuery = `SELECT * FROM stage WHERE stageId = ?`
   const insertQuery = `INSERT INTO stage (

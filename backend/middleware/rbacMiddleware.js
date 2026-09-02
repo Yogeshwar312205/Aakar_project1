@@ -139,10 +139,28 @@ export const rbacMiddleware = asyncHandler(async (req, res, next) => {
   
   console.log('[RBAC] User is Assignee - Owned stages:', ownedStages, 'Owned substages:', ownedSubstages)
   
+  // CRITICAL: If employee owns substages, they need to see parent stages too
+  // Query to get parent stageIds for owned substages
+  let parentStageIds = []
+  if (ownedSubstages.length > 0) {
+    const [parentStages] = await connection.promise().query(
+      'SELECT DISTINCT stageId FROM substage WHERE substageId IN (?)',
+      [ownedSubstages]
+    )
+    parentStageIds = parentStages.map(ps => ps.stageId)
+    console.log('[RBAC] Parent stages for owned substages:', parentStageIds)
+  }
+  
+  // Merge ownedStages with parentStageIds (remove duplicates)
+  const allVisibleStages = [...new Set([...ownedStages, ...parentStageIds])]
+  
+  console.log('[RBAC] Final visible stages (owned + parents of owned substages):', allVisibleStages)
+  
   // Attach RBAC context to request
   req.rbac = {
     role: 'assignee',
-    ownedStages: ownedStages,
+    ownedStages: allVisibleStages, // Includes both directly owned stages AND parent stages of owned substages
+    directlyOwnedStages: ownedStages, // Only stages directly assigned
     ownedSubstages: ownedSubstages,
     isManager: false,
     projectNumber: projectNumber

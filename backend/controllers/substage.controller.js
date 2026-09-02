@@ -684,6 +684,28 @@ export const createSubStage = asyncHandler(async (req, res) => {
             .json(new ApiResponse(500, null, 'Error creating substage'))
         }
 
+        // Get the newly created substageId
+        const newSubstageId = data.insertId
+        
+        // If owner is different from creator, create a stage_assignment record
+        if (employeeId !== req.user[0].employeeId) {
+          const assignmentQuery = `INSERT INTO stage_assignment (projectNumber, stageId, substageId, employeeId, assignedBy)
+            VALUES (?, NULL, ?, ?, ?)`
+          
+          db.query(
+            assignmentQuery,
+            [req.body.projectNumber, newSubstageId, employeeId, req.user[0].employeeId],
+            (assignmentErr) => {
+              if (assignmentErr) {
+                console.error('Error creating substage assignment:', assignmentErr)
+                // Don't fail the substage creation, just log the error
+              } else {
+                console.log(`[Substage Creation] Created assignment: substage ${newSubstageId} assigned to employee ${employeeId}`)
+              }
+            }
+          )
+        }
+
         // After creating substage, recalculate stage progress
         const stageId = req.body.stageId
         const projectNumber = req.body.projectNumber

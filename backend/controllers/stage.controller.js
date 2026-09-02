@@ -150,11 +150,17 @@ export const getActiveStagesByProjectNumber = asyncHandler(async (req, res) => {
       // Determine if user directly owns this stage (assigned to them)
       const isDirectOwner = stage.owner === currentUserId // stage.owner is employeeId from DB
       
-      // canEdit: Manager can edit all, Assignee can edit only owned stages
-      const canEdit = rbac.isManager === true || (rbac.ownedStages && rbac.ownedStages.includes(stage.stageId))
+      // canEdit: Manager can edit all stages
+      // Assignee can only edit stages they DIRECTLY own (not parent stages of owned substages)
+      const canEdit = rbac.isManager === true 
+        || (rbac.directlyOwnedStages && rbac.directlyOwnedStages.includes(stage.stageId))
       
       // canMarkComplete: Only the direct owner can mark as complete (Manager cannot complete others' work)
       const canMarkComplete = isDirectOwner
+      
+      // isVisible: Stage is visible if in ownedStages (includes parent stages)
+      const isVisible = rbac.isManager === true 
+        || (rbac.ownedStages && rbac.ownedStages.includes(stage.stageId))
       
       console.log('[Stage Controller] Stage', stage.stageId, ':', {
         stageName: stage.stageName,
@@ -163,6 +169,8 @@ export const getActiveStagesByProjectNumber = asyncHandler(async (req, res) => {
         isDirectOwner,
         canEdit,
         canMarkComplete,
+        isVisible,
+        isDirectlyOwned: rbac.directlyOwnedStages && rbac.directlyOwnedStages.includes(stage.stageId),
         rbacIsManager: rbac.isManager
       })
       
@@ -171,6 +179,7 @@ export const getActiveStagesByProjectNumber = asyncHandler(async (req, res) => {
         canEdit,
         canMarkComplete,
         isOwnedByCurrentUser: isDirectOwner, // For UI display
+        isDirectlyOwned: rbac.directlyOwnedStages && rbac.directlyOwnedStages.includes(stage.stageId), // Directly assigned (not just parent)
         startDate: stage.startDate
           ? new Date(stage.startDate).toLocaleDateString('en-CA')
           : null,

@@ -83,6 +83,8 @@ const StageTreeNode = ({
       duration: '',
       progress: '',
       substages: [],
+      canEdit: true, // RBAC: Newly created substages are editable by creator
+      canMarkComplete: true, // RBAC: Creator can mark their substages as complete
     }
     onAddChild(node.id, newSubstage)
     setIsExpanded(true)

@@ -449,6 +449,8 @@ const UpdateProject = () => {
       duration: newStage.duration || 0,
       progress: newStage.progress || 0,
       isPending: true, // Flag to identify pending stages
+      canEdit: true, // RBAC: Newly created stages are editable by creator
+      canMarkComplete: true, // RBAC: Creator can mark their stages as complete
     }
 
     setPendingStages([...pendingStages, pendingStage])
@@ -533,6 +535,8 @@ const UpdateProject = () => {
       progress: newSubstage.progress || 0,
       isPending: true, // Flag to identify pending substages
       isCompleted: 0, // New substages are not completed
+      canEdit: true, // RBAC: Newly created substages are editable by creator
+      canMarkComplete: true, // RBAC: Creator can mark their substages as complete
     }
 
     // If adding a child to a completed parent, mark parent as incomplete

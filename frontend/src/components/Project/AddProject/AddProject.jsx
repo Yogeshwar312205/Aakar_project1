@@ -65,6 +65,8 @@ const AddProject = () => {
       seqPrevStage: null,
       createdBy: user.employeeId,
       substages: [], // Support nested substages
+      canEdit: true, // RBAC: Newly created stages are editable by creator
+      canMarkComplete: true, // RBAC: Creator can mark their stages as complete
     },
   ])
 
@@ -99,6 +101,8 @@ const AddProject = () => {
               duration: item.duration || '',
               progress: '',
               substages: buildSubstagesTree(item.itemId),
+              canEdit: true, // RBAC: Newly created substages are editable by creator
+              canMarkComplete: true, // RBAC: Creator can mark their substages as complete
             }))
         }
 
@@ -119,6 +123,8 @@ const AddProject = () => {
           seqPrevStage: null,
           createdBy: user.employeeId,
           substages: buildSubstagesTree(item.itemId),
+          canEdit: true, // RBAC: Newly created stages are editable by creator
+          canMarkComplete: true, // RBAC: Creator can mark their stages as complete
         }))
         setStages(newStages)
         toast.success(
@@ -183,6 +189,8 @@ const AddProject = () => {
           seqPrevStage: null,
           createdBy: user.employeeId,
           substages: [],
+          canEdit: true, // RBAC: Newly created stages are editable by creator
+          canMarkComplete: true, // RBAC: Creator can mark their stages as complete
         },
       ])
       navigate(-1)

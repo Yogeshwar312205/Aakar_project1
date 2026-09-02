@@ -80,6 +80,18 @@ WHERE ss.stageId = ?`
         || (rbac.ownedSubstages && rbac.ownedSubstages.includes(substage.substageId))
         || (rbac.ownedStages && rbac.ownedStages.includes(parseInt(stageId)))
       
+      console.log(`[Substage Controller] Substage ${substage.substageId} permissions:`, {
+        isManager: rbac.isManager,
+        ownerEmployeeId: substage.ownerEmployeeId,
+        currentUserId,
+        isDirectOwner,
+        canEdit,
+        ownedSubstages: rbac.ownedSubstages,
+        includesThisSubstage: rbac.ownedSubstages && rbac.ownedSubstages.includes(substage.substageId),
+        ownedStages: rbac.ownedStages,
+        includesParentStage: rbac.ownedStages && rbac.ownedStages.includes(parseInt(stageId))
+      })
+      
       // canMarkComplete: Only the direct owner can mark as complete
       const canMarkComplete = isDirectOwner
       

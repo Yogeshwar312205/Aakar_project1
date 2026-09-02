@@ -37,32 +37,38 @@ export const rbacMiddleware = asyncHandler(async (req, res, next) => {
   
   // If not found, req.params.id might be a projectNumber, stageId, or substageId - resolve it
   if (!projectNumber && req.params.id) {
-    // Try to look it up in this order: stage -> substage -> project
-    // This order is intentional because routes like /activeSubStages/:stageId use stageId most commonly
-    
-    // First check if it's a stageId
-    const [stageData] = await connection.promise().query(
-      'SELECT projectNumber FROM stage WHERE stageId = ?',
-      [req.params.id]
-    )
-    
-    if (stageData && stageData.length > 0) {
-      projectNumber = stageData[0].projectNumber
-      console.log('[RBAC] Resolved stageId', req.params.id, 'to projectNumber', projectNumber)
+    // Special case: /activeStages/:id route - id is always projectNumber
+    if (req.path.startsWith('/activeStages/')) {
+      projectNumber = req.params.id
+      console.log('[RBAC] Route /activeStages/* - Using id as projectNumber:', projectNumber)
     } else {
-      // Not a stageId, check if it's a substageId
-      const [substageData] = await connection.promise().query(
-        'SELECT projectNumber FROM substage WHERE substageId = ?',
+      // Try to look it up in this order: stage -> substage -> project
+      // This order is intentional because routes like /activeSubStages/:stageId use stageId most commonly
+      
+      // First check if it's a stageId
+      const [stageData] = await connection.promise().query(
+        'SELECT projectNumber FROM stage WHERE stageId = ?',
         [req.params.id]
       )
       
-      if (substageData && substageData.length > 0) {
-        projectNumber = substageData[0].projectNumber
-        console.log('[RBAC] Resolved substageId', req.params.id, 'to projectNumber', projectNumber)
+      if (stageData && stageData.length > 0) {
+        projectNumber = stageData[0].projectNumber
+        console.log('[RBAC] Resolved stageId', req.params.id, 'to projectNumber', projectNumber)
       } else {
-        // Not a substageId, assume it's a projectNumber directly
-        projectNumber = req.params.id
-        console.log('[RBAC] Using req.params.id as projectNumber:', projectNumber)
+        // Not a stageId, check if it's a substageId
+        const [substageData] = await connection.promise().query(
+          'SELECT projectNumber FROM substage WHERE substageId = ?',
+          [req.params.id]
+        )
+        
+        if (substageData && substageData.length > 0) {
+          projectNumber = substageData[0].projectNumber
+          console.log('[RBAC] Resolved substageId', req.params.id, 'to projectNumber', projectNumber)
+        } else {
+          // Not a substageId, assume it's a projectNumber directly
+          projectNumber = req.params.id
+          console.log('[RBAC] Using req.params.id as projectNumber:', projectNumber)
+        }
       }
     }
   }

@@ -435,6 +435,29 @@ export const createStage = asyncHandler(async (req, res) => {
           .status(500)
           .json(new ApiResponse(500, null, 'Error creating stage'))
       }
+      
+      // Get the newly created stageId
+      const newStageId = data.insertId
+      
+      // If owner is different from creator, create a stage_assignment record
+      if (employeeId !== req.user[0].employeeId) {
+        const assignmentQuery = `INSERT INTO stage_assignment (projectNumber, stageId, substageId, employeeId, assignedBy)
+          VALUES (?, ?, NULL, ?, ?)`
+        
+        db.query(
+          assignmentQuery,
+          [projectNumber, newStageId, employeeId, req.user[0].employeeId],
+          (assignmentErr) => {
+            if (assignmentErr) {
+              console.error('Error creating stage assignment:', assignmentErr)
+              // Don't fail the stage creation, just log the error
+            } else {
+              console.log(`[Stage Creation] Created assignment: stage ${newStageId} assigned to employee ${employeeId}`)
+            }
+          }
+        )
+      }
+      
       res
         .status(201)
         .json(new ApiResponse(201, data, 'Stage created successfully'))

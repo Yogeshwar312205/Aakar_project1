@@ -28,6 +28,7 @@ import substageRoutes from './routes/substage.routes.js'
 import substagesMasterRoutes from './routes/substagesMaster.routes.js'
 import stageTemplateRoutes from './routes/stageTemplate.routes.js'
 import assignmentRoutes from './routes/assignment.routes.js'
+import trainersModule from './controllers/trainersModule.js'
 import morgan from "morgan"
 
 import bomRoute from './routes/bom.route.js';
@@ -76,6 +77,7 @@ app.use('/api/', activityRoute)
 
 // Training routes
 app.use(server)
+app.use(trainersModule)  // Trainers CRUD routes
 
 // Ticket tracking routes
 app.use('/tickets', ticketsRoutes)

@@ -57,8 +57,8 @@ const UpdateSkill = () => {
     console.log("effective dept id: ", effectiveDepartmentId);
     if(departmentId){
       console.log("Selected department id : ",departmentId);
-      fetchDepartmentSkill()
-      departmentExpectedSkills();
+      fetchDepartmentSkill();
+      // Removed departmentExpectedSkills() call as its logic is now integrated into fetchDepartmentSkill()
     } else {
       console.error("Department ID is missing!");
       toast.error("Department ID is not available.");
@@ -78,32 +78,57 @@ const UpdateSkill = () => {
 
     const fetchDepartmentSkill = async () => {
       try {
-        const resp = await axios.get(`http://localhost:3000/skills/${departmentId}`);
-        const deptSkills = resp?.data || [];
-
+        // Fetch all department-skill relationships
         const expectedResp = await departmentExpectedSkill();
         const expectedData = expectedResp?.data || expectedResp || [];
+        
+        // Get skills that this department has marked as applicable (type 2 or 3)
         const expectedSkillIds = expectedData
-          .filter((dept) => dept.departmentId === departmentId && dept.departmentSkillType === 3 && dept.departmentSkillStatus === 1)
+          .filter((dept) => dept.departmentId === departmentId && (dept.departmentSkillType === 2 || dept.departmentSkillType === 3) && dept.departmentSkillStatus === 1)
           .map((dept) => dept.skillId);
 
-        const deptOnly = Array.isArray(deptSkills) ? deptSkills.map(ds => {
-          const skillId = ds.skillId || ds.id;
-          return {
-            skillId: skillId,
-            skillName: ds.skillName || ds.label,
-            departmentId: ds.departmentId || departmentId,
-            departmentName: ds.departmentName || departmentName || selectedDepartmentName || '',
-            skillDescription: ds.skillDescription || ds.description || '',
-            departmentSkillType: expectedSkillIds.includes(skillId) ? 'Applicable to my department' : 'Giving Training',
-          };
-        }) : [];
+        // Create a map to track which skills we've already added to avoid duplicates
+        const skillMap = new Map();
 
-        setSkills(deptOnly);
+        expectedData.forEach(dept => {
+          // Skip type 2 entries from OTHER departments (they're taking training, not giving)
+          if (dept.departmentId !== departmentId && dept.departmentSkillType === 2) {
+            return;
+          }
+          
+          // Skip inactive skills
+          if (dept.departmentSkillStatus !== 1) {
+            return;
+          }
+
+          const skillId = dept.skillId;
+          
+          // If we haven't seen this skill yet, add it
+          if (!skillMap.has(skillId)) {
+            skillMap.set(skillId, {
+              skillId: skillId,
+              skillName: dept.skillName,
+              departmentId: dept.departmentId,
+              departmentName: dept.departmentName,
+              skillDescription: dept.skillDescription,
+              departmentSkillType: dept.departmentId === departmentId 
+                ? convertIdtoLabel(dept.departmentSkillType) 
+                : 'Giving Training',
+            });
+          } else if (dept.departmentId === departmentId) {
+            // If this is OUR department's entry, update the type to reflect our relationship
+            const existing = skillMap.get(skillId);
+            existing.departmentSkillType = convertIdtoLabel(dept.departmentSkillType);
+          }
+        });
+
+        const mappedSkills = Array.from(skillMap.values());
+
+        setSkills(mappedSkills);
         setGlobalExpectedSkill(expectedSkillIds);
 
-        console.log("Department skills count:", deptOnly.length);
-        console.log("Expected Skill : ", expectedSkillIds);
+        console.log("Department skills count:", mappedSkills.length);
+        console.log("Expected Skill IDs:", expectedSkillIds);
       } catch (error){
         console.error("Error in fetching department skills: ", error);
       }

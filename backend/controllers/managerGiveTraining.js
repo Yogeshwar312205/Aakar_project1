@@ -201,21 +201,44 @@ router.get(`/GetDeptGiveTrainData/:dept_id/:skill_id?`, (req, res) => {
 );
 
 // Getting skill names which give training by particular department
+// Updated to show:
+// 1. Skills this department can give training for (type 1 or 3)
+// 2. Skills from other departments that are available for cross-department training (type 1 or 3)
 router.get(`/DepartmentGiveTskills/:dept_id`,(req,res)=>{
   const deptId = req.params.dept_id;
-  const query = `SELECT s.skillName,ds.skillId
-FROM departmentSkill ds
-JOIN skill s ON ds.skillId = s.skillId
-WHERE ds.departmentId = ?
-  AND ds.departmentSkillType IN (1, 3) AND s.skillActivityStatus = 1;
-; `
-  connection.query(query,[deptId],(err,result)=>{
+  const query = `
+    SELECT DISTINCT s.skillName, s.skillId, ds.departmentId, d.departmentName
+    FROM departmentSkill ds
+    JOIN skill s ON ds.skillId = s.skillId
+    JOIN department d ON ds.departmentId = d.departmentId
+    WHERE s.skillActivityStatus = 1
+      AND ds.departmentSkillStatus = 1
+      AND (
+        -- Skills owned by this department (can give training)
+        (ds.departmentId = ? AND ds.departmentSkillType IN (1, 3))
+        OR
+        -- Skills from other departments available for cross-department training
+        (ds.departmentId != ? AND ds.departmentSkillType IN (1, 3))
+      )
+    ORDER BY s.skillName
+  `;
+  
+  connection.query(query, [deptId, deptId], (err, result) => {
     if(err){
-      console.error('Error in fetching Skill Training by Departmment', err);
-        return res.status(500).json({ error: 'Error fetching data' });
+      console.error('Error in fetching Skill Training by Department', err);
+      return res.status(500).json({ error: 'Error fetching data' });
     }
-    res.json(result);
-    // console.log('DepartmentId',result);
+    
+    // Map to ensure consistent format (skillId and skillName)
+    const formattedResult = result.map(skill => ({
+      skillId: skill.skillId,
+      skillName: skill.skillName,
+      departmentId: skill.departmentId,
+      departmentName: skill.departmentName
+    }));
+    
+    res.json(formattedResult);
+    console.log(`Fetched ${formattedResult.length} skills for department ${deptId}`);
   })
 })
 
@@ -349,27 +372,50 @@ connection.query(query,[departmentId],(err,result) =>{
 });
 
 
-// Select employess from selected assign table who are elidgible for that training
+// Select employees from employeeSkill table who are eligible for that training
+// Updated to query employeeSkill directly instead of selectedAssignTraining
+// This ensures newly added/updated employees appear immediately without manual intervention
 router.get('/eligible-employee-to-send-to-training', (req, res) => {
-  const {trainingId,departmentId} = req.query;
+  const {trainingId, departmentId} = req.query;
 
   if (!trainingId) {
     return res.status(400).json({ error: 'Training ID is required' });
   }
-  const query = `SELECT sa.employeeId, sa.skillId,s.skillName,e.employeeName,ed.departmentId
-  FROM training t
-  INNER JOIN trainingSkills ts ON t.trainingId = ts.trainingId
-  INNER JOIN selectedAssigntraining sa ON sa.skillId = ts.skillId
-  INNER JOIN skill s ON sa.skillId = s.skillId
-  INNER JOIN employeeDesignation ed on ed.employeeId = sa.employeeId
-  INNER JOIN employee e ON e.employeeId = sa.employeeId
-  WHERE t.trainingId = ? AND ed.departmentId = ? AND sa.employeeId != t.trainerId`;
+  
+  if (!departmentId) {
+    return res.status(400).json({ error: 'Department ID is required' });
+  }
 
-  connection.query(query, [trainingId,departmentId], (err, result) => {
+  // Query that fetches employees directly from employeeSkill table
+  // This includes ALL employees in the department who have the required skills
+  // regardless of whether they're in selectedAssignTraining table
+  const query = `
+    SELECT DISTINCT 
+      es.employeeId, 
+      es.skillId,
+      s.skillName,
+      e.employeeName,
+      ed.departmentId,
+      es.grade
+    FROM training t
+    INNER JOIN trainingSkills ts ON t.trainingId = ts.trainingId
+    INNER JOIN employeeSkill es ON es.skillId = ts.skillId
+    INNER JOIN skill s ON es.skillId = s.skillId
+    INNER JOIN employee e ON e.employeeId = es.employeeId
+    INNER JOIN employeeDesignation ed ON ed.employeeId = es.employeeId
+    WHERE t.trainingId = ? 
+      AND ed.departmentId = ? 
+      AND es.employeeId != t.trainerId
+    ORDER BY e.employeeName, s.skillName
+  `;
+
+  connection.query(query, [trainingId, departmentId], (err, result) => {
     if (err) {
       console.error("Error fetching eligible employees:", err);
       return res.status(500).json({ error: 'Database query failed' });
     }
+    
+    console.log(`Fetched ${result.length} eligible employees for training ${trainingId} in department ${departmentId}`);
     return res.json(result);
   });
 });

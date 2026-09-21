@@ -280,17 +280,11 @@ router.post("/add-2-in-department-skill", (req, res) => {
         });
       });
     } else {
-      // Update existing record
+      // Record already exists with type 2 - reactivate it if it was deactivated
       const query3 = `
        UPDATE departmentSkill
-        SET departmentSkillStatus = 
-        CASE 
-          WHEN departmentSkillStatus = 0 THEN 1
-          WHEN departmentSkillStatus = 1 THEN 0
-          ELSE departmentSkillStatus -- No change for other values (2, 3, etc.)
-        END
-          WHERE skillId = ? AND departmentId = ?;
-
+        SET departmentSkillStatus = 1
+        WHERE skillId = ? AND departmentId = ? AND departmentSkillType = 2;
       `;
 
       connection.query(query3, [skillId, departmentId], (err, result) => {
@@ -303,11 +297,26 @@ router.post("/add-2-in-department-skill", (req, res) => {
               error: err.message,
             });
         }
+        
+        // Also ensure employees have the skill assigned
+        const query4 = `
+          INSERT INTO employeeSkill (employeeId, skillId, grade)
+          SELECT DISTINCT ed.employeeId, ? , 0
+          FROM employeeDesignation ed
+          LEFT JOIN employeeSkill es ON ed.employeeId = es.employeeId AND es.skillId = ?
+          WHERE ed.departmentId = ? AND es.employeeId IS NULL;
+        `;
+        connection.query(query4, [skillId, skillId, departmentId], (err) => {
+          if (err) {
+            console.error("Error assigning skill to employees:", err);
+          }
+        });
+        
         return res.status(200).json({
           skillId,
           departmentId,
-          previousDepartmentSkillType: 2, // Show previous state explicitly
-          updatedDepartmentSkillType: 0,
+          departmentSkillType: 2,
+          message: "Skill reactivated successfully"
         });
       });
     }
@@ -396,20 +405,50 @@ router.post("/add-3-in-department-skill", (req, res) => {
 
 router.delete('/remove-2-in-deparment-skill',(req,res)=>{
   const {skillId,departmentId }= req.body;
-  if(!skillId) return res.status(400).json({message:"SkillId is required..."})
-  const query = `UPDATE departmentSkill set  departmentSkillStatus = 0 where skillId = ? and departmentId = ?  and departmentSkillType = 2`
+  
+  if(!skillId) {
+    return res.status(400).json({message:"SkillId is required..."});
+  }
+  
+  if(!departmentId) {
+    return res.status(400).json({message:"DepartmentId is required..."});
+  }
+  
+  // Delete the type 2 relationship completely (cross-department skill)
+  // This allows the skill to be re-added later if needed
+  const query = `
+    DELETE FROM departmentSkill 
+    WHERE skillId = ? AND departmentId = ? AND departmentSkillType = 2
+  `;
+  
   connection.query(query,[skillId,departmentId],(err,result)=>{
     if(err){
-      console.log("Error in removing skillId from deparmentskill",err)
-      return res.status(500).json({message:"Error in removing skillId from deparmentskill",error:err.message})
+      console.error("Error in removing skillId from departmentSkill:",err);
+      return res.status(500).json({
+        message:"Error in removing skillId from departmentSkill",
+        error:err.message
+      });
     }
+    
+    if(result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "No type 2 relationship found to remove",
+        skillId,
+        departmentId
+      });
+    }
+    
+    console.log(`Removed type 2 relationship: skillId=${skillId}, departmentId=${departmentId}`);
+    
     return res.status(200).json({
-      message : "Skill removed successfully...",
+      message : "Skill removed successfully from department",
       skillId,
+      departmentId,
       departmentSkillType : 2,
-    })
-  })
-})
+      affectedRows: result.affectedRows
+    });
+  });
+});
 
 router.delete('/remove-3-in-deparment-skill', (req, res) => {
   const { skillId, departmentId } = req.body;
@@ -489,7 +528,9 @@ router.get('/expected-department-skill', (req, res) => {
     s.skillDescription, 
     d.departmentName,
     ds.departmentSkillType,
-    ds.departmentSkillStatus
+    ds.departmentSkillStatus,
+    s.departmentId as skillOwnerDeptId,
+    ownerDept.departmentName as skillOwnerDeptName
 
 FROM 
     departmentSkill ds
@@ -499,6 +540,9 @@ INNER JOIN
 INNER JOIN
     department d
     ON d.departmentId = ds.departmentId
+INNER JOIN
+    department ownerDept
+    ON ownerDept.departmentId = s.departmentId
 WHERE 
      s.skillActivityStatus = 1 ;
 

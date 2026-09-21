@@ -89,13 +89,16 @@ const UpdateSkill = () => {
 
         // Create a map to track which skills we've already added to avoid duplicates
         const skillMap = new Map();
+        
+        // Create a map to track MY department's relationship with each skill
+        const myDepartmentRelationships = new Map();
+        expectedData.forEach(dept => {
+          if (dept.departmentId === departmentId && dept.departmentSkillStatus === 1) {
+            myDepartmentRelationships.set(dept.skillId, dept.departmentSkillType);
+          }
+        });
 
         expectedData.forEach(dept => {
-          // Skip type 2 entries from OTHER departments (they're taking training, not giving)
-          if (dept.departmentId !== departmentId && dept.departmentSkillType === 2) {
-            return;
-          }
-          
           // Skip inactive skills
           if (dept.departmentSkillStatus !== 1) {
             return;
@@ -103,20 +106,42 @@ const UpdateSkill = () => {
 
           const skillId = dept.skillId;
           
+          // For cross-department skills: Only show if type 1 or 3 (giving training)
+          // Skip type 2 from OTHER departments (they're taking training, not giving)
+          if (dept.departmentId !== departmentId && dept.departmentSkillType === 2) {
+            return;
+          }
+          
           // If we haven't seen this skill yet, add it
           if (!skillMap.has(skillId)) {
+            // Determine the display type for this skill
+            let displayType;
+            
+            if (dept.skillOwnerDeptId === departmentId) {
+              // This is OUR department's skill - show our relationship type
+              displayType = convertIdtoLabel(dept.departmentSkillType);
+            } else {
+              // This is ANOTHER department's skill
+              // Check if MY department has marked it as applicable (type 2)
+              const myRelationship = myDepartmentRelationships.get(skillId);
+              if (myRelationship === 2) {
+                displayType = 'Applicable to my department';
+              } else {
+                displayType = 'Giving Training';
+              }
+            }
+            
             skillMap.set(skillId, {
               skillId: skillId,
               skillName: dept.skillName,
-              departmentId: dept.departmentId,
-              departmentName: dept.departmentName,
+              departmentId: dept.skillOwnerDeptId, // ALWAYS use the skill owner department ID
+              departmentName: dept.skillOwnerDeptName, // ALWAYS use the skill owner department name
               skillDescription: dept.skillDescription,
-              departmentSkillType: dept.departmentId === departmentId 
-                ? convertIdtoLabel(dept.departmentSkillType) 
-                : 'Giving Training',
+              departmentSkillType: displayType,
             });
           } else if (dept.departmentId === departmentId) {
-            // If this is OUR department's entry, update the type to reflect our relationship
+            // If this is OUR department's entry for a skill we already added,
+            // update the type to reflect our relationship (but keep original department name)
             const existing = skillMap.get(skillId);
             existing.departmentSkillType = convertIdtoLabel(dept.departmentSkillType);
           }
@@ -128,7 +153,8 @@ const UpdateSkill = () => {
         setGlobalExpectedSkill(expectedSkillIds);
 
         console.log("Department skills count:", mappedSkills.length);
-        console.log("Expected Skill IDs:", expectedSkillIds);
+        console.log("Expected Skill IDs (type 2 or 3):", expectedSkillIds);
+        console.log("My department relationships:", Array.from(myDepartmentRelationships.entries()));
       } catch (error){
         console.error("Error in fetching department skills: ", error);
       }
@@ -289,18 +315,34 @@ const UpdateSkill = () => {
   const handleOnClick = async (row) => {
     const body = { skillId: row.skillId, departmentId };
 
+    // Determine the skill type based on ownership
+    // If the skill belongs to MY department -> type3 (own skill)
+    // If the skill belongs to ANOTHER department -> type2 (cross-department)
     const skillType = row.departmentId === departmentId ? 'type3' : 'type2';
 
     const originalExpectedSkill = globalExpectedSkill;
     const originalSkills = skills;
 
     if (globalExpectedSkill.includes(row.skillId)) {
+      // UNCHECKING - Remove the skill from applicable list
       console.log('Removing expected skill, request body:', body, 'skillType:', skillType);
+      console.log('Original skill owner department:', row.departmentId, 'Current department:', departmentId);
 
       try {
+        // Optimistically update UI
         setGlobalExpectedSkill(prev => prev.filter(ges => ges !== row.skillId));
 
+        // Update the UI display based on skill ownership
         if (row.departmentId === departmentId) {
+          // This is our own department's skill - change to "Giving Training"
+          setSkills(prevSkills => prevSkills.map(skill =>
+            skill.skillId === row.skillId
+              ? { ...skill, departmentSkillType: 'Giving Training' }
+              : skill
+          ));
+        } else {
+          // This is a cross-department skill - change to "Giving Training"
+          // (removes "Applicable to my department" label)
           setSkills(prevSkills => prevSkills.map(skill =>
             skill.skillId === row.skillId
               ? { ...skill, departmentSkillType: 'Giving Training' }
@@ -310,36 +352,42 @@ const UpdateSkill = () => {
 
         await removeSkillFromDepartment(body, skillType);
         console.log('Skill successfully removed from expected skills');
-        toast.success('Skill removed from expected skills');
+        console.log('Skill ownership remains with department:', row.departmentId);
+        toast.success('Skill removed from applicable skills');
       } catch (err) {
+        // Revert on error
         setGlobalExpectedSkill(originalExpectedSkill);
         setSkills(originalSkills);
         console.error('Error in removing from department skill:', err?.response || err);
-        toast.error('Failed to remove skill from expected skills. Changes reverted.');
+        toast.error('Failed to remove skill. Changes reverted.');
       }
     } else {
+      // CHECKING - Add the skill to applicable list
       console.log('Adding expected skill, request body:', body, 'skillType:', skillType);
+      console.log('Original skill owner department:', row.departmentId, 'Current department:', departmentId);
 
       try {
+        // Optimistically update UI
         setGlobalExpectedSkill(prev => [...prev, row.skillId]);
 
-        if (row.departmentId === departmentId) {
-          setSkills(prevSkills => prevSkills.map(skill =>
-            skill.skillId === row.skillId
-              ? { ...skill, departmentSkillType: 'Applicable to my department' }
-              : skill
-          ));
-        }
+        // Update the UI display - ALWAYS show "Applicable to my department" when checked
+        setSkills(prevSkills => prevSkills.map(skill =>
+          skill.skillId === row.skillId
+            ? { ...skill, departmentSkillType: 'Applicable to my department' }
+            : skill
+        ));
 
         await addSkillToDepartment(body, skillType);
         console.log('Skill successfully added to expected skills');
-        toast.success('Skill added to expected skills');
+        console.log('Skill ownership remains with department:', row.departmentId);
+        toast.success('Skill marked as applicable to your department');
       } catch (error) {
+        // Revert on error
         setGlobalExpectedSkill(originalExpectedSkill);
         setSkills(originalSkills);
         console.error('Error adding skill - full error:', error);
         console.error('Error response data:', error?.response?.data);
-        toast.error('Failed to add skill to expected skills. Changes reverted.');
+        toast.error('Failed to add skill. Changes reverted.');
       }
     }
   };

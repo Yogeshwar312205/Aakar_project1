@@ -202,26 +202,50 @@ const SendConformEmpToTraining = () => {
 
     useEffect(() => {
         if (!selectedTrainingId) return;
+        
+        // Log the parameters being sent
+        console.log('=== Fetching Eligible Employees ===');
+        console.log('Training ID:', selectedTrainingId);
+        console.log('Department ID:', departmentId);
+        
+        if (!departmentId) {
+            console.error('ERROR: departmentId is undefined or null!');
+            setEligibleEmployees([]);
+            return;
+        }
+        
         const train_dept_data = {trainingId:selectedTrainingId,departmentId:departmentId}
         axios
             .get(`http://localhost:3000/eligible-employee-to-send-to-training`,{params : train_dept_data})
             .then((response) => {
+                console.log('API Response received:', response.data);
+                console.log('Number of employees:', response.data.length);
+                
                 const empFromAssignedTrining = response.data
                 const emp_ids =TrainingPreselectedemp.filter(emp => emp.trainingId === selectedTrainingId).map(emp => emp.employeeId);
                 const uniqueEmployees = response.data.filter(
                     (item, index, array) =>
                       index === array.findIndex(emp => emp.employeeId === item.employeeId)
                   );
-                console.log("Uniques employees : ",uniqueEmployees)
+                console.log("Unique employees after filter:",uniqueEmployees)
+                console.log("Number of unique employees:", uniqueEmployees.length);
+                
                 setEligibleEmployees(uniqueEmployees);
                 setTrainingPreselectedempId(emp_ids);
                 setConstEmpId(emp_ids);
-                console.log("Eligible employee data : ",emp_ids)
-                console.log("Eligible employee data : ",response.data)
+                console.log("Pre-selected employee IDs:",emp_ids)
+                console.log("Full response data:",response.data)
             })
             .catch((error) => {
-                console.error("Error fetching eligible employees:", error);
-                console.log("Error fetching eligible employees:",train_dept_data);
+                console.error("=== ERROR fetching eligible employees ===");
+                console.error("Error object:", error);
+                console.error("Request params:",train_dept_data);
+                if (error.response) {
+                    console.error("Response status:", error.response.status);
+                    console.error("Response data:", error.response.data);
+                }
+                // Set empty array on error
+                setEligibleEmployees([]);
             });
     }, [selectedTrainingId]);
 
@@ -509,9 +533,22 @@ const SendConformEmpToTraining = () => {
                                                             </tbody>
                                                         </table>
                                                             ) : (
-                                                                <p>
-                                                                    No employee to select....
-                                                                </p>
+                                                                <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                                                                    <p style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
+                                                                        No eligible employees found
+                                                                    </p>
+                                                                    <p style={{ fontSize: '14px', marginBottom: '5px' }}>
+                                                                        Possible reasons:
+                                                                    </p>
+                                                                    <ul style={{ textAlign: 'left', display: 'inline-block', fontSize: '13px' }}>
+                                                                        <li>No employees have the required skills</li>
+                                                                        <li>Employees are in a different department</li>
+                                                                        <li>Trainer is the only person with these skills</li>
+                                                                    </ul>
+                                                                    <p style={{ fontSize: '13px', marginTop: '10px', fontStyle: 'italic' }}>
+                                                                        Assign skills to employees in Employee Status to see them here
+                                                                    </p>
+                                                                </div>
                                                             )
                                                         }
                                                     </div>

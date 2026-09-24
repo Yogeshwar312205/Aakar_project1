@@ -314,20 +314,39 @@ router.post('/send-multiple-emps-to-trainings', (req, res) => {
 
 
 router.get('/get-distinct-department-employess-skill-to-train/:departmentId',(req,res)=>{
-  const a = req.params.departmentId;
+  const departmentId = req.params.departmentId;
+  
+  // Updated query to use employeeSkill table instead of selectedAssigntraining
+  // This shows ALL employees with skills (real-time data), not just pre-assigned ones
   const query = `
-    select sa.employeeId , sa.skillId , e.employeeName , d.departmentName ,d.departmentId, s.skillName from selectedAssigntraining sa
-    inner join employee e on sa.employeeId = e.employeeId
-    inner join employeeDesignation ed on e.employeeId = ed.employeeId
-    inner join department d on d.departmentId = ed.departmentId
-    inner join skill s on sa.skillId = s.skillId
-    where sa.skillId in (select skillId from departmentSkill where departmentId = ? and (departmentSkillType = 1 OR departmentSkillType = 3));`
+    SELECT 
+      es.employeeId, 
+      es.skillId, 
+      e.employeeName, 
+      d.departmentName,
+      d.departmentId, 
+      s.skillName
+    FROM employeeSkill es
+    INNER JOIN employee e ON es.employeeId = e.employeeId
+    INNER JOIN employeeDesignation ed ON e.employeeId = ed.employeeId
+    INNER JOIN department d ON d.departmentId = ed.departmentId
+    INNER JOIN skill s ON es.skillId = s.skillId
+    WHERE es.skillId IN (
+      SELECT skillId FROM departmentSkill 
+      WHERE departmentId = ? 
+        AND (departmentSkillType = 1 OR departmentSkillType = 3)
+        AND departmentSkillStatus = 1
+    )
+    ORDER BY d.departmentName, e.employeeName, s.skillName
+  `;
 
-  connection.query(query,[a],(err,result) =>{
+  connection.query(query,[departmentId],(err,result) =>{
     if(err){
-      // console.log("Fetching data from data base for seperating departments",err);
-      return res.status(500).json({ error: 'Database insertion failed' });
+      console.error("Error fetching employees by department and skill:", err);
+      return res.status(500).json({ error: 'Database query failed' });
     }
+    
+    // Group results by department name
     const response = {};
     result.forEach(row =>{
       if(!response[row.departmentName]){
@@ -339,11 +358,10 @@ router.get('/get-distinct-department-employess-skill-to-train/:departmentId',(re
         skillName: row.skillName,
         skillId : row.skillId,
         departmentId : row.departmentId
-
-        //grade: row.grade
       })
-      // console.log("hi", response)
     })
+    
+    console.log(`Fetched ${result.length} employee-skill records for department ${departmentId}, grouped into ${Object.keys(response).length} departments`);
     return res.json(response)
 
   });

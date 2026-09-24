@@ -13,6 +13,7 @@ import skillRoutes from '../controllers/skills.js'
 import trainerRoutes from '../controllers/trainer.js'
 import trainingRoutes from '../controllers/trainings.js'
 import updateSkillRoutes from '../controllers/updateSkill.js'
+import trainersModuleRoutes from '../controllers/trainersModule.js'
 
 
 const app = express()
@@ -32,6 +33,7 @@ app.use(skillRoutes)
 app.use(trainerRoutes)
 app.use(trainingRoutes)
 app.use(updateSkillRoutes)
+app.use(trainersModuleRoutes)
 
 export default app
 

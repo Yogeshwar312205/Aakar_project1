@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import GeneralSearchBar from '../components/GenralSearchBar.jsx';
 import { useSelector, useDispatch } from 'react-redux';
 import { skillTrainingByDepartment } from './Manager/UpdateSkillAPI.jsx';
@@ -6,6 +7,7 @@ import { setSelectedDepartmentId, setSelectedDepartmentName } from '../features/
 import './Home.css';
 
 const Home = () => {
+    const navigate = useNavigate();
     const employeeMail = useSelector((state) => state.auth.user?.employeeEmail);
     const userName = useSelector((state) => state.auth.user?.employeeName || 'User');
     const userRole = useSelector((state) => state.auth.user?.designationName || 'Employee');
@@ -130,6 +132,48 @@ const Home = () => {
             <div className="welcome-section">
                 <h2>Welcome to Aakar ERP</h2>
                 <p>Use the navigation menu to access different modules and manage your work efficiently.</p>
+            </div>
+
+            {/* Quick Action for Trainers */}
+            <div
+                className="welcome-section"
+                style={{
+                    marginTop: '20px',
+                    border: '1.5px solid #0061A1',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    backgroundColor: '#f8fbff',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}
+            >
+                <div>
+                    <h3 style={{ color: '#0061A1', fontWeight: 'bold', fontSize: '18px', margin: 0 }}>
+                        👨‍🏫 Trainer Status & Evaluated Students
+                    </h3>
+                    <p style={{ color: '#555', margin: '6px 0 0 0', fontSize: '14px' }}>
+                        View your assigned training programs, manage sessions, take attendance, and evaluate students with skill grades.
+                    </p>
+                </div>
+                <button
+                    style={{
+                        backgroundColor: '#0061A1',
+                        color: 'white',
+                        padding: '10px 22px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        border: 'none',
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        flexShrink: 0,
+                        marginLeft: '20px',
+                        boxShadow: '0 2px 8px rgba(0, 97, 161, 0.3)'
+                    }}
+                    onClick={() => navigate('/TrainerSwitch')}
+                >
+                    Go to Trainer Status →
+                </button>
             </div>
         </div>
     );

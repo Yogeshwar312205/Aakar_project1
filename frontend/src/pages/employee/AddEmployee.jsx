@@ -51,6 +51,7 @@ const AddEmployee = () => {
     ]);
 
     const [access, setAccess] = useState('');
+    const [canManageExternalTrainers, setCanManageExternalTrainers] = useState(false);
 
     const handleSave = (e) => {
         e.preventDefault();
@@ -67,6 +68,7 @@ const AddEmployee = () => {
             employee: {
                 ...employeeInputValues,
                 employeeAccess: access,
+                canManageExternalTrainers: canManageExternalTrainers,
                 employeeEndDate: employeeInputValues.employeeEndDate || null,
             },
             jobProfiles: employeeDesignations.map((designation) => ({
@@ -122,7 +124,12 @@ const AddEmployee = () => {
                     employeeDesignations={employeeDesignations}
                     setEmployeeDesignations={setEmployeeDesignations}
                 />
-                <AccessTable access={access} setAccess={setAccess} />
+                <AccessTable 
+                    access={access} 
+                    setAccess={setAccess} 
+                    canManageExternalTrainers={canManageExternalTrainers}
+                    setCanManageExternalTrainers={setCanManageExternalTrainers}
+                />
             </section>
         </div>
     );

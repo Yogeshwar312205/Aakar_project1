@@ -33,6 +33,7 @@ import morgan from "morgan"
 import bomRoute from './routes/bom.route.js';
 import inventoryRoute from './routes/inventory.route.js';
 import transactionRoute from './routes/transactions.route.js';
+import externalTrainerRoute from './routes/externalTrainer.route.js';
 
 const app = express()
 
@@ -76,6 +77,7 @@ app.use('/api/', activityRoute)
 
 // Training routes
 app.use(server)
+app.use('/api/externalTrainer', externalTrainerRoute)
 
 // Ticket tracking routes
 app.use('/tickets', ticketsRoutes)

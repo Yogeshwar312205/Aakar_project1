@@ -42,6 +42,8 @@ const AddTraining = ({ onTrainingAdded, editTrainingData, isEditing, setIsEditin
           setEmployeeOptions(trainers.map(emp => ({
             id: emp.employeeId,
             label: emp.employeeName,
+            trainerType: emp.trainerType || 'internal', // Add trainer type
+            displayLabel: `${emp.employeeName}${emp.trainerType === 'external' ? ' (External Trainer)' : ''}` // Enhanced display
           })));
         }
       })();
@@ -384,7 +386,7 @@ const AddTraining = ({ onTrainingAdded, editTrainingData, isEditing, setIsEditin
         <GeneralSearchBar
           options={employeeOptions}
           label='Search Trainer'
-          displayKey='label'
+          displayKey='displayLabel'
           isMultiSelect={false}
           selectedValues={{
             id: newTraining.trainerId,

@@ -46,42 +46,72 @@ router.get('/trainer-employee', (req, res) => {
         .map((row) => row.skillId);
 
       // Construct query and parameters based on the skill types
-      let finalQuery = '';
+      let internalTrainerQuery = '';
       let queryParams = [];
 
       if (type3Skills.length > 0) {
         const placeholdersSkill = type3Skills.map(() => '?').join(',');
-        finalQuery = `
-          SELECT DISTINCT ed.employeeId, e.employeeName
+        internalTrainerQuery = `
+          SELECT DISTINCT ed.employeeId, e.employeeName, 'internal' as trainerType
           FROM employee e
           INNER JOIN employeeSkill es ON e.employeeId = es.employeeId
           JOIN employeeDesignation ed ON e.employeeId = ed.employeeId
           WHERE es.skillId IN (${placeholdersSkill})
             AND es.grade = 4
-            AND ed.departmentId = ? group by ed.employeeId
-            having count (DISTINCT es.skillId) = ${type3Skills.length}
+            AND ed.departmentId = ? 
+            AND e.userType = 'internal'
+          GROUP BY ed.employeeId
+          HAVING COUNT(DISTINCT es.skillId) = ${type3Skills.length}
         `;
         queryParams = [...type3Skills, departmentId];
       } else if (type1Skills.length > 0) {
-        finalQuery = `
-          SELECT DISTINCT e.employeeId, e.employeeName
+        internalTrainerQuery = `
+          SELECT DISTINCT e.employeeId, e.employeeName, 'internal' as trainerType
           FROM employee e
           JOIN employeeDesignation ed ON e.employeeId = ed.employeeId
           WHERE ed.departmentId = ?
+            AND e.userType = 'internal'
         `;
         queryParams = [departmentId];
       } else {
         return res.status(404).json({ error: 'No matching employees found' });
       }
 
-      // Execute the final query
-      connection.query(finalQuery, queryParams, (err, employees) => {
-        if (err) {
-          console.error('Error fetching employees:', err);
-          return res.status(500).json({ error: 'Error fetching employees' });
-        }
+      // Query for external trainers with matching skills and active access
+      const externalTrainerQuery = `
+        SELECT DISTINCT e.employeeId, e.employeeName, 'external' as trainerType
+        FROM employee e
+        INNER JOIN externalTrainerSkills ets ON e.employeeId = ets.employeeId
+        WHERE e.userType = 'external_trainer'
+          AND ets.skillId IN (${placeholders})
+          AND CURDATE() BETWEEN e.accessStartDate AND e.accessEndDate
+        GROUP BY e.employeeId
+        HAVING COUNT(DISTINCT ets.skillId) = ${skillIdArray.length}
+      `;
 
-        return res.status(200).json(employees);
+      // Execute both queries in parallel
+      Promise.all([
+        new Promise((resolve, reject) => {
+          connection.query(internalTrainerQuery, queryParams, (err, results) => {
+            if (err) reject(err);
+            else resolve(results || []);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          connection.query(externalTrainerQuery, skillIdArray, (err, results) => {
+            if (err) reject(err);
+            else resolve(results || []);
+          });
+        })
+      ])
+      .then(([internalTrainers, externalTrainers]) => {
+        // Combine both internal and external trainers
+        const allTrainers = [...internalTrainers, ...externalTrainers];
+        return res.status(200).json(allTrainers);
+      })
+      .catch(err => {
+        console.error('Error fetching trainers:', err);
+        return res.status(500).json({ error: 'Error fetching trainers' });
       });
     });
   });

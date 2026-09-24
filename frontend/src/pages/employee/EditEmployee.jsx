@@ -43,6 +43,7 @@ const EditEmployee = () => {
 
     const [employeeDesignations, setEmployeeDesignations] = useState([]);
     const [access, setAccess] = useState('');
+    const [canManageExternalTrainers, setCanManageExternalTrainers] = useState(false);
 
     useEffect(() => {
         const employeeData = employees.find((item) => item.employee.customEmployeeId === id);
@@ -60,6 +61,7 @@ const EditEmployee = () => {
 
             setEmployeeDesignations(Array.isArray(jobProfiles) ? jobProfiles : [jobProfiles]);
             setAccess(employee.employeeAccess || '');
+            setCanManageExternalTrainers(employee.canManageExternalTrainers || false);
         } else {
             toast.error('Employee details not found in Redux store.');
         }
@@ -101,6 +103,7 @@ const EditEmployee = () => {
             employee: {
                 ...employeeInputValues,
                 employeeAccess: access, // Updated access string
+                canManageExternalTrainers: canManageExternalTrainers,
                 employeeEndDate: employeeInputValues.employeeEndDate || null,
             },
             jobProfiles: employeeDesignations.map((designation) => ({
@@ -161,7 +164,13 @@ const EditEmployee = () => {
                     setEmployeeDesignations={setEmployeeDesignations}
                 />
 
-                <AccessTable access={access} setAccess={setAccess} mode={"edit"} />
+                <AccessTable 
+                    access={access} 
+                    setAccess={setAccess} 
+                    canManageExternalTrainers={canManageExternalTrainers}
+                    setCanManageExternalTrainers={setCanManageExternalTrainers}
+                    mode={"edit"} 
+                />
             </section>
             <ToastContainer />
         </div>

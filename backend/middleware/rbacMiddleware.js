@@ -26,9 +26,25 @@ import { connection } from '../db/index.js'
 export const rbacMiddleware = asyncHandler(async (req, res, next) => {
   // Extract employeeId from req.user (set by authMiddleware)
   const employeeId = req.user[0]?.employeeId
+  const userType = req.user[0]?.userType
   
   if (!employeeId) {
     throw new ApiError(401, 'User authentication required')
+  }
+  
+  // External trainers don't have project access - skip RBAC for them
+  // They only have access to training-related routes
+  if (userType === 'external_trainer') {
+    console.log('[RBAC] External trainer detected - skipping project RBAC:', employeeId);
+    req.rbac = {
+      role: 'external_trainer',
+      restrictedAccess: true,
+      ownedStages: [],
+      ownedSubstages: [],
+      isManager: false,
+      projectNumber: null
+    };
+    return next();
   }
   
   // Extract projectNumber from request params or body

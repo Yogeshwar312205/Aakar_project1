@@ -13,7 +13,14 @@ import {
     Typography,
 } from '@mui/material';
 
-const AccessTable = ({ access, setAccess }) => {
+const AccessTable = ({ access, setAccess, canManageExternalTrainers, setCanManageExternalTrainers }) => {
+    // Debug: Check if props are received
+    console.log('AccessTable props:', { 
+        access, 
+        canManageExternalTrainers, 
+        hasSetFunction: !!setCanManageExternalTrainers 
+    });
+    
     const initialState = {
         HRManagement: { active: false, subOptions: [] },
         ProjectManagement: { active: false, subOptions: [] },
@@ -178,6 +185,48 @@ const AccessTable = ({ access, setAccess }) => {
     return (
         <div className="add-employee-details my-1 bg-white rounded">
             <h3 style={{ fontSize: '18px', marginBottom: '10px', color: '#7D7D7D', fontWeight: 'bold' }}>Manage Access</h3>
+            
+            {/* Special Permissions Section */}
+            <Box sx={{ maxWidth: 700, marginLeft: '10px', marginTop: '20px', marginBottom: '30px' }}>
+                <Box 
+                    sx={{ 
+                        padding: '15px', 
+                        backgroundColor: '#f0f7ff', 
+                        border: '1px solid #2196f3', 
+                        borderRadius: '8px',
+                        marginBottom: '20px'
+                    }}
+                >
+                    <Typography 
+                        variant="subtitle1" 
+                        sx={{ 
+                            fontWeight: 'bold', 
+                            color: '#1976d2', 
+                            marginBottom: '10px',
+                            fontSize: '16px'
+                        }}
+                    >
+                        🎓 Training Management Permissions
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box>
+                            <Typography variant="body1" sx={{ fontWeight: 500, color: '#000' }}>
+                                Can Manage External Trainers
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#666', fontSize: '13px' }}>
+                                Allow this employee to add, edit, and manage external trainers
+                            </Typography>
+                        </Box>
+                        <Switch
+                            checked={canManageExternalTrainers || false}
+                            onChange={(e) => setCanManageExternalTrainers && setCanManageExternalTrainers(e.target.checked)}
+                            color="primary"
+                            inputProps={{ 'aria-label': 'Can Manage External Trainers' }}
+                        />
+                    </Box>
+                </Box>
+            </Box>
+
             <Box sx={{ maxWidth: 700, marginLeft: '10px', marginTop: '20px' }}>
                 {Object.keys(subOptions).map((module) => (
                     <Box key={module} sx={{ marginBottom: '20px' }}>

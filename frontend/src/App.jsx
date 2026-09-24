@@ -35,6 +35,9 @@ import TrainerAttendance from './pages/Trainer/TrainerAttendance.jsx'
 import TrainerViewAttendance from './pages/Trainer/TrainerViewAttendance.jsx'
 import TrainerEditAttendance from './pages/Trainer/TrainerEditAttendance.jsx'
 import EmployeeTrainingEnrolled from './pages/Trainer/EmployeeTrainingEnrolled.jsx'
+import ExternalTrainerList from './pages/Trainer/ExternalTrainer/ExternalTrainerList.jsx'
+import AddExternalTrainer from './pages/Trainer/ExternalTrainer/AddExternalTrainer.jsx'
+import EditExternalTrainer from './pages/Trainer/ExternalTrainer/EditExternalTrainer.jsx'
 import ManagerEmployeeTrainingEnrolled from './pages/Manager/ManagerEmployeeTrainingEnrolled.jsx'
 import SendConformEmpToTraining from './pages/Manager/SendConformEmpToTraining.jsx'
 import AccessSyncWrapper from './components/AccessSyncWrapper'
@@ -381,6 +384,33 @@ const App = () => {
                 </PrivateRoute>
               }
             />
+            
+            {/* External Trainer Routes */}
+            <Route
+              path="/training/external-trainer"
+              element={
+                <PrivateRoute>
+                  <ExternalTrainerList />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/training/external-trainer/add"
+              element={
+                <PrivateRoute>
+                  <AddExternalTrainer />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/training/external-trainer/edit/:id"
+              element={
+                <PrivateRoute>
+                  <EditExternalTrainer />
+                </PrivateRoute>
+              }
+            />
+            
             <Route
               path="/tickettracking"
               element={

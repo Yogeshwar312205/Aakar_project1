@@ -50,39 +50,106 @@ router.get('/api/employees', (req, res) => {
 // Endpoint to fetch employee's training details
 router.get('/employee/:employeeId', (req, res) => {
     const employeeId = req.params.employeeId;
-    const query = `
-      SELECT
-        t.trainingTitle,
-        t.trainingId,
-        e.employeeName,
-        t.startTrainingDate,
-        t.endTrainingDate,
-        empTrainer.employeeName AS trainerName,
-        GROUP_CONCAT(s.skillName) AS skillNames  -- Concatenates all associated skill names into a single string
-      FROM
-        training t
-      JOIN
-        trainingRegistration tr ON t.trainingId = tr.trainingId
-      JOIN
-        employee e ON tr.employeeId = e.employeeId
-      LEFT JOIN
-        employee empTrainer ON t.trainerId = empTrainer.employeeId
-      LEFT JOIN
-        trainingSkills ts ON t.trainingId = ts.trainingId
-      LEFT JOIN
-        skill s ON ts.skillId = s.skillId
-      WHERE
-        tr.employeeId = ?
-      GROUP BY
-        t.trainingId, e.employeeName, empTrainer.employeeName;  -- Group by relevant fields to avoid duplicate rows
+    
+    // First, check if this employee is a trainer (external trainer OR has grade 4 in any skill)
+    const checkTrainerQuery = `
+      SELECT 
+        e.userType,
+        MAX(es.grade) as maxGrade
+      FROM employee e
+      LEFT JOIN employeeSkill es ON e.employeeId = es.employeeId
+      WHERE e.employeeId = ?
+      GROUP BY e.employeeId, e.userType
     `;
-
-    connection.query(query, [employeeId], (err, results) => {
+    
+    connection.query(checkTrainerQuery, [employeeId], (err, employeeData) => {
       if (err) {
-        // console.error("Error fetching employee's training details: ", err);
-        res.status(500).send('Server error');
+        console.error("Error checking employee type: ", err);
+        return res.status(500).send('Server error');
+      }
+      
+      if (employeeData.length === 0) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+      
+      const { userType, maxGrade } = employeeData[0];
+      const isTrainer = userType === 'external_trainer' || maxGrade === 4;
+      
+      if (isTrainer) {
+        // For trainers (both internal grade 4 and external), show trainings they are conducting
+        const trainerQuery = `
+          SELECT
+            t.trainingTitle,
+            t.trainingId,
+            t.startTrainingDate,
+            t.endTrainingDate,
+            e.employeeName AS trainerName,
+            GROUP_CONCAT(DISTINCT s.skillName) AS skillNames,
+            GROUP_CONCAT(DISTINCT emp.employeeName) AS traineesNames,
+            COUNT(DISTINCT tr.employeeId) AS traineeCount
+          FROM
+            training t
+          LEFT JOIN
+            employee e ON t.trainerId = e.employeeId
+          LEFT JOIN
+            trainingSkills ts ON t.trainingId = ts.trainingId
+          LEFT JOIN
+            skill s ON ts.skillId = s.skillId
+          LEFT JOIN
+            trainingRegistration tr ON t.trainingId = tr.trainingId
+          LEFT JOIN
+            employee emp ON tr.employeeId = emp.employeeId
+          WHERE
+            t.trainerId = ?
+          GROUP BY
+            t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, e.employeeName
+        `;
+        
+        connection.query(trainerQuery, [employeeId], (err, results) => {
+          if (err) {
+            console.error("Error fetching trainer's training details: ", err);
+            res.status(500).send('Server error');
+          } else {
+            res.json(results);
+          }
+        });
       } else {
-        res.json(results);
+        // For regular employees, show trainings they are attending
+        const traineeQuery = `
+          SELECT
+            t.trainingTitle,
+            t.trainingId,
+            e.employeeName,
+            t.startTrainingDate,
+            t.endTrainingDate,
+            empTrainer.employeeName AS trainerName,
+            GROUP_CONCAT(s.skillName) AS skillNames
+          FROM
+            training t
+          JOIN
+            trainingRegistration tr ON t.trainingId = tr.trainingId
+          JOIN
+            employee e ON tr.employeeId = e.employeeId
+          LEFT JOIN
+            employee empTrainer ON t.trainerId = empTrainer.employeeId
+          LEFT JOIN
+            trainingSkills ts ON t.trainingId = ts.trainingId
+          LEFT JOIN
+            skill s ON ts.skillId = s.skillId
+          WHERE
+            tr.employeeId = ?
+          GROUP BY
+            t.trainingId, e.employeeName, empTrainer.employeeName
+        `;
+        
+        connection.query(traineeQuery, [employeeId], (err, results) => {
+          if (err) {
+            console.error("Error fetching employee's training details: ", err);
+            res.status(500).send('Server error');
+          } else {
+            res.json(results);
+          }
+        });
       }
     });
   });

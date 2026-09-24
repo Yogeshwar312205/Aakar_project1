@@ -127,6 +127,10 @@ export const loginEmployee = asyncHandler(async (req, res) => {
                     e.employeeAccess,
                     e.createdAt,
                     e.employeeEndDate,
+                    e.userType,
+                    e.accessStartDate,
+                    e.accessEndDate,
+                    e.canManageExternalTrainers,
                     d.departmentId,
                     d.departmentName,
                     ds.designationId,
@@ -349,8 +353,8 @@ export const addEmployee = asyncHandler(async (req, res) => {
             INSERT INTO employee
             (customEmployeeId, employeeName, companyName, employeeQualification, experienceInYears,
              employeeDOB, employeeJoinDate, employeeGender, employeePhone, employeeEmail,
-             employeePassword, employeeAccess)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             employeePassword, employeeAccess, canManageExternalTrainers)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const employeeData = [
@@ -366,6 +370,7 @@ export const addEmployee = asyncHandler(async (req, res) => {
             employee.employee.employeeEmail,
             hashedPassword,
             employee.employee.employeeAccess || null,
+            employee.employee.canManageExternalTrainers ? 1 : 0,
         ];
 
         console.log('Inserting employee with data:', employeeData);
@@ -510,6 +515,7 @@ export const editEmployeeWithRelations = asyncHandler(async (req, res) => {
               employeePhone = ?,
               employeeEmail = ?,
               employeeAccess = ?,
+              canManageExternalTrainers = ?,
               employeeEndDate = ?
             WHERE employeeId = ?`;
 
@@ -525,11 +531,13 @@ export const editEmployeeWithRelations = asyncHandler(async (req, res) => {
             employee.employeePhone || null,
             employee.employeeEmail,
             employee.employeeAccess || null,
+            employee.canManageExternalTrainers ? 1 : 0,
             parseDate(employee.employeeEndDate),
             id,
         ];
 
         console.log('Update values:', employeeValues);
+        console.log('canManageExternalTrainers received:', employee.canManageExternalTrainers, 'converted to:', employee.canManageExternalTrainers ? 1 : 0);
 
         const [employeeResult] = await connection.promise().query(updateEmployeeQuery, employeeValues);
 
@@ -602,9 +610,12 @@ export const getCurrentEmployeeAccess = asyncHandler(async (req, res) => {
 
     try {
         const [employee] = await connection.promise().query(
-            "SELECT employeeAccess, employeeEndDate FROM employee WHERE employeeId = ?",
+            "SELECT employeeAccess, employeeEndDate, userType, canManageExternalTrainers FROM employee WHERE employeeId = ?",
             [employeeId]
         );
+
+        console.log('📊 getCurrentEmployeeAccess query result:', employee);
+        console.log('📊 Employee ID queried:', employeeId);
 
         if (employee.length === 0) {
             return res.status(404).json({ message: "Employee not found" });
@@ -626,8 +637,16 @@ export const getCurrentEmployeeAccess = asyncHandler(async (req, res) => {
             }
         }
 
+        console.log('✅ Returning access for employee', employeeId, ':', {
+            canManageExternalTrainers: employeeData.canManageExternalTrainers === 1 || employeeData.canManageExternalTrainers === true,
+            rawValue: employeeData.canManageExternalTrainers,
+            employeeData: employeeData
+        });
+
         res.status(200).json({
             employeeAccess: employeeData.employeeAccess,
+            userType: employeeData.userType || 'internal',
+            canManageExternalTrainers: employeeData.canManageExternalTrainers === 1 || employeeData.canManageExternalTrainers === true,
             deactivated: false
         });
     } catch (error) {
@@ -721,6 +740,8 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
         e.employeePhone,
         e.employeeEmail,
         e.employeeAccess,
+        e.canManageExternalTrainers,
+        e.userType,
         e.createdAt,
         e.employeeEndDate,
         ed.departmentId,
@@ -773,6 +794,8 @@ export const getAllEmployees = asyncHandler(async (req, res) => {
                         employeePhone: row.employeePhone,
                         employeeEmail: row.employeeEmail,
                         employeeAccess: row.employeeAccess,
+                        canManageExternalTrainers: row.canManageExternalTrainers === 1 || row.canManageExternalTrainers === true,
+                        userType: row.userType || 'internal',
                         createdAt: row.createdAt,
                         employeeEndDate: row.employeeEndDate,
                     },

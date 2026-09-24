@@ -22,6 +22,7 @@ const EmployeeSwitch = () => {
   const navigate = useNavigate();
   const employeeId = useSelector((state) => state.auth.user?.employeeId);
   const employeeName = useSelector((state) => state.auth.user?.employeeName);
+  const userType = useSelector((state) => state.auth.user?.userType) || 'internal';
 
 
   const getTrainingStatusLabel = (startDate, endDate) => {
@@ -92,16 +93,35 @@ const EmployeeSwitch = () => {
       console.error('Training details are missing!');
       return;
     }
-    navigate('/EmployeeTrainingDetails', {
-      state: {
-        employeeId : employeeId,
-        trainingId: training.trainingId,
-        trainingTitle: training.trainingTitle,
-        trainerName: training.trainerName,
-        startTrainingDate: training.startTrainingDate,
-        endTrainingDate: training.endTrainingDate,
-      }
-    });
+    
+    // For external trainers, navigate to TrainerTrainingDetails (can manage sessions)
+    if (userType === 'external_trainer') {
+      const today = dayjs(new Date()).format("DD-MM-YYYY");
+      const isActive = today > training.endTrainingDate ? 1 : 0;
+      
+      navigate('/TrainerTrainingDetails', {
+        state: {
+          trainingId: training.trainingId,
+          trainingTitle: training.trainingTitle,
+          startTrainingDate: training.startTrainingDate,
+          endTrainingDate: training.endTrainingDate,
+          skillNames: training.skillNames,
+          active: isActive
+        }
+      });
+    } else {
+      // For regular employees, navigate to EmployeeTrainingDetails (view only)
+      navigate('/EmployeeTrainingDetails', {
+        state: {
+          employeeId: employeeId,
+          trainingId: training.trainingId,
+          trainingTitle: training.trainingTitle,
+          trainerName: training.trainerName,
+          startTrainingDate: training.startTrainingDate,
+          endTrainingDate: training.endTrainingDate,
+        }
+      });
+    }
   };
 
   const getTrainingStatus = (startDate, endDate) => {

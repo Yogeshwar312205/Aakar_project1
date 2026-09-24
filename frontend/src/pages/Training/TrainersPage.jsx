@@ -14,12 +14,10 @@ const TrainersPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState(null);
 
-  // Form fields
-  const [trainerType, setTrainerType] = useState('INTERNAL');
+  // Form fields (always EXTERNAL)
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [employeeId, setEmployeeId] = useState('');
   const [organization, setOrganization] = useState('');
   const [specialization, setSpecialization] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +31,8 @@ const TrainersPage = () => {
   const fetchTrainers = async () => {
     try {
       const response = await axios.get(`${API_BASE}/api/trainers`);
-      setTrainers(response.data);
+      // Only show EXTERNAL trainers on this page
+      setTrainers(response.data.filter((t) => t.trainer_type === 'EXTERNAL'));
     } catch (err) {
       console.error('Error fetching trainers:', err);
       setError('Failed to fetch trainers.');
@@ -41,11 +40,9 @@ const TrainersPage = () => {
   };
 
   const resetForm = () => {
-    setTrainerType('INTERNAL');
     setFullName('');
     setEmail('');
     setPhone('');
-    setEmployeeId('');
     setOrganization('');
     setSpecialization('');
     setPassword('');
@@ -64,11 +61,9 @@ const TrainersPage = () => {
 
   const handleEdit = (trainer) => {
     setEditingId(trainer.id);
-    setTrainerType(trainer.trainer_type);
     setFullName(trainer.full_name);
     setEmail(trainer.email);
     setPhone(trainer.phone || '');
-    setEmployeeId(trainer.employee_id || '');
     setOrganization(trainer.organization || '');
     setSpecialization(trainer.specialization || '');
     setPassword('');
@@ -82,30 +77,25 @@ const TrainersPage = () => {
       return;
     }
 
-    if (trainerType === 'INTERNAL' && !employeeId.trim()) {
-      toast.error('Employee ID is required for Internal trainers.');
-      return;
-    }
-
     const payload = {
-      trainer_type: trainerType,
+      trainer_type: 'EXTERNAL',
       full_name: fullName,
       email,
       phone: phone || null,
-      employee_id: trainerType === 'INTERNAL' ? employeeId : null,
-      organization: trainerType === 'EXTERNAL' ? organization : null,
+      employee_id: null,
+      organization: organization || null,
       specialization: specialization || null,
-      password: trainerType === 'EXTERNAL' && password ? password : null,
-      expiry_date: trainerType === 'EXTERNAL' && expiryDate ? expiryDate : null,
+      password: password || null,
+      expiry_date: expiryDate || null,
     };
 
     try {
       if (editingId) {
         await axios.put(`${API_BASE}/api/trainers/${editingId}`, payload);
-        toast.success('Trainer updated successfully.');
+        toast.success('External trainer updated successfully.');
       } else {
         await axios.post(`${API_BASE}/api/trainers`, payload);
-        toast.success('Trainer added successfully.');
+        toast.success('External trainer added successfully.');
       }
       resetForm();
       setIsFormOpen(false);
@@ -118,10 +108,10 @@ const TrainersPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this trainer?')) {
+    if (window.confirm('Are you sure you want to delete this external trainer?')) {
       try {
         await axios.delete(`${API_BASE}/api/trainers/${id}`);
-        toast.success('Trainer deleted successfully.');
+        toast.success('External trainer deleted successfully.');
         fetchTrainers();
       } catch (err) {
         console.error('Error deleting trainer:', err);
@@ -154,23 +144,10 @@ const TrainersPage = () => {
       align: 'center',
     },
     {
-      id: 'trainer_type',
-      label: 'Type',
+      id: 'organization',
+      label: 'Organization',
       align: 'center',
-      render: (row) => (
-        <span className={`badge ${row.trainer_type === 'INTERNAL' ? 'badge-internal' : 'badge-external'}`}>
-          {row.trainer_type}
-        </span>
-      ),
-    },
-    {
-      id: 'org_or_emp',
-      label: 'Organization / Emp ID',
-      align: 'center',
-      render: (row) =>
-        row.trainer_type === 'INTERNAL'
-          ? row.employee_id || '—'
-          : row.organization || '—',
+      render: (row) => row.organization || '—',
     },
     {
       id: 'specialization',
@@ -193,8 +170,7 @@ const TrainersPage = () => {
       id: 'expiry_date',
       label: 'Expiry Date',
       align: 'center',
-      render: (row) =>
-        row.trainer_type === 'EXTERNAL' ? formatDate(row.expiry_date) : '—',
+      render: (row) => formatDate(row.expiry_date),
     },
     {
       id: 'status_label',
@@ -250,11 +226,11 @@ const TrainersPage = () => {
   return (
     <div className="trainers-container">
       <div className="trainers-header">
-        <h2 className="trainers-title">Trainers Management</h2>
+        <h2 className="trainers-title">External Trainers</h2>
         <div className="trainers-header-buttons">
           <button className="Add-trainer" onClick={handleToggleForm}>
             {isFormOpen ? <FiXCircle style={{ marginRight: '8px' }} size={20} /> : <FiPlusCircle style={{ marginRight: '8px' }} size={20} />}
-            {isFormOpen ? 'Cancel' : '+ Add Trainer'}
+            {isFormOpen ? 'Cancel' : '+ Add External Trainer'}
           </button>
           <button className="Trainer-report" onClick={() => toast.info('Trainer report generation coming soon.')}>
             Trainer Report
@@ -266,31 +242,7 @@ const TrainersPage = () => {
 
       {isFormOpen && (
         <div className="trainer-input-box">
-          {/* Trainer Type Radio */}
-          <div className="trainer-type-selector">
-            <label>
-              <input
-                type="radio"
-                name="trainerType"
-                value="INTERNAL"
-                checked={trainerType === 'INTERNAL'}
-                onChange={() => setTrainerType('INTERNAL')}
-              />
-              Internal
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="trainerType"
-                value="EXTERNAL"
-                checked={trainerType === 'EXTERNAL'}
-                onChange={() => setTrainerType('EXTERNAL')}
-              />
-              External
-            </label>
-          </div>
-
-          {/* Common fields */}
+          {/* All fields for External trainer */}
           <div className="trainer-form-row">
             <Textfield label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} name="fullName" isRequired />
             <Textfield label="Email" value={email} onChange={(e) => setEmail(e.target.value)} name="email" isRequired />
@@ -298,21 +250,11 @@ const TrainersPage = () => {
             <Textfield label="Specialization" value={specialization} onChange={(e) => setSpecialization(e.target.value)} name="specialization" />
           </div>
 
-          {/* Internal-specific */}
-          {trainerType === 'INTERNAL' && (
-            <div className="trainer-form-row">
-              <Textfield label="Employee ID" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} name="employeeId" isRequired />
-            </div>
-          )}
-
-          {/* External-specific */}
-          {trainerType === 'EXTERNAL' && (
-            <div className="trainer-form-row">
-              <Textfield label="Organization" value={organization} onChange={(e) => setOrganization(e.target.value)} name="organization" />
-              <Textfield label="Temporary Password" value={password} onChange={(e) => setPassword(e.target.value)} name="password" type="password" />
-              <Textfield label="Expiry Date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} name="expiryDate" type="date" />
-            </div>
-          )}
+          <div className="trainer-form-row">
+            <Textfield label="Organization" value={organization} onChange={(e) => setOrganization(e.target.value)} name="organization" />
+            <Textfield label="Temporary Password" value={password} onChange={(e) => setPassword(e.target.value)} name="password" type="password" />
+            <Textfield label="Expiry Date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} name="expiryDate" type="date" />
+          </div>
 
           <button className="trainer-save-btn" onClick={handleSave}>
             {editingId ? 'Update' : 'Add'}

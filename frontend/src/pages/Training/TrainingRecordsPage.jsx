@@ -4,6 +4,7 @@ import './TrainingRecordsPage.css';
 import { toast } from 'react-toastify';
 import { FiPlusCircle, FiXCircle, FiEye } from 'react-icons/fi';
 import Textfield from '../../components/Textfield';
+import Grade from '../Manager/Grade';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:3000';
@@ -11,6 +12,7 @@ const API_BASE = 'http://localhost:3000';
 const TrainingRecordsPage = () => {
   const [records, setRecords] = useState([]);
   const [trainers, setTrainers] = useState([]);
+  const [skills, setSkills] = useState([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [error, setError] = useState(null);
 
@@ -23,6 +25,7 @@ const TrainingRecordsPage = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [trainerId, setTrainerId] = useState('');
+  const [skillId, setSkillId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [employeeIdsStr, setEmployeeIdsStr] = useState('');
@@ -31,7 +34,17 @@ const TrainingRecordsPage = () => {
   useEffect(() => {
     fetchRecords();
     fetchTrainers();
+    fetchSkills();
   }, []);
+
+  const fetchSkills = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/skills`);
+      setSkills(response.data || []);
+    } catch (err) {
+      console.error('Error fetching skills:', err);
+    }
+  };
 
   const fetchRecords = async () => {
     try {
@@ -56,6 +69,7 @@ const TrainingRecordsPage = () => {
     setTitle('');
     setDescription('');
     setTrainerId('');
+    setSkillId('');
     setStartDate('');
     setEndDate('');
     setEmployeeIdsStr('');
@@ -86,6 +100,7 @@ const TrainingRecordsPage = () => {
       title,
       description: description || null,
       trainer_id: parseInt(trainerId),
+      skill_id: skillId ? parseInt(skillId) : null,
       start_date: startDate,
       end_date: endDate,
       employee_ids,
@@ -101,6 +116,29 @@ const TrainingRecordsPage = () => {
       console.error('Error creating session:', err);
       const msg = err.response?.data?.message || 'Failed to create session.';
       toast.error(msg);
+    }
+  };
+
+  const handleGradeChange = async (employeeId, skillIdToUpdate, newGrade) => {
+    try {
+      await axios.post(`${API_BASE}/update-grade`, {
+        employeeId,
+        skillId: skillIdToUpdate,
+        grade: newGrade,
+      });
+      setModalAttendees((prev) =>
+        prev.map((att) =>
+          att.employee_id === employeeId ? { ...att, grade: newGrade } : att
+        )
+      );
+      if (newGrade === 4) {
+        toast.success(`All 4 ticked! Employee is now eligible as an Internal Trainer for this skill.`);
+      } else {
+        toast.success(`Skill grade updated to ${newGrade}`);
+      }
+    } catch (err) {
+      console.error('Error updating grade:', err);
+      toast.error('Failed to update grade.');
     }
   };
 
@@ -248,6 +286,21 @@ const TrainingRecordsPage = () => {
                 ))}
               </select>
             </div>
+            <div>
+              <label style={{ fontSize: '12px', color: '#666', marginBottom: '4px', display: 'block' }}>Skill Taught</label>
+              <select
+                className="trainer-select"
+                value={skillId}
+                onChange={(e) => setSkillId(e.target.value)}
+              >
+                <option value="">Select Skill</option>
+                {skills.map((s) => (
+                  <option key={s.skillId} value={s.skillId}>
+                    {s.skillName}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Textfield label="Start Date" value={startDate} onChange={(e) => setStartDate(e.target.value)} name="startDate" type="datetime-local" isRequired />
             <Textfield label="End Date" value={endDate} onChange={(e) => setEndDate(e.target.value)} name="endDate" type="datetime-local" isRequired />
           </div>
@@ -296,6 +349,7 @@ const TrainingRecordsPage = () => {
                     <th>Employee Name</th>
                     <th>Department</th>
                     <th>Status</th>
+                    <th style={{ textAlign: 'center' }}>Skill & Grade</th>
                     <th>Feedback</th>
                   </tr>
                 </thead>
@@ -315,6 +369,25 @@ const TrainingRecordsPage = () => {
                         }`}>
                           {att.status}
                         </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {att.skill_id ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                            <span style={{ fontSize: '11px', color: '#555', fontWeight: '600' }}>{att.skillName}</span>
+                            <Grade
+                              pemp_id={att.employee_id}
+                              pskill_id={att.skill_id}
+                              pgrade={att.grade || 0}
+                              onGradeChange={(empId, sId, newGrade) => handleGradeChange(empId, sId, newGrade)}
+                              isChangable={true}
+                            />
+                            {att.grade === 4 && (
+                              <span style={{ fontSize: '10px', color: '#2e7d32', fontWeight: 'bold' }}>✓ Internal Trainer</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#999', fontSize: '12px' }}>No skill linked</span>
+                        )}
                       </td>
                       <td>{att.feedback || '—'}</td>
                     </tr>

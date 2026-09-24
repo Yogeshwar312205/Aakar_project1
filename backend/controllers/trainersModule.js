@@ -299,20 +299,20 @@ router.post("/api/trainers/login", (req, res) => {
 
 // POST /api/training/sessions — Create training session + bulk-insert attendees
 router.post("/api/training/sessions", (req, res) => {
-  const { title, description, trainer_id, start_date, end_date, employee_ids } = req.body;
+  const { title, description, trainer_id, skill_id, start_date, end_date, employee_ids } = req.body;
 
   if (!title || !trainer_id || !start_date || !end_date) {
     return res.status(400).json({ message: "title, trainer_id, start_date, and end_date are required." });
   }
 
   const insertProgram = `
-    INSERT INTO training_programs (title, description, trainer_id, start_date, end_date)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO training_programs (title, description, trainer_id, skill_id, start_date, end_date)
+    VALUES (?, ?, ?, ?, ?, ?)
   `;
 
   connection.query(
     insertProgram,
-    [title, description || null, trainer_id, start_date, end_date],
+    [title, description || null, trainer_id, skill_id || null, start_date, end_date],
     (err, result) => {
       if (err) {
         console.error("Error creating training session:", err);
@@ -420,11 +420,17 @@ router.get("/api/training/sessions/:id/attendees", (req, res) => {
       ta.status,
       ta.feedback,
       e.employeeName,
-      d.departmentName
+      d.departmentName,
+      tp.skill_id,
+      s.skillName,
+      COALESCE(es.grade, 0) AS grade
     FROM training_attendees ta
+    JOIN training_programs tp ON ta.training_id = tp.id
+    LEFT JOIN skill s ON tp.skill_id = s.skillId
     LEFT JOIN employee e ON ta.employee_id = e.employeeId
     LEFT JOIN employeeDesignation ed ON e.employeeId = ed.employeeId
     LEFT JOIN department d ON ed.departmentId = d.departmentId
+    LEFT JOIN employeeSkill es ON es.employeeId = ta.employee_id AND es.skillId = tp.skill_id
     WHERE ta.training_id = ?
     ORDER BY e.employeeName ASC
   `;

@@ -93,10 +93,7 @@ const [editingSession, setEditingSession] = useState(null); // To track session 
   };
 
   const handleEmployees = () => {
-    const today = dayjs(new Date()).format("DD-MM-YYYY");
-    const trainingEndDate = endTrainingDate;
-    const isActive = today > trainingEndDate ? 1 : 0;
-    navigate('/EmployeeTrainingEnrolled', { state: { trainingId, active: isActive} });
+    navigate('/EmployeeTrainingEnrolled', { state: { trainingId, active: 1 } });
   };
 
   const handleSave = async () => {

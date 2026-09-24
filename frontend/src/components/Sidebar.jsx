@@ -203,7 +203,7 @@ const Sidebar = () => {
           name: 'My Status',
           slug: '/EmployeeSwitch',
           icon: 'FaUserAlt',
-          access: '1',
+          access: employeeAccess1 === '1' ? '1' : '0',
         },
         {
           name: 'Skills',
@@ -236,7 +236,7 @@ const Sidebar = () => {
           access: trainerAccess,
         },
         {
-          name: 'Trainers',
+          name: 'External Trainers',
           slug: '/training/trainers',
           icon: 'FaChalkboardTeacher',
           access: TrainingManagementAccess?.[0] === '1' ? '1' : '0',

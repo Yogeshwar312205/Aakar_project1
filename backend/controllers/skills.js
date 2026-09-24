@@ -10,7 +10,7 @@ router.get('/skills/:departmentId', (req, res) => {
     // Updated query to include skills from other departments that are marked as applicable
     // This query returns:
     // 1. Skills owned by this department (s.departmentId = ?)
-    // 2. Skills from other departments where this department has access (ds.departmentId = ? AND ds.departmentSkillType IN (1, 3))
+    // 2. Skills from other departments where this department has access (ds.departmentId = ? AND ds.departmentSkillType IN (1, 2, 3))
     const query = `
       SELECT DISTINCT s.skillId, s.skillName, s.departmentIdGivingTraining, s.skillDescription, s.departmentId
       FROM skill s
@@ -18,7 +18,7 @@ router.get('/skills/:departmentId', (req, res) => {
       WHERE s.skillActivityStatus = 1
         AND (
           s.departmentId = ? 
-          OR (ds.departmentId = ? AND ds.departmentSkillType IN (1, 3) AND ds.departmentSkillStatus = 1)
+          OR (ds.departmentId = ? AND ds.departmentSkillType IN (1, 2, 3) AND ds.departmentSkillStatus = 1)
         )
       ORDER BY s.skillName
     `;

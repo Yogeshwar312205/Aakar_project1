@@ -68,16 +68,28 @@ router.post('/add-training', (req, res) => {
     const departmentId = req.params.departmentId;
     const query = `
       SELECT t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, e.employeeName AS trainerName, t.trainerId,
-        GROUP_CONCAT(s.skillName SEPARATOR ', ') AS skills, GROUP_CONCAT(s.skillId SEPARATOR ', ') AS skillIds, t.evaluationType
+        GROUP_CONCAT(DISTINCT s.skillName SEPARATOR ', ') AS skills, 
+        GROUP_CONCAT(DISTINCT s.skillId SEPARATOR ', ') AS skillIds, 
+        t.evaluationType
       FROM training t
       LEFT JOIN employee e ON t.trainerId = e.employeeId
       LEFT JOIN trainingSkills ts ON t.trainingId = ts.trainingId
       LEFT JOIN skill s ON ts.skillId = s.skillId
-      WHERE s.departmentId = ?
-      GROUP BY t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, e.employeeName
+      WHERE EXISTS (
+        SELECT 1 FROM trainingSkills ts2
+        JOIN skill s2 ON ts2.skillId = s2.skillId
+        WHERE ts2.trainingId = t.trainingId 
+        AND (s2.departmentId = ? OR EXISTS (
+          SELECT 1 FROM departmentSkill ds 
+          WHERE ds.skillId = s2.skillId 
+          AND ds.departmentId = ?
+          AND ds.departmentSkillStatus = 1
+        ))
+      )
+      GROUP BY t.trainingId, t.trainingTitle, t.startTrainingDate, t.endTrainingDate, e.employeeName, t.trainerId
     `;
 
-    connection.query(query,[departmentId], (err, result) => {
+    connection.query(query,[departmentId, departmentId], (err, result) => {
       if (err) {
         console.error('Error fetching training data:', err);
         res.status(500).json({ error: 'Failed to fetch training data' });

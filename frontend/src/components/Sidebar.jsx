@@ -97,7 +97,7 @@ const Sidebar = () => {
         // Fetch canManageExternalTrainers permission
         try {
           const accessResponse = await axios.get(
-            `${import.meta.env.VITE_BACKEND_URL}/api/v1/employee/${employeeId}/access`,
+            `${import.meta.env.VITE_BACKEND_URL}/employee/${employeeId}/access`,
             { 
               withCredentials: true,
               headers: {

@@ -61,7 +61,7 @@ const EditExternalTrainer = () => {
   const fetchTrainerData = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/externalTrainer/getExternalTrainer/${id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/getExternalTrainer/${id}`,
         { withCredentials: true }
       );
 
@@ -214,7 +214,7 @@ const EditExternalTrainer = () => {
 
     try {
       await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/externalTrainer/updateExternalTrainer/${id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/updateExternalTrainer/${id}`,
         formData,
         { withCredentials: true }
       );

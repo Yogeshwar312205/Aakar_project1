@@ -78,7 +78,7 @@ app.use('/api/', activityRoute)
 
 // Training routes
 app.use(server)
-app.use('/api/externalTrainer', externalTrainerRoute)
+app.use('/api/v1/externalTrainer', externalTrainerRoute)
 app.use('/api/v1', myTrainingRoutes)
 
 // Ticket tracking routes

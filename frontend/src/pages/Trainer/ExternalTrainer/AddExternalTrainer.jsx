@@ -151,7 +151,7 @@ const AddExternalTrainer = () => {
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/externalTrainer/addExternalTrainer`,
+        `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/addExternalTrainer`,
         formData,
         { withCredentials: true }
       );

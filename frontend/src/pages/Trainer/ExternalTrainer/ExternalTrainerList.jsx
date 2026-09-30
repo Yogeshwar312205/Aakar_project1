@@ -32,13 +32,22 @@ const ExternalTrainerList = () => {
   const fetchTrainers = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching external trainers...');
+      console.log('API URL:', `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/getAllExternalTrainers`);
+      
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/externalTrainer/getAllExternalTrainers`,
+        `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/getAllExternalTrainers`,
         { withCredentials: true }
       );
+      
+      console.log('✅ API Response:', response);
+      console.log('📊 Response data:', response.data);
+      console.log('👥 Trainers array:', response.data.data);
+      
       setTrainers(response.data.data || []);
     } catch (error) {
-      console.error('Failed to fetch trainers:', error);
+      console.error('❌ Failed to fetch trainers:', error);
+      console.error('Error response:', error.response);
       toast.error(error.response?.data?.message || 'Failed to fetch external trainers');
       setTrainers([]);
     } finally {
@@ -50,7 +59,7 @@ const ExternalTrainerList = () => {
     if (window.confirm(`Are you sure you want to delete ${trainerName}? This action cannot be undone.`)) {
       try {
         await axios.delete(
-          `${import.meta.env.VITE_BACKEND_URL}/api/externalTrainer/deleteExternalTrainer/${id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/deleteExternalTrainer/${id}`,
           { withCredentials: true }
         );
         toast.success('External trainer deleted successfully');
@@ -66,7 +75,7 @@ const ExternalTrainerList = () => {
     if (window.confirm(`Resend login credentials to ${trainerName}?`)) {
       try {
         await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/externalTrainer/resendCredentials/${id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/resendCredentials/${id}`,
           {},
           { withCredentials: true }
         );

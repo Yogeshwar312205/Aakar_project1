@@ -9,7 +9,10 @@ import { fetchTrainings, fetchTrainingEmployees } from './trainerapi';
 import Modal from 'react-modal';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import TrainerReportGenerator from './TrainerReportGenerator';
+
+dayjs.extend(customParseFormat);
 
 
 const Tickit = ({ text, icon, onClick, count }) => (
@@ -35,16 +38,17 @@ const TrainerSwitch = () => {
 
 
   const getTrainingStatusLabel = (startDate, endDate) => {
-    const start = dayjs(startDate).format("DD-MM-YYYY");
-    const end = dayjs(endDate).format("DD-MM-YYYY");
-    const today = dayjs(new Date()).format("DD-MM-YYYY");
+    // Parse DD-MM-YYYY format to Date objects for proper comparison
+    const start = dayjs(startDate, "DD-MM-YYYY");
+    const end = dayjs(endDate, "DD-MM-YYYY");
+    const today = dayjs();
 
-    if (today >= start && today <= end) {
-      return "Ongoing"
-    } else if (today > end) {
-      return "Completed"
+    if (today.isBefore(start, 'day')) {
+      return "Upcoming";
+    } else if (today.isAfter(end, 'day')) {
+      return "Completed";
     } else {
-      return "Upcoming"
+      return "Ongoing";
     }
   };
   useEffect(() => {
@@ -128,16 +132,17 @@ const TrainerSwitch = () => {
   };
 
   const getTrainingStatus = (startDate, endDate) => {
-    const today = dayjs(new Date()).format("DD-MM-YYYY");
-    const start = startDate;
-    const end = endDate;
+    // Parse DD-MM-YYYY format to Date objects for proper comparison
+    const start = dayjs(startDate, "DD-MM-YYYY");
+    const end = dayjs(endDate, "DD-MM-YYYY");
+    const today = dayjs();
 
-    if (today >= start && today <= end) {
-      return <span className="status-bubble ongoing">Ongoing</span>;
-    } else if (today > end) {
+    if (today.isBefore(start, 'day')) {
+      return <span className="status-bubble upcoming">Upcoming</span>;
+    } else if (today.isAfter(end, 'day')) {
       return <span className="status-bubble completed">Completed</span>;
     } else {
-      return <span className="status-bubble upcoming">Upcoming</span>;
+      return <span className="status-bubble ongoing">Ongoing</span>;
     }
   };
 

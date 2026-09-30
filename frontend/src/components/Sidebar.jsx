@@ -245,6 +245,12 @@ const Sidebar = () => {
       access: userType === 'external_trainer' ? '1' : (employeeAccess1 === '1' || trainerAccess === '1' || TrainingManagementAccess?.[0] === '1') ? '1' : '0',
       children: [
         {
+          name: 'My Training',
+          slug: '/my-training',
+          icon: 'FaUserAlt',
+          access: userType === 'external_trainer' ? '0' : '1',
+        },
+        {
           name: 'My Status',
           slug: '/EmployeeSwitch',
           icon: 'FaUserAlt',

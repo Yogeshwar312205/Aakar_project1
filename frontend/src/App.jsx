@@ -29,6 +29,7 @@ import ShowTrainingDept from './pages/Manager/ShowTrainingDept.jsx'
 import TrainingSwitch from './pages/Manager/TrainingSwitch.jsx'
 import EmployeeSwitch from './pages/EmployeePOV/EmployeeSwitch.jsx'
 import EmployeeTrainingDetails from './pages/EmployeePOV/EmployeeTrainingDetails.jsx'
+import MyTraining from './pages/EmployeePOV/MyTraining/MyTraining.jsx'
 import TrainerSwitch from './pages/Trainer/TrainerSwitch.jsx'
 import TrainerTrainingDetails from './pages/Trainer/TrainerTrainingDetails.jsx'
 import TrainerAttendance from './pages/Trainer/TrainerAttendance.jsx'
@@ -310,6 +311,15 @@ const App = () => {
               element={
                 <PrivateRoute>
                   <EmployeeSwitch />
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/my-training"
+              element={
+                <PrivateRoute>
+                  <MyTraining />
                 </PrivateRoute>
               }
             />

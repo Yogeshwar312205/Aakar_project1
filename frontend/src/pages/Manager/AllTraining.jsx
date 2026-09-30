@@ -11,7 +11,10 @@ import TableCo from '../../components/TableCo';
 import {fetchAllTraining, deleteTraining, fetchEmployeeoneDataAPI, fetchEmployeetwoDataAPI} from './TrainingAPI';
 import { useSelector, useDispatch } from 'react-redux';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import {skillTrainingByDepartment} from  './UpdateSkillAPI';
+
+dayjs.extend(customParseFormat);
 
 const Tickit = ({ text, icon, onClick, count }) => (
   <button className="custom-button-all-training-ticket" onClick={onClick}>
@@ -80,8 +83,10 @@ const AllTraining = () => {
         numberOfDays: Math.abs(dayjs(data.endTrainingDate).diff(dayjs(data.startTrainingDate), "day") + 1) || "",
         startTrainingDate: dayjs(data.startTrainingDate).format("DD-MM-YYYY"),
         endTrainingDate: dayjs(data.endTrainingDate).format("DD-MM-YYYY"),
-        "Training Status" : getTrainingStatusLabel(data.startTrainingDate, data.endTrainingDate)
-      }))
+      })).map(data => ({
+        ...data,
+        "Training Status": getTrainingStatusLabel(data.startTrainingDate, data.endTrainingDate)
+      }));
       console.log("Data : ",updatedData);
       setTrainingData(updatedData);
       setFilteredData(updatedData);
@@ -224,28 +229,32 @@ const AllTraining = () => {
   };
 
   const getTrainingStatus = (startDate, endDate) => {
-    const today = dayjs(new Date()).format("DD-MM-YYYY");
+    // Parse DD-MM-YYYY format to Date objects for comparison
+    const start = dayjs(startDate, "DD-MM-YYYY");
+    const end = dayjs(endDate, "DD-MM-YYYY");
+    const today = dayjs();
 
-    if (today >= startDate && today <= endDate) {
-      return <span className="status-bubble ongoing">Ongoing</span>;
-    } else if (today > endDate) {
+    if (today.isBefore(start, 'day')) {
+      return <span className="status-bubble upcoming">Upcoming</span>;
+    } else if (today.isAfter(end, 'day')) {
       return <span className="status-bubble completed">Completed</span>;
     } else {
-      return <span className="status-bubble upcoming">Upcoming</span>;
+      return <span className="status-bubble ongoing">Ongoing</span>;
     }
   };
 
   const getTrainingStatusLabel = (startDate, endDate) => {
-    const start = dayjs(startDate).format("DD-MM-YYYY");
-    const end = dayjs(endDate).format("DD-MM-YYYY");
-    const today = dayjs(new Date()).format("DD-MM-YYYY");
+    // Parse DD-MM-YYYY format to Date objects
+    const start = dayjs(startDate, "DD-MM-YYYY");
+    const end = dayjs(endDate, "DD-MM-YYYY");
+    const today = dayjs();
 
-    if (today >= start && today <= end) {
-      return "Ongoing"
-    } else if (today > end) {
-      return "Completed"
+    if (today.isBefore(start, 'day')) {
+      return "Upcoming";
+    } else if (today.isAfter(end, 'day')) {
+      return "Completed";
     } else {
-      return "Upcoming"
+      return "Ongoing";
     }
   };
 

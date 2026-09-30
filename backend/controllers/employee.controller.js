@@ -81,6 +81,43 @@ export const loginEmployee = asyncHandler(async (req, res) => {
                 }
             }
             
+            // Check external trainer access period
+            if (employee.userType === 'external_trainer') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                // Check if access dates are set
+                if (!employee.accessStartDate || !employee.accessEndDate) {
+                    console.log("Login attempt blocked - external trainer missing access dates:", employeeEmail);
+                    return res.status(401).json({ 
+                        message: "Access period not configured. Please contact the administrator." 
+                    });
+                }
+                
+                const startDate = new Date(employee.accessStartDate);
+                const endDate = new Date(employee.accessEndDate);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(0, 0, 0, 0);
+                
+                // Check if access hasn't started yet
+                if (today < startDate) {
+                    console.log("Login attempt blocked - external trainer access not started:", employeeEmail);
+                    return res.status(401).json({ 
+                        message: `Access period starts on ${startDate.toLocaleDateString()}. Please try again after this date.` 
+                    });
+                }
+                
+                // Check if access has expired
+                if (today > endDate) {
+                    console.log("Login attempt blocked - external trainer access expired:", employeeEmail);
+                    return res.status(401).json({ 
+                        message: "Access period has expired. Please contact the administrator to extend access." 
+                    });
+                }
+                
+                console.log(`External trainer login allowed - access valid from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
+            }
+            
             // Check if the password matches
             console.log("Password to compare:", employeePassword);
             console.log("Hashed password from DB:", employee.employeePassword);

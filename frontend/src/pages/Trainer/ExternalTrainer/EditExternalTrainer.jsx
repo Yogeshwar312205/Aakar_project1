@@ -45,8 +45,9 @@ const EditExternalTrainer = () => {
 
     setLoadingSkills(true);
     try {
+      // Note: Skills endpoint is at root level, not under /api/v1
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/skills/${userDepartmentId}`,
+        `http://localhost:3000/skills/${userDepartmentId}`,
         { withCredentials: true }
       );
       setAvailableSkills(response.data || []);

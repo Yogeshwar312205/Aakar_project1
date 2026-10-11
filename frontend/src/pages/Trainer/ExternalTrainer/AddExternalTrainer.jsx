@@ -33,20 +33,28 @@ const AddExternalTrainer = () => {
   // Fetch skills for the admin's department
   useEffect(() => {
     const fetchSkills = async () => {
+      console.log('🔍 Fetching skills for department:', userDepartmentId);
+      
       if (!userDepartmentId) {
-        console.warn('No department ID found for user');
+        console.warn('⚠️ No department ID found for user');
         return;
       }
 
       setLoadingSkills(true);
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/skills/${userDepartmentId}`,
-          { withCredentials: true }
-        );
+        // Note: Skills endpoint is at root level, not under /api/v1
+        const url = `http://localhost:3000/skills/${userDepartmentId}`;
+        console.log('📡 API URL:', url);
+        
+        const response = await axios.get(url, { withCredentials: true });
+        
+        console.log('✅ Skills response:', response.data);
+        console.log('📊 Number of skills:', response.data?.length || 0);
+        
         setAvailableSkills(response.data || []);
       } catch (error) {
-        console.error('Failed to fetch skills:', error);
+        console.error('❌ Failed to fetch skills:', error);
+        console.error('Error response:', error.response);
         toast.error('Failed to load skills');
       } finally {
         setLoadingSkills(false);

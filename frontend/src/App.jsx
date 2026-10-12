@@ -43,6 +43,7 @@ import ManagerEmployeeTrainingEnrolled from './pages/Manager/ManagerEmployeeTrai
 import SendConformEmpToTraining from './pages/Manager/SendConformEmpToTraining.jsx'
 import AccessSyncWrapper from './components/AccessSyncWrapper'
 import { setupAxiosInterceptors } from './utils/axiosInterceptor'
+import { useSessionValidator } from './hooks/useSessionValidator'
 
 //Ticket
 import Dashboard from './ticketComponents/Dashboard/Dashboard.jsx'
@@ -85,11 +86,45 @@ import BOMPage from './pages/BOM/BOMPage/BOMPage.jsx'
 export const API_BASE_URL = `http://localhost:3000`
 const App = () => {
   const { isAuthenticated } = useSelector((state) => state.auth)
+  
+  // Validate session on app initialization
+  // This will proactively check if tokens are valid before protected routes render
+  const { validating } = useSessionValidator();
 
   // Setup axios interceptor for automatic token refresh
   useEffect(() => {
     setupAxiosInterceptors();
   }, []);
+
+  // Show loading indicator while validating session
+  if (validating) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div style={{
+          width: '50px',
+          height: '50px',
+          border: '5px solid #f3f3f3',
+          borderTop: '5px solid #3498db',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <p style={{ color: '#666', fontSize: '14px' }}>Validating session...</p>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -56,7 +56,11 @@ export const setupAxiosInterceptors = () => {
       }
 
       // Check if error is 401 (Unauthorized) and not already retried
-      if (error.response?.status === 401 && !originalRequest._retry) {
+      // IMPORTANT: Exclude the refresh token endpoint itself from retry logic to prevent infinite loops
+      if (error.response?.status === 401 && 
+          !originalRequest._retry && 
+          !originalRequest.url?.includes('/refreshToken')) {
+        
         if (isRefreshing) {
           // If already refreshing, queue this request
           return new Promise((resolve, reject) => {
@@ -75,6 +79,7 @@ export const setupAxiosInterceptors = () => {
 
         try {
           // Try to refresh the access token
+          // Note: Refresh token is in HTTP-only cookie, sent automatically with withCredentials
           const response = await axios.post(
             `${API_BASE_URL}/employee/refreshToken`,
             {},
@@ -84,12 +89,9 @@ export const setupAxiosInterceptors = () => {
           );
 
           if (response.data.data.accessToken) {
-            // Update token in localStorage
-            const authData = JSON.parse(localStorage.getItem('authData'));
-            if (authData) {
-              authData.accessToken = response.data.data.accessToken;
-              localStorage.setItem('authData', JSON.stringify(authData));
-            }
+            // Backend automatically sets new access token in HTTP-only cookie via Set-Cookie header
+            // No need to manually update localStorage - the cookie is the source of truth
+            console.log('✅ Access token refreshed successfully');
 
             // Process queued requests
             processQueue(null, response.data.data.accessToken);
@@ -98,11 +100,15 @@ export const setupAxiosInterceptors = () => {
             return axios(originalRequest);
           }
         } catch (refreshError) {
+          console.error('❌ Token refresh failed:', refreshError.response?.status);
+          
           // Token refresh failed - log user out
           processQueue(refreshError, null);
+          
+          // Clear auth state and storage
           store.dispatch(logout());
           
-          // Show logout message
+          // Show user-friendly message
           toast.info('Session expired. Please login again.', {
             position: 'top-right',
             autoClose: 3000,

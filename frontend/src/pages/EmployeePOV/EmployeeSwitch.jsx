@@ -9,8 +9,14 @@ import GeneralSearchBar from '../../components/GenralSearchBar';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import EmployeeReportGenerator from './EmployeeReportGenerator'; // Import Employee Skill Report Generator
 import TrainingReportGenerator from './TrainingReportGenerator'; // Import Training Report Generator
+
+// Extend dayjs with required plugins
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
 
 const EmployeeSwitch = () => {
   const [trainings, setTrainings] = useState([]);
@@ -26,41 +32,96 @@ const EmployeeSwitch = () => {
 
 
   const getTrainingStatusLabel = (startDate, endDate) => {
-    const start = dayjs(startDate).format("DD-MM-YYYY");
-    const end = dayjs(endDate).format("DD-MM-YYYY");
-    const today = dayjs(new Date()).format("DD-MM-YYYY");
+    // Parse dates as dayjs objects for proper date comparison
+    const start = dayjs(startDate);
+    const end = dayjs(endDate);
+    const today = dayjs();
 
-    if (today >= start && today <= end) {
+    console.log('🔍 Training Status Calculation:', {
+      startDate,
+      endDate,
+      startParsed: start.format('DD-MM-YYYY'),
+      endParsed: end.format('DD-MM-YYYY'),
+      today: today.format('DD-MM-YYYY'),
+      isSameOrAfterStart: today.isSameOrAfter(start, 'day'),
+      isSameOrBeforeEnd: today.isSameOrBefore(end, 'day'),
+      isAfterEnd: today.isAfter(end, 'day')
+    });
+
+    // Use isSameOrAfter and isSameOrBefore for accurate date comparison
+    if (today.isSameOrAfter(start, 'day') && today.isSameOrBefore(end, 'day')) {
+      console.log('✅ Status: Ongoing');
       return "Ongoing"
-    } else if (today > end) {
+    } else if (today.isAfter(end, 'day')) {
+      console.log('✅ Status: Completed');
       return "Completed"
     } else {
+      console.log('✅ Status: Upcoming');
       return "Upcoming"
     }
   };
 
   useEffect(() => {
+    console.log('🔄 EmployeeSwitch mounted. Employee ID:', employeeId);
+    if (!employeeId) {
+      console.error('❌ No employee ID available!');
+      toast.error('Employee ID not found. Please login again.');
+      return;
+    }
     fetchTrainings();
     fetchSkillMatrix();
-  }, []);
+  }, [employeeId]);
 
   const fetchTrainings = async () => {
     try {
+      console.log('📡 Fetching trainings for employee:', employeeId);
       const data = await fetchEmployeeTrainings(employeeId);
-      const updatedData = data.map(data => ({
-        ...data ,
-        startTrainingDate: dayjs(data.startTrainingDate).format("DD-MM-YYYY"),
-        endTrainingDate: dayjs(data.endTrainingDate).format("DD-MM-YYYY"),
-        "trainingStatus" : getTrainingStatusLabel(data.startTrainingDate, data.endTrainingDate)
-
-      }))
-      console.log("Training status from employeeSwitch : ",updatedData)
+      console.log('✅ Raw training data received:', data);
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No training data returned from API');
+        setTrainings([]);
+        setFilteredTrainings([]);
+        return;
+      }
+      
+      const updatedData = data.map(training => {
+        console.log('🔄 Processing training:', training.trainingTitle);
+        console.log('  Raw dates:', {
+          start: training.startTrainingDate,
+          end: training.endTrainingDate
+        });
+        
+        // Calculate status BEFORE formatting dates (using raw date strings/objects)
+        const status = getTrainingStatusLabel(training.startTrainingDate, training.endTrainingDate);
+        
+        // Then format dates for display
+        const formatted = {
+          ...training,
+          startTrainingDate: dayjs(training.startTrainingDate).format("DD-MM-YYYY"),
+          endTrainingDate: dayjs(training.endTrainingDate).format("DD-MM-YYYY"),
+          trainingStatus: status
+        };
+        
+        console.log('  Formatted:', {
+          start: formatted.startTrainingDate,
+          end: formatted.endTrainingDate,
+          status: formatted.trainingStatus
+        });
+        
+        return formatted;
+      });
+      
+      console.log("✅ Training status from employeeSwitch:", updatedData);
 
       setTrainings(updatedData);
       setFilteredTrainings(updatedData);
     } catch (error) {
-      console.error("Error fetching trainings:", error);
+      console.error("❌ Error fetching trainings:", error);
+      console.error("❌ Error details:", error.response || error.message);
       toast.error("Failed to fetch trainings.");
+      setTrainings([]);
+      setFilteredTrainings([]);
     }
   };
 
@@ -125,11 +186,15 @@ const EmployeeSwitch = () => {
   };
 
   const getTrainingStatus = (startDate, endDate) => {
-    const today = dayjs(new Date()).format("DD-MM-YYYY");
+    // Parse dates as dayjs objects for proper date comparison
+    // Note: startDate and endDate are already formatted as "DD-MM-YYYY" strings
+    const start = dayjs(startDate, "DD-MM-YYYY");
+    const end = dayjs(endDate, "DD-MM-YYYY");
+    const today = dayjs();
 
-    if (today >= startDate && today <= endDate) {
+    if (today.isSameOrAfter(start, 'day') && today.isSameOrBefore(end, 'day')) {
       return <span className="status-bubble ongoing">Ongoing</span>;
-    } else if (today > endDate) {
+    } else if (today.isAfter(end, 'day')) {
       return <span className="status-bubble completed">Completed</span>;
     } else {
       return <span className="status-bubble upcoming">Upcoming</span>;

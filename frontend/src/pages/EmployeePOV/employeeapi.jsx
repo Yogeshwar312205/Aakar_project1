@@ -4,13 +4,37 @@ import { toast } from 'react-toastify';
 // Fetch trainings by employee ID
 export const fetchEmployeeTrainings = async (employeeId) => {
   try {
-    const response = await axios.get(`http://localhost:3000/employee/${employeeId}`);
-    return response.data.map((training) => ({
+    console.log('📡 API: Fetching trainings for employee:', employeeId);
+    const url = `http://localhost:3000/employee/${employeeId}`;
+    console.log('📡 API URL:', url);
+    
+    const response = await axios.get(url, { withCredentials: true });
+    
+    console.log('✅ API Response status:', response.status);
+    console.log('✅ API Response data:', response.data);
+    console.log('✅ Number of trainings:', response.data?.length || 0);
+    
+    if (!response.data || !Array.isArray(response.data)) {
+      console.error('❌ Invalid response format:', response.data);
+      toast.error('Invalid training data format received');
+      return [];
+    }
+    
+    const mappedData = response.data.map((training) => ({
       ...training,
       id: training.trainingId,
     }));
+    
+    console.log('✅ Mapped training data:', mappedData);
+    return mappedData;
   } catch (error) {
-    toast.error('Error fetching trainings');
+    console.error('❌ API Error fetching trainings:', error);
+    console.error('❌ Error response:', error.response);
+    console.error('❌ Error status:', error.response?.status);
+    console.error('❌ Error data:', error.response?.data);
+    
+    const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Error fetching trainings';
+    toast.error(errorMsg);
     throw error;
   }
 };

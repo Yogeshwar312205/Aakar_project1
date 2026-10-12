@@ -50,6 +50,7 @@ router.get('/api/employees', (req, res) => {
 // Endpoint to fetch employee's training details
 router.get('/employee/:employeeId', (req, res) => {
     const employeeId = req.params.employeeId;
+    console.log('📡 [Backend] GET /employee/:employeeId - Employee ID:', employeeId);
     
     // First, check if this employee is a trainer (external trainer OR has grade 4 in any skill)
     const checkTrainerQuery = `
@@ -64,18 +65,22 @@ router.get('/employee/:employeeId', (req, res) => {
     
     connection.query(checkTrainerQuery, [employeeId], (err, employeeData) => {
       if (err) {
-        console.error("Error checking employee type: ", err);
+        console.error("❌ Error checking employee type: ", err);
         return res.status(500).send('Server error');
       }
       
       if (employeeData.length === 0) {
+        console.warn('⚠️ Employee not found:', employeeId);
         return res.status(404).json({ message: 'Employee not found' });
       }
       
       const { userType, maxGrade } = employeeData[0];
       const isTrainer = userType === 'external_trainer' || maxGrade === 4;
       
+      console.log('👤 Employee type check:', { employeeId, userType, maxGrade, isTrainer });
+      
       if (isTrainer) {
+        console.log('🎓 Fetching trainings for TRAINER:', employeeId);
         // For trainers (both internal grade 4 and external), show trainings they are conducting
         const trainerQuery = `
           SELECT
@@ -107,13 +112,16 @@ router.get('/employee/:employeeId', (req, res) => {
         
         connection.query(trainerQuery, [employeeId], (err, results) => {
           if (err) {
-            console.error("Error fetching trainer's training details: ", err);
+            console.error("❌ Error fetching trainer's training details: ", err);
             res.status(500).send('Server error');
           } else {
+            console.log('✅ Trainer trainings found:', results.length);
+            console.log('📋 Trainer training data:', results);
             res.json(results);
           }
         });
       } else {
+        console.log('🎓 Fetching trainings for EMPLOYEE (trainee):', employeeId);
         // For regular employees, show trainings they are attending
         const traineeQuery = `
           SELECT
@@ -144,9 +152,11 @@ router.get('/employee/:employeeId', (req, res) => {
         
         connection.query(traineeQuery, [employeeId], (err, results) => {
           if (err) {
-            console.error("Error fetching employee's training details: ", err);
+            console.error("❌ Error fetching employee's training details: ", err);
             res.status(500).send('Server error');
           } else {
+            console.log('✅ Employee trainings found:', results.length);
+            console.log('📋 Employee training data:', results);
             res.json(results);
           }
         });

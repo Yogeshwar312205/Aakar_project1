@@ -34,9 +34,11 @@ const AddExternalTrainer = () => {
   useEffect(() => {
     const fetchSkills = async () => {
       console.log('🔍 Fetching skills for department:', userDepartmentId);
+      console.log('👤 User object:', user);
       
       if (!userDepartmentId) {
         console.warn('⚠️ No department ID found for user');
+        toast.warning('Unable to load skills: Department information not available');
         return;
       }
 
@@ -48,14 +50,24 @@ const AddExternalTrainer = () => {
         
         const response = await axios.get(url, { withCredentials: true });
         
-        console.log('✅ Skills response:', response.data);
+        console.log('✅ Skills response status:', response.status);
+        console.log('✅ Skills response data:', response.data);
         console.log('📊 Number of skills:', response.data?.length || 0);
+        
+        if (!response.data || response.data.length === 0) {
+          console.warn('⚠️ No skills found for department:', userDepartmentId);
+          toast.warning('No skills available for your department. Please contact admin to add skills first.');
+        }
         
         setAvailableSkills(response.data || []);
       } catch (error) {
         console.error('❌ Failed to fetch skills:', error);
-        console.error('Error response:', error.response);
-        toast.error('Failed to load skills');
+        console.error('❌ Error status:', error.response?.status);
+        console.error('❌ Error data:', error.response?.data);
+        console.error('❌ Error message:', error.message);
+        
+        const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Failed to load skills. Please try again.';
+        toast.error(errorMsg);
       } finally {
         setLoadingSkills(false);
       }
@@ -150,25 +162,43 @@ const AddExternalTrainer = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('📝 Form submission started');
+    console.log('📋 Current form data:', formData);
+    console.log('🔧 Skills count:', formData.skills?.length || 0);
+    console.log('🔧 Skills array:', formData.skills);
+    
     if (!validateForm()) {
+      console.error('❌ Form validation failed');
+      console.error('❌ Validation errors:', errors);
       toast.error('Please fix the errors in the form');
       return;
     }
 
+    console.log('✅ Form validation passed');
     setLoading(true);
 
     try {
+      const apiUrl = `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/addExternalTrainer`;
+      console.log('📡 Sending POST request to:', apiUrl);
+      console.log('📦 Request payload:', JSON.stringify(formData, null, 2));
+      
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/externalTrainer/addExternalTrainer`,
+        apiUrl,
         formData,
         { withCredentials: true }
       );
 
+      console.log('✅ Trainer added successfully:', response.data);
       toast.success('External trainer added successfully! Login credentials sent via email.');
       navigate('/training/external-trainer');
     } catch (error) {
-      console.error('Failed to add trainer:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to add external trainer';
+      console.error('❌ Failed to add trainer:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      console.error('❌ Request data:', formData);
+      
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to add external trainer';
       toast.error(errorMessage);
     } finally {
       setLoading(false);

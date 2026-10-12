@@ -136,6 +136,9 @@ const sendCredentialsEmail = async (trainerData, password) => {
  * POST /api/externalTrainer/addExternalTrainer
  */
 export const addExternalTrainer = asyncHandler(async (req, res) => {
+  console.log('[Add External Trainer] === REQUEST START ===');
+  console.log('[Add External Trainer] Full request body:', JSON.stringify(req.body, null, 2));
+  
   const {
     customEmployeeId,
     employeeName,
@@ -148,22 +151,30 @@ export const addExternalTrainer = asyncHandler(async (req, res) => {
     skills     // New: array of skill IDs
   } = req.body;
 
-  console.log('[Add External Trainer] Request received:', {
+  console.log('[Add External Trainer] Extracted fields:', {
     customEmployeeId,
     employeeName,
     employeeEmail,
+    employeePhone,
     accessStartDate,
     accessEndDate,
-    skills
+    companyName,
+    passwordProvided: !!password,
+    skills,
+    skillsType: typeof skills,
+    skillsIsArray: Array.isArray(skills),
+    skillsLength: skills?.length
   });
 
   // Validation
   if (!customEmployeeId || !employeeName || !employeeEmail || !accessStartDate || !accessEndDate) {
+    console.error('[Add External Trainer] ❌ Missing required fields');
     throw new ApiError(400, 'Required fields: customEmployeeId, employeeName, employeeEmail, accessStartDate, accessEndDate');
   }
 
   // Validate skills array
   if (!skills || !Array.isArray(skills) || skills.length === 0) {
+    console.error('[Add External Trainer] ❌ Invalid skills:', { skills, isArray: Array.isArray(skills), length: skills?.length });
     throw new ApiError(400, 'At least one skill must be selected');
   }
 
